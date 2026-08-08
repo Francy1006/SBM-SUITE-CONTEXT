@@ -41,6 +41,7 @@
 32. Container project roots use canonical runtime paths under `/suite/<brand>/<project>` and must match the backend Project Registry exactly. Current required mappings include:
     - `dp-api` → `/suite/dp/DP-API` → `SBM-SUITE/dp/DP-API/`
     - `sbm-manager` → `/suite/sbm/SBM-MANAGER` → `SBM-SUITE/sbm/SBM-MANAGER/`
+    - `sbm-db` → `/suite/sbm/SBM-DB` → `SBM-SUITE/sbm/SBM-DB/`
    Never change path casing or derive brand/project segments heuristically.
 33. All workflow backups are stored below `SBM-SUITE/context/backup/`; no workflow may use or create a pluralized or workflow-local backup directory.
 
@@ -1082,7 +1083,7 @@ Every context export and upgrade workflow must:
 85. Reject duplicate Objective IDs, duplicate project grouping headings and modifications, reordering or removal of existing `COMPLETED_OBJECTIVES.md` history.
 86. Do not copy a closed objective to `Completed work` in any `PROJECT_CONTEXT.md`.
 87. Require `canonical_project_path` to equal the exact runtime root published for `project_name` by the backend Project Registry/source contract; never construct runtime or repository paths from `project_name` or alter path casing.
-88. Require every project `target_file` to match the exact repository-relative mapping published for the selected project. The patch archive contract below exposes exactly one concrete project mapping set as the backend format-validation anchor; this anchor does not select the runtime project. The actual project mapping for each run comes from the source manifest/backend Project Registry. Current repository roots are `SBM-SUITE/dp/DP-API/` for `dp-api` and `SBM-SUITE/sbm/SBM-MANAGER/` for `sbm-manager`. Never derive `target_file` by string manipulation of `canonical_project_path`.
+88. Require every project `target_file` to match the exact repository-relative mapping published for the selected project. The patch archive contract below exposes exactly one concrete project mapping set as the backend format-validation anchor; this anchor does not select the runtime project. The actual project mapping for each run comes from the source manifest/backend Project Registry. Current repository roots include `SBM-SUITE/dp/DP-API/` for `dp-api`, `SBM-SUITE/sbm/SBM-MANAGER/` for `sbm-manager`, and `SBM-SUITE/sbm/SBM-DB/` for `sbm-db`. Never derive `target_file` by string manipulation of `canonical_project_path`.
 89. Generate only patch files listed in `supported_patch_paths`.
 90. Require the output `contract_version` to equal the source manifest `contract_version`.
 
@@ -1153,6 +1154,7 @@ Actual project routing is always resolved from the source manifest/backend Proje
 |---|---|---|
 | `dp-api` | `/suite/dp/DP-API` | `SBM-SUITE/dp/DP-API/` |
 | `sbm-manager` | `/suite/sbm/SBM-MANAGER` | `SBM-SUITE/sbm/SBM-MANAGER/` |
+| `sbm-db` | `/suite/sbm/SBM-DB` | `SBM-SUITE/sbm/SBM-DB/` |
 
 For a given run, every project-scoped patch must target only the exact repository path belonging to the literal `project_name` selected by the source manifest. The validation anchor above must never be used to override that selected-project routing.
 

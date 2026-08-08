@@ -40,8 +40,10 @@ The project being processed is:
 Resolve it only through these canonical repository and container mappings:
 
 ```text
-DP-API            → SBM-SUITE/dp/DP-API/            → /suite/dp/DP-API
-SBM-API           → SBM-SUITE/sbm/SBM-API/          → /suite/sbm/SBM-API
+dp-api            → SBM-SUITE/dp/DP-API/            → /suite/dp/DP-API
+sbm-api           → SBM-SUITE/sbm/SBM-API/          → /suite/sbm/SBM-API
+sbm-db            → SBM-SUITE/sbm/SBM-DB/           → /suite/sbm/SBM-DB
+sbm-manager       → SBM-SUITE/sbm/SBM-MANAGER/      → /suite/sbm/SBM-MANAGER
 sbm-ai-assistant  → SBM-SUITE/sbm/sbm-ai-assistant/ → /suite/sbm/sbm-ai-assistant
 ```
 

@@ -67,7 +67,7 @@ Current business scope includes products, materials, services, catalogs, pricing
 | sbm-ai-assistant | SBM | AI orchestration, RAG, embeddings and Tools | AI-assisted workflows |
 | SBM-SUITE/context | SBM | Global context and documentation contracts | Context governance |
 
-Canonical repository paths currently evidenced here include `SBM-SUITE/dp/DP-API/`, `SBM-SUITE/sbm/SBM-MANAGER/`, `SBM-SUITE/sbm/SBM-API/` and `SBM-SUITE/sbm/sbm-ai-assistant/`. Canonical runtime roots preserve those brand segments as `/suite/dp/DP-API`, `/suite/sbm/SBM-MANAGER`, `/suite/sbm/SBM-API` and `/suite/sbm/sbm-ai-assistant`. The repository path for `SBM-DB` remains `N/A` in this document until explicitly evidenced.
+Canonical repository paths currently evidenced here include `SBM-SUITE/dp/DP-API/`, `SBM-SUITE/sbm/SBM-API/`, `SBM-SUITE/sbm/SBM-DB/`, `SBM-SUITE/sbm/SBM-MANAGER/` and `SBM-SUITE/sbm/sbm-ai-assistant/`. Canonical runtime roots preserve those brand segments as `/suite/dp/DP-API`, `/suite/sbm/SBM-API`, `/suite/sbm/SBM-DB`, `/suite/sbm/SBM-MANAGER` and `/suite/sbm/sbm-ai-assistant`.
 
 ## 5. Applications and services
 
@@ -118,69 +118,43 @@ Legend:
                               │       USUARIOS SBM        │
                               └─────────────┬─────────────┘
                                             │
-                          ┌─────────────────┴─────────────────┐
-                          │                                   │
-                          ▼                                   ▼
-              ┌─────────────────────────┐         ┌─────────────────────────┐
-              │ 🟦 SBM-MANAGER          │         │ ⬜ Slack / otros canales│
-              │ Vue.js 3 · Front Web    │         │ Interfaces aprobadas    │
-              └────────────┬────────────┘         └────────────┬────────────┘
-                           │                                   │
-              ┌────────────┼────────────┐                      │
-              │            │            │                      │
-              ▼            ▼            └──────────────────────┤
-    ┌──────────────────┐  ┌──────────────────┐                 ▼
-    │ 🟩 DP-API        │  │ 🟩 SBM-API       │      ┌──────────────────────────┐
-    │ Django / DRF     │  │ Django / DRF     │      │ 🟨 SBM-AI-ASSISTANT      │
-    │ Client operations│  │ Platform / Admin │      │ FastAPI · AI Middleware │
-    └─────────┬────────┘  └─────────┬────────┘      │ RAG · Agents · Tools    │
-              │                     │               └────────────┬─────────────┘
-              │                     │                            │
-              │                     │                   ┌────────┴─────────┐
-              │                     │                   │                  │
-              │                     │                   │ Tool / REST      │
-              │                     │                   │                  │
-              │                     │                   ▼                  ▼
-              │                     │          ┌────────────────┐  ┌────────────────┐
-              │                     └─────────►│ 🟩 SBM-API     │  │ 🟩 DP-API      │
-              │                                └────────────────┘  └────────────────┘
-              │
-              └─────────────────────┐
-                                    │
-                                    ▼
-                        ┌───────────────────────────┐
-                        │ 🟥 PostgreSQL            │
-                        │ SBM-DB                    │
-                        │                           │
-                        │ ditaly_pasta              │
-                        │ sbm_business              │
-                        │ public                    │
-                        └─────────────▲─────────────┘
-                                      │
-                                      │ schema / migrations
-                                      │
-                        ┌─────────────┴─────────────┐
-                        │ 🟧 Flyway                │
-                        │ SBM-DB                   │
-                        │ Versioned migrations     │
-                        └───────────────────────────┘
-
-
-                    AI / KNOWLEDGE INFRASTRUCTURE
-
-              ┌───────────────────────────┐
-              │ 🟨 SBM-AI-ASSISTANT      │
-              └─────────────┬─────────────┘
-                            │
-                            │ Vector API
-                            ▼
-              ┌───────────────────────────┐
-              │ 🟥 Qdrant                 │
-              │                           │
-              │ sbm_docs                  │
-              │ sbm_contexts              │
-              │ sbm_documentation         │
-              └───────────────────────────┘
+                         ┌──────────────────┴──────────────────┐
+                         │                                     │
+                         ▼                                     ▼
+              ┌─────────────────────────┐          ┌─────────────────────────┐
+              │ 🟦 SBM-MANAGER          │          │ ⬜ Slack / otros canales│
+              │ Vue.js 3 · Front Web    │          │ Interfaces aprobadas    │
+              └────────────┬────────────┘          └────────────┬────────────┘
+                           │                                    │
+                 ┌─────────┴─────────┐                          ▼
+                 │                   │               ┌──────────────────────────┐
+                 ▼                   ▼               │ 🟨 SBM-AI-ASSISTANT      │
+       ┌──────────────────┐  ┌──────────────────┐    │ FastAPI · RAG · Tools   │
+       │ 🟩 DP-API        │  │ 🟩 SBM-API       │◄───┤ API/tool orchestration  │
+       │ Django / DRF     │  │ Django / DRF     │    └────────────┬─────────────┘
+       │ Client operations│  │ Platform / Admin │                 │
+       └─────────┬────────┘  └─────────┬────────┘                 ├────► 🟩 DP-API
+                 │                     │                          │
+                 └──────────┬──────────┘                          │ Vector API
+                            │                                     ▼
+                            ▼                          ┌──────────────────────────┐
+                ┌───────────────────────────┐         │ 🟥 Qdrant                │
+                │ 🟥 PostgreSQL · SBM-DB   │         │ sbm_docs                 │
+                │                           │         │ sbm_contexts             │
+                │ sbm_business              │         │ sbm_documentation        │
+                │ ditaly_pasta              │         └──────────────────────────┘
+                │ accounting                │
+                │ analytics                 │
+                │ public                    │
+                └─────────────▲─────────────┘
+                              │ schema / migrations
+                              │
+                ┌─────────────┴─────────────┐
+                │ 🟧 Flyway · SBM-DB       │
+                │ sbm_business             │
+                │ ditaly_pasta             │
+                │ cross · analytics        │
+                └───────────────────────────┘
 ```
 
 Diagram maintenance rules:
@@ -361,6 +335,7 @@ Shared configuration rules:
 - secrets and `.env` values must remain outside Git and ZIP packages;
 - project-specific environment files own local runtime values;
 - `SBM-MANAGER` uses canonical repository root `SBM-SUITE/sbm/SBM-MANAGER/` and runtime root `/suite/sbm/SBM-MANAGER`;
+- `SBM-DB` uses canonical repository root `SBM-SUITE/sbm/SBM-DB/` and runtime root `/suite/sbm/SBM-DB`;
 - project context scripts resolve the absolute suite root from `SBM_SUITE_ROOT`;
 - suite-level context contracts, prompts, input, output and project-tree artifacts are resolved below `SBM-SUITE/context`;
 - container requests use repository paths mounted below `/suite`, including `/suite/<brand>/<project>` for project roots;
@@ -447,6 +422,7 @@ Current verified direction:
 
 - SBM-MANAGER is the canonical Vue 3 web frontend consuming DP-API and SBM-API through explicit frontend clients.
 - SBM-MANAGER context, QA and lifecycle scaffolding is present; fresh QA and lifecycle execution remain pending.
+- SBM-DB is the canonical PostgreSQL/Flyway authority; project context, QA/lifecycle scaffolding and canonical routing are defined, while fresh QA and complete migration-chain validation remain pending.
 - Product is the accepted DP-API reference vertical.
 - Material is separated into its own domain app.
 - Service is a planned backend domain.

@@ -51,6 +51,7 @@ SBM-SUITE/context
 |---|---|---|---|---:|---|---|---|
 | OBJ-CTX-001 | SBM-SUITE | Validate and stabilize the expanded context governance model, synchronized section patches and project-tree evidence | active | 5 |  | FEATURE-expands-context-governance | `context/documentation/pages/AI Architect Roadmap/`, `context/documentation/pages/SBM-Suite/` |
 | SBM-MANAGER-001 | SBM-MANAGER | Integrar SBM-MANAGER completamente a SBM Suite, incluyendo contextos, lifecycle scripts, QA/SonarQube, registro en sbm-ai-assistant, sincronización global y actualización del diagrama canónico de arquitectura en SUITE_CONTEXT.md. | active | 5 | 2026-08-07 | `FEATURE-integrates-sbm-manager` | `context/documentation/pages/🤖 AI Architect Roadmap/🏢 SBM-Suite 3a50bde8acd580d0a068d6abc3542603.md` |
+| SBM-DB-001 | SBM-DB | habilitación de sbm-db | active | 5 | 2026-08-07 | `FEATURE-enables-sbm-db` | `context/documentation/pages/🤖 AI Architect Roadmap/🏢 SBM-Suite 3a50bde8acd580d0a068d6abc3542603.md` |
 
 Rules:
 
@@ -81,10 +82,11 @@ Rules:
 | DP-API | Client-facing business operations | Products, materials, services, catalogs, tickets, providers, pricing, branches and other client domains | Project code, project contexts and canonical APIs |
 | SBM-MANAGER | Enterprise web frontend | Vue 3 management UI, frontend orchestration, reusable CRUD behavior and explicit DP-API / SBM-API consumption | Project code, project contexts and frontend API clients |
 | SBM-API | Internal platform operations | Internal administration, franchise, fiscal, inventory, calculation, configuration and platform services | Project code and project contexts |
+| SBM-DB | Physical database and migration authority | PostgreSQL schemas, DBML, Flyway migrations, constraints, views and structural seeds | DBML, Flyway, PostgreSQL runtime and project contexts |
 | sbm-ai-assistant | AI and knowledge orchestration | Embeddings, Qdrant, RAG, Slack, context export/upgrade and future documentation workflows | AI repository and indexed Git Markdown |
 | SBM-SUITE/context | Global governance | Cross-project context, architecture, business, QA, security, data, decisions and workflow contracts | Git Markdown |
 
-Canonical project roots include `SBM-SUITE/dp/DP-API/`, `SBM-SUITE/sbm/SBM-MANAGER/`, `SBM-SUITE/sbm/SBM-API/` and `SBM-SUITE/sbm/sbm-ai-assistant/`. Their canonical runtime roots are `/suite/dp/DP-API`, `/suite/sbm/SBM-MANAGER`, `/suite/sbm/SBM-API` and `/suite/sbm/sbm-ai-assistant`.
+Canonical project roots include `SBM-SUITE/dp/DP-API/`, `SBM-SUITE/sbm/SBM-API/`, `SBM-SUITE/sbm/SBM-DB/`, `SBM-SUITE/sbm/SBM-MANAGER/` and `SBM-SUITE/sbm/sbm-ai-assistant/`. Their canonical runtime roots are `/suite/dp/DP-API`, `/suite/sbm/SBM-API`, `/suite/sbm/SBM-DB`, `/suite/sbm/SBM-MANAGER` and `/suite/sbm/sbm-ai-assistant`.
 
 ## 6. Project objective summaries
 
@@ -92,6 +94,7 @@ Canonical project roots include `SBM-SUITE/dp/DP-API/`, `SBM-SUITE/sbm/SBM-MANAG
 |---|---|---|---|---|---|---|---|
 | DP-API | Client-facing business API | test fix | Dedicated Service app; Material consumer migration; duplicate Product endpoint retirement | `BUGFIX-test-fix` | `dp/DP-API/context/PROJECT_CONTEXT.md` | `dp/DP-API/context/QA_CONTEXT.md` | `context/documentation/pages/QA & Testing/`, `context/documentation/pages/Development Roadmap/` |
 | SBM-MANAGER | Enterprise web frontend | Integrar SBM-MANAGER completamente a SBM Suite | Not defined | `FEATURE-integrates-sbm-manager` | `sbm/SBM-MANAGER/context/PROJECT_CONTEXT.md` | `sbm/SBM-MANAGER/context/QA_CONTEXT.md` | `context/documentation/pages/🤖 AI Architect Roadmap/🏢 SBM-Suite 3a50bde8acd580d0a068d6abc3542603.md` |
+| SBM-DB | PostgreSQL schema and migration authority | habilitación de sbm-db | Not defined | `FEATURE-enables-sbm-db` | `sbm/SBM-DB/context/PROJECT_CONTEXT.md` | `sbm/SBM-DB/context/QA_CONTEXT.md` | `context/documentation/pages/🤖 AI Architect Roadmap/🏢 SBM-Suite 3a50bde8acd580d0a068d6abc3542603.md` |
 | SBM-API | Internal platform API | Not defined | Not defined | N/A | `sbm/SBM-API/context/PROJECT_CONTEXT.md` | `sbm/SBM-API/context/QA_CONTEXT.md` | To be mapped |
 | sbm-ai-assistant | AI orchestration and RAG | Support expanded context governance and project-tree evidence | Add documentation export, upgrade and dedicated collection | `FEATURE-expands-context-governance` | `sbm/sbm-ai-assistant/context/PROJECT_CONTEXT.md` | `sbm/sbm-ai-assistant/context/QA_CONTEXT.md` | `context/documentation/pages/AI Engineering/`, `context/documentation/pages/SBM-Suite/` |
 | SBM-SUITE | Global governance and orchestration | Implement expanded context governance | Implement documentation workflow | `FEATURE-expands-context-governance` | `context/PROJECT_CONTEXT.md` | `context/QA_CONTEXT.md` | `context/documentation/` |
@@ -400,6 +403,7 @@ Planned or incomplete capabilities:
 - documentation exported to Git under `context/documentation/`;
 - expanded `FORMAT_CONTEXT.md` contract defined.
 - SBM-MANAGER canonical project context, QA context, deploy context and lifecycle scripts prepared;
+- SBM-DB canonical project context, QA context, deploy context and lifecycle scripts prepared;
 - section-level patch validation and application implemented;
 - project-tree generation integrated into context deployment;
 - context export response persistence and completion validation implemented;
@@ -409,7 +413,8 @@ Planned or incomplete capabilities:
 ## 16. Pending work
 
 1. Validate SBM-MANAGER project-to-global synchronization and QA lifecycle with fresh evidence.
-2. Complete validated project-to-global synchronization coverage for the remaining projects.
+2. Validate SBM-DB canonical registry, migration QA and project-to-global lifecycle with fresh evidence.
+3. Complete validated project-to-global synchronization coverage for the remaining projects.
 4. Create and populate `SECURITY_CONTEXT.md` with validated evidence.
 4. Create and populate `DATA_CONTEXT.md` with validated evidence.
 5. Create and populate `DECISIONS_CONTEXT.md` with validated evidence.

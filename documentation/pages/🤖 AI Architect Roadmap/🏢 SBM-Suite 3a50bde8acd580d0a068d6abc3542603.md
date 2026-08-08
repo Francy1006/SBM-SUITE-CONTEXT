@@ -1,5 +1,17 @@
 # 🏢 SBM-Suite
 
+> **Last updated:** 2026-08-08
+>
+> **Purpose:**
+>
+> Documentar la visión, arquitectura, componentes, estado operativo y roadmap de SBM Suite como plataforma empresarial multimarca y AI-native.
+>
+> **Source of truth:**
+>
+> `SBM-SUITE/context/PROJECT_CONTEXT.md`, `SBM-SUITE/context/QA_CONTEXT.md`, `SBM-SUITE/context/DATA_CONTEXT.md`, `SBM-SUITE/context/DECISIONS_CONTEXT.md` y los repositorios de proyecto validados.
+
+## 1. Overview
+
 > **AI-native, agent-orchestrated business operating system**
 > 
 > 
@@ -12,7 +24,7 @@
 
 ---
 
-# 1. Objetivo de SBM Suite
+### 1. Objetivo de SBM Suite
 
 SBM Suite no es solamente un ERP ni una colección de aplicaciones independientes.
 
@@ -34,7 +46,81 @@ La plataforma debe permitir incorporar nuevas marcas sin reconstruir toda la arq
 
 ---
 
-# 2. Principios de arquitectura
+## 2. Scope
+
+### 3. Marcas administradas
+
+| Marca | Descripción |
+| --- | --- |
+| Ditaly Pasta | Franquicia gastronómica de comida rápida especializada en pastas, con gestión de locales, franquiciados, ventas, pedidos, compras, documentos, permisos y planos. |
+| Kiseki Tech | Empresa de importación y venta de artículos tecnológicos, con tienda online, costos en USD y operación mediante Mercado Libre. |
+| Consorcio Gastronómico | Empresa de asesoría y tramitación de patentes comerciales, resoluciones sanitarias, documentación y planos. |
+| PortalConvenios.cl | Plataforma de convenios de bienestar y salud para empresas y entidades públicas, con gestión de prestadores, clientes, operativos y agenda. |
+
+Ditaly Pasta es actualmente la marca principal utilizada para el desarrollo funcional.
+
+---
+
+## 3. Current state
+
+### 6. Estado actual del desarrollo
+
+#### Foco funcional
+
+Actualmente el desarrollo está concentrado en Ditaly Pasta.
+
+Los módulos `product` y `material` fueron implementados recientemente en:
+
+- `dp-api`;
+- `sbm-manager`.
+
+Antes de continuar con nuevos módulos de negocio, se implementará una base transversal de calidad y seguridad.
+
+#### Separación entre `sbm-api` y `dp-api`
+
+Actualmente `sbm-api` todavía contiene métodos y endpoints que corresponden a `dp-api`.
+
+Se está ejecutando una migración para establecer responsabilidades definitivas.
+
+##### Estado deseado
+
+`sbm-api`:
+
+- procesos internos;
+- funciones críticas;
+- administración SBM;
+- lógica transversal;
+- selección de marca o franquicia;
+- operaciones no expuestas directamente al cliente.
+
+`dp-api`:
+
+- primera API cliente;
+- productos;
+- materiales;
+- catálogos;
+- precios públicos;
+- pedidos;
+- clientes;
+- proveedores;
+- sucursales;
+- tickets;
+- procesos públicos de Ditaly Pasta.
+
+##### Resultado esperado
+
+1. Eliminar de `sbm-api` las funciones que correspondan a `dp-api`.
+2. Eliminar duplicaciones.
+3. Establecer contratos claros entre ambas APIs.
+4. Separar correctamente permisos y usuarios.
+5. Preparar comunicación síncrona y asíncrona.
+6. Documentar responsabilidades por servicio.
+
+---
+
+## 4. Core concepts
+
+### 2. Principios de arquitectura
 
 1. **Multimarca**
     
@@ -79,22 +165,11 @@ La plataforma debe permitir incorporar nuevas marcas sin reconstruir toda la arq
 
 ---
 
-# 3. Marcas administradas
+## 5. Architecture or operating model
 
-| Marca | Descripción |
-| --- | --- |
-| Ditaly Pasta | Franquicia gastronómica de comida rápida especializada en pastas, con gestión de locales, franquiciados, ventas, pedidos, compras, documentos, permisos y planos. |
-| Kiseki Tech | Empresa de importación y venta de artículos tecnológicos, con tienda online, costos en USD y operación mediante Mercado Libre. |
-| Consorcio Gastronómico | Empresa de asesoría y tramitación de patentes comerciales, resoluciones sanitarias, documentación y planos. |
-| PortalConvenios.cl | Plataforma de convenios de bienestar y salud para empresas y entidades públicas, con gestión de prestadores, clientes, operativos y agenda. |
+### 4. Modelo de APIs
 
-Ditaly Pasta es actualmente la marca principal utilizada para el desarrollo funcional.
-
----
-
-# 4. Modelo de APIs
-
-## `sbm-api`
+#### `sbm-api`
 
 API interna y transversal de SBM Suite.
 
@@ -117,7 +192,7 @@ Responsabilidades generales:
 - integraciones internas;
 - permisos y auditoría.
 
-## APIs cliente por marca
+#### APIs cliente por marca
 
 Cada marca podrá disponer de una API cliente cuando sus procesos públicos o comerciales lo requieran.
 
@@ -130,7 +205,7 @@ Estas APIs expondrán únicamente las funciones necesarias para:
 - portales;
 - integraciones externas autorizadas.
 
-### Primera API cliente
+##### Primera API cliente
 
 `dp-api` es la primera API cliente de SBM Suite y corresponde a Ditaly Pasta.
 
@@ -138,7 +213,7 @@ Las futuras marcas podrán incorporar APIs propias cuando exista una necesidad f
 
 ---
 
-# 5. Arquitectura general
+### 5. Arquitectura general
 
 ```
                          SBM Suite
@@ -159,9 +234,11 @@ Las futuras marcas podrán incorporar APIs propias cuando exista una necesidad f
  Primera API                              IA, RAG, Tools,
  cliente                                  Agentes y MCP
         │
-        ▼
- Aplicaciones y canales
- públicos de cada marca
+        └──────────────┐
+                       ▼
+                    sbm-db
+             PostgreSQL / Flyway
+       autoridad de esquemas y migraciones
 ```
 
 Arquitectura futura ampliada:
@@ -179,6 +256,7 @@ sbm-api
        ├── sbm-digital-api
        ├── dp-api
        ├── futuras APIs cliente
+       ├── sbm-db
        ├── Kafka
        ├── Redis / Celery
        └── servicios externos
@@ -195,74 +273,21 @@ Usuarios públicos
 
 ---
 
-# 6. Estado actual del desarrollo
+## 6. Components
 
-## Foco funcional
+### 7. Repositorios y aplicaciones
 
-Actualmente el desarrollo está concentrado en Ditaly Pasta.
+#### `sbm-manager`
 
-Los módulos `product` y `material` fueron implementados recientemente en:
-
-- `dp-api`;
-- `sbm-manager`.
-
-Antes de continuar con nuevos módulos de negocio, se implementará una base transversal de calidad y seguridad.
-
-## Separación entre `sbm-api` y `dp-api`
-
-Actualmente `sbm-api` todavía contiene métodos y endpoints que corresponden a `dp-api`.
-
-Se está ejecutando una migración para establecer responsabilidades definitivas.
-
-### Estado deseado
-
-`sbm-api`:
-
-- procesos internos;
-- funciones críticas;
-- administración SBM;
-- lógica transversal;
-- selección de marca o franquicia;
-- operaciones no expuestas directamente al cliente.
-
-`dp-api`:
-
-- primera API cliente;
-- productos;
-- materiales;
-- catálogos;
-- precios públicos;
-- pedidos;
-- clientes;
-- proveedores;
-- sucursales;
-- tickets;
-- procesos públicos de Ditaly Pasta.
-
-### Resultado esperado
-
-1. Eliminar de `sbm-api` las funciones que correspondan a `dp-api`.
-2. Eliminar duplicaciones.
-3. Establecer contratos claros entre ambas APIs.
-4. Separar correctamente permisos y usuarios.
-5. Preparar comunicación síncrona y asíncrona.
-6. Documentar responsabilidades por servicio.
-
----
-
-# 7. Repositorios y aplicaciones
-
-## `sbm-manager`
-
-### Tipo
+##### Tipo
 
 Frontend administrativo interno.
 
-### Propósito
+##### Propósito
 
 Centralizar la administración de SBM Suite y de todas las marcas asociadas.
 
-### Funciones actuales y futuras
+##### Funciones actuales y futuras
 
 - productos;
 - materiales;
@@ -282,7 +307,7 @@ Centralizar la administración de SBM Suite y de todas las marcas asociadas.
 - dashboards;
 - configuración de agentes IA.
 
-### Tecnologías actuales
+##### Tecnologías actuales
 
 - Vue.js;
 - JavaScript;
@@ -291,7 +316,7 @@ Centralizar la administración de SBM Suite y de todas las marcas asociadas.
 - Axios;
 - Docker.
 
-### Evolución planificada
+##### Evolución planificada
 
 - TypeScript;
 - Vitest;
@@ -304,35 +329,35 @@ Centralizar la administración de SBM Suite y de todas las marcas asociadas.
 - módulos visuales;
 - integración con contenidos y canales digitales.
 
-### Estado
+##### Estado
 
 🚧 En desarrollo.
 
-## `sbm-api`
+#### `sbm-api`
 
-### Tipo
+##### Tipo
 
 Backend interno transversal.
 
-### Propósito
+##### Propósito
 
 Gestionar procesos críticos, administrativos y compartidos de SBM Suite.
 
-### Arquitectura
+##### Arquitectura
 
 - arquitectura hexagonal en módulos con reglas de negocio;
 - arquitectura por capas en módulos genéricos;
 - adaptadores para servicios externos;
 - comunicación mediante APIs y eventos.
 
-### Tecnologías actuales
+##### Tecnologías actuales
 
 - Django;
 - Django REST Framework;
 - PostgreSQL;
 - Docker.
 
-### Evolución planificada
+##### Evolución planificada
 
 - pytest;
 - pytest-django;
@@ -345,21 +370,21 @@ Gestionar procesos críticos, administrativos y compartidos de SBM Suite.
 - seguridad automatizada;
 - contratos de integración.
 
-### Estado
+##### Estado
 
 🚧 En refactorización y separación de responsabilidades.
 
-## `dp-api`
+#### `dp-api`
 
-### Tipo
+##### Tipo
 
 Primera API cliente de SBM Suite.
 
-### Propósito
+##### Propósito
 
 Exponer los procesos públicos y comerciales de Ditaly Pasta.
 
-### Dominios actuales o planificados
+##### Dominios actuales o planificados
 
 - productos;
 - materiales;
@@ -374,14 +399,14 @@ Exponer los procesos públicos y comerciales de Ditaly Pasta.
 - servicios;
 - configuración pública de marca.
 
-### Tecnologías actuales
+##### Tecnologías actuales
 
 - Django;
 - Django REST Framework;
 - PostgreSQL;
 - Docker.
 
-### Evolución planificada
+##### Evolución planificada
 
 - arquitectura hexagonal en módulos de negocio;
 - pytest;
@@ -393,11 +418,11 @@ Exponer los procesos públicos y comerciales de Ditaly Pasta.
 - Celery;
 - OpenTelemetry.
 
-### Estado
+##### Estado
 
 🚧 En desarrollo.
 
-## Futuras APIs cliente
+#### Futuras APIs cliente
 
 Cada nueva API deberá justificarse por una necesidad real de negocio.
 
@@ -412,13 +437,13 @@ Podrán aparecer cuando una marca necesite:
 
 No deben crearse anticipadamente sin necesidad funcional.
 
-## `sbm-ai-assistant`
+#### `sbm-ai-assistant`
 
-### Tipo
+##### Tipo
 
 Orquestador de Inteligencia Artificial, herramientas, agentes y conocimiento empresarial.
 
-### Estado actual
+##### Estado actual
 
 Actualmente incluye:
 
@@ -431,7 +456,7 @@ Actualmente incluye:
 - sincronización programada;
 - respuestas basadas en documentación empresarial.
 
-### Siguiente avance
+##### Siguiente avance
 
 Conectar `sbm-ai-assistant` con:
 
@@ -457,7 +482,7 @@ sbm-ai-assistant
    └── registra trazabilidad
 ```
 
-### Evolución planificada
+##### Evolución planificada
 
 - LangGraph;
 - MCP;
@@ -470,17 +495,17 @@ sbm-ai-assistant
 - aprobación humana;
 - integración con Notion.
 
-### Estado
+##### Estado
 
 🚧 RAG implementado; integración con APIs como siguiente etapa.
 
-## `sbm-db`
+#### `sbm-db`
 
-### Tipo
+##### Tipo
 
 Repositorio central de persistencia y migraciones.
 
-### Tecnologías
+##### Tecnologías
 
 - PostgreSQL;
 - Flyway;
@@ -488,7 +513,7 @@ Repositorio central de persistencia y migraciones.
 - dbdiagram.io;
 - Docker.
 
-### Responsabilidades
+##### Responsabilidades
 
 - modelo de datos;
 - esquemas;
@@ -499,7 +524,7 @@ Repositorio central de persistencia y migraciones.
 - configuración inicial;
 - datos maestros.
 
-### Evolución planificada
+##### Evolución planificada
 
 - pruebas de migraciones;
 - backups;
@@ -516,21 +541,21 @@ Repositorio central de persistencia y migraciones.
 
 Estos datos de marca se incorporarán cuando comience formalmente la etapa de publicación de `dp-store`.
 
-### Estado
+##### Estado
 
 🚧 En desarrollo.
 
-## `dp-store`
+#### `dp-store`
 
-### Tipo
+##### Tipo
 
 Primera tienda pública asociada a una marca.
 
-### Propósito
+##### Propósito
 
 Servir como canal digital de Ditaly Pasta y como modelo reutilizable para futuras tiendas.
 
-### Funciones futuras
+##### Funciones futuras
 
 - catálogo;
 - productos;
@@ -545,17 +570,17 @@ Servir como canal digital de Ditaly Pasta y como modelo reutilizable para futura
 - integración con redes sociales;
 - conexión con la API cliente correspondiente.
 
-### Estado
+##### Estado
 
 📅 Planificado.
 
-## `sbm-comercial`
+#### `sbm-comercial`
 
-### Tipo
+##### Tipo
 
 Frontend React comercial y transversal.
 
-### Propósito
+##### Propósito
 
 Servir como portal corporativo y comercial de SBM Suite.
 
@@ -567,7 +592,7 @@ Podrá consumir información de:
 - `sbm-digital-api`;
 - servicios externos.
 
-### Tecnologías
+##### Tecnologías
 
 - React;
 - TypeScript;
@@ -577,27 +602,27 @@ Podrá consumir información de:
 - Vite;
 - Docker.
 
-### Estado
+##### Estado
 
 🚧 Base existente / evolución funcional planificada.
 
-## `sbm-digital-api`
+#### `sbm-digital-api`
 
-### Tipo
+##### Tipo
 
 Backend for Frontend y Digital Experience API.
 
-### Tecnología objetivo
+##### Tecnología objetivo
 
 - Node.js;
 - NestJS;
 - TypeScript.
 
-### Propósito
+##### Propósito
 
 Unificar y adaptar información para canales públicos.
 
-### Responsabilidades
+##### Responsabilidades
 
 - agregación de APIs;
 - composición de respuestas;
@@ -613,21 +638,21 @@ Unificar y adaptar información para canales públicos.
 - integración con distintas APIs cliente;
 - aislamiento de `sbm-api`.
 
-### Justificación
+##### Justificación
 
 Esta API permite que `sbm-comercial`, `dp-store` y futuros canales consuman una capa especializada sin conectarse directamente a múltiples servicios internos.
 
-### Estado
+##### Estado
 
 📅 Planificado.
 
-## `nginx-proxy`
+#### `nginx-proxy`
 
-### Tipo
+##### Tipo
 
 Infraestructura de producción.
 
-### Responsabilidades
+##### Responsabilidades
 
 - reverse proxy;
 - routing;
@@ -635,17 +660,17 @@ Infraestructura de producción.
 - terminación HTTPS;
 - protección básica.
 
-### Estado
+##### Estado
 
 ✅ Implementado.
 
-## `cert-bot`
+#### `cert-bot`
 
-### Tipo
+##### Tipo
 
 Gestión de certificados TLS.
 
-### Responsabilidades
+##### Responsabilidades
 
 - emisión;
 - renovación;
@@ -653,17 +678,17 @@ Gestión de certificados TLS.
 
 En Kubernetes podrá complementarse o reemplazarse por `cert-manager`.
 
-### Estado
+##### Estado
 
 ✅ Implementado.
 
-## Jenkins
+#### Jenkins
 
-### Tipo
+##### Tipo
 
 CI/CD.
 
-### Responsabilidades actuales y futuras
+##### Responsabilidades actuales y futuras
 
 - construcción;
 - pruebas;
@@ -676,15 +701,141 @@ CI/CD.
 
 Azure DevOps también se incorporará como plataforma empresarial complementaria.
 
-### Estado
+##### Estado
 
 ✅ Implementado parcialmente; ampliación planificada.
 
 ---
 
-# 8. Procesamiento asíncrono e integración
+## 7. Workflows
 
-## Redis
+### 16. Documentación y gestión
+
+#### Notion
+
+Contendrá:
+
+- visión general;
+- roadmap;
+- tecnologías;
+- certificaciones;
+- prioridades;
+- estado global.
+
+La documentación técnica detallada se reducirá progresivamente a medida que migre hacia Azure DevOps y los repositorios.
+
+#### Azure DevOps
+
+Se utilizará para:
+
+- Repos;
+- Boards;
+- Pipelines;
+- Wiki;
+- dashboards;
+- QA;
+- documentación técnica;
+- seguimiento;
+- evidencia empresarial.
+
+#### GitHub
+
+Se mantendrá como vitrina pública y portafolio.
+
+#### README por repositorio
+
+Cada repositorio tendrá documentación específica de:
+
+- objetivo;
+- arquitectura;
+- instalación;
+- configuración;
+- variables;
+- endpoints;
+- pruebas;
+- despliegue;
+- integración.
+
+---
+
+## 8. Configuration
+
+La configuración técnica permanece propiedad de cada repositorio y no se documentan valores secretos.
+
+Para `SBM-DB`, la evidencia suministrada confirma:
+
+- PostgreSQL como motor de base de datos;
+- Flyway como autoridad de migraciones;
+- `flyway.locations=filesystem:/flyway/sql` para el flujo `analytics`;
+- `.sonar/` excluido del control de versiones;
+- SonarQube configurado para analizar Shell/YAML/secrets, con Flyway SQL fuera del alcance de Community Build.
+
+## 9. Security
+
+La base transversal de seguridad continúa como trabajo planificado a nivel Suite.
+
+### Seguridad
+
+- SAST;
+- DAST;
+- dependencias;
+- secretos;
+- contenedores;
+- Kubernetes;
+- APIs;
+- redes;
+- seguridad LLM;
+- auditoría.
+
+## 10. Validation
+
+La validación transversal descrita por el documento fuente contempla:
+
+### QA
+
+- pruebas unitarias;
+- pruebas de integración;
+- pruebas de contrato;
+- pruebas E2E;
+- cobertura;
+- SonarQube;
+- pruebas de carga;
+- reportes automáticos.
+
+### Evidencia actual de `SBM-DB`
+
+La evidencia QA suministrada el `2026-08-08` registra:
+
+- estado general `passed`;
+- 33 migraciones validadas en `sbm_business`;
+- 55 migraciones validadas en `ditaly_pasta`;
+- 5 migraciones validadas en el flujo `cross`;
+- 2 migraciones validadas en `analytics`;
+- SonarQube Quality Gate `PASSED`;
+- Flyway SQL fuera del análisis estático de SonarQube Community Build.
+
+## 11. Known limitations
+
+Limitaciones y transiciones explícitas en el documento fuente:
+
+- `sbm-api` todavía contiene métodos y endpoints que corresponden a `dp-api`;
+- la separación definitiva entre `sbm-api` y `dp-api` continúa en evolución;
+- PostgreSQL podrá mantenerse inicialmente fuera del clúster para evitar complejidad innecesaria;
+- varios servicios, agentes, canales y componentes de infraestructura permanecen planificados.
+
+## 12. Roadmap
+
+### Objetivo activo de `SBM-DB`
+
+| Objective ID | Objective | Status | Priority | Target date | Branch |
+|---|---|---|---:|---|---|
+| SBM-DB-001 | habilitación de sbm-db | active | 5 | 2026-08-07 | `FEATURE-enables-sbm-db` |
+
+Este objetivo permanece **active**. Su presencia aquí no representa cierre ni implementación completada.
+
+### 8. Procesamiento asíncrono e integración
+
+#### Redis
 
 Se utilizará para:
 
@@ -694,7 +845,7 @@ Se utilizará para:
 - datos temporales;
 - control de concurrencia.
 
-## Celery
+#### Celery
 
 Se utilizará para:
 
@@ -707,13 +858,13 @@ Se utilizará para:
 - procesamiento de IA;
 - integraciones externas.
 
-## Celery Beat
+#### Celery Beat
 
 Se utilizará como scheduler distribuido.
 
 La sincronización programada de Confluence en `sbm-ai-assistant` deberá migrarse desde APScheduler hacia Celery Beat cuando se implemente la infraestructura distribuida.
 
-## Kafka
+#### Kafka
 
 Se utilizará como bus de eventos empresariales.
 
@@ -738,7 +889,7 @@ Kafka no reemplaza a Celery:
 
 ---
 
-# 9. Infraestructura objetivo
+### 9. Infraestructura objetivo
 
 ```
 Docker / Docker Compose
@@ -767,7 +918,7 @@ PostgreSQL podrá mantenerse inicialmente fuera del clúster para evitar complej
 
 ---
 
-# 10. Comercio y canales digitales
+### 10. Comercio y canales digitales
 
 SBM Suite deberá permitir que las APIs cliente alimenten diferentes canales.
 
@@ -782,7 +933,7 @@ SBM Suite
 └── futuros marketplaces
 ```
 
-## Mercado Libre
+#### Mercado Libre
 
 La integración futura deberá contemplar:
 
@@ -797,7 +948,7 @@ La integración futura deberá contemplar:
 - reputación;
 - conciliación.
 
-## Tipo de cambio
+#### Tipo de cambio
 
 Para negocios de importación, SBM Suite deberá:
 
@@ -811,9 +962,9 @@ Para negocios de importación, SBM Suite deberá:
 
 ---
 
-# 11. Multimedia, SEO y redes sociales
+### 11. Multimedia, SEO y redes sociales
 
-## Multimedia
+#### Multimedia
 
 - Cloudinary;
 - YouTube;
@@ -822,7 +973,7 @@ Para negocios de importación, SBM Suite deberá:
 - activos por marca;
 - gestión centralizada de contenido.
 
-## SEO
+#### SEO
 
 - Google Search Console;
 - Google Analytics;
@@ -834,7 +985,7 @@ Para negocios de importación, SBM Suite deberá:
 - sitemap;
 - robots.txt.
 
-## Redes sociales
+#### Redes sociales
 
 Las publicaciones podrán gestionarse mediante:
 
@@ -855,11 +1006,11 @@ Canales considerados:
 
 ---
 
-# 12. Módulos futuros
+### 12. Módulos futuros
 
 Estos módulos forman parte de la visión completa, pero se implementarán después de estabilizar el núcleo técnico.
 
-## Marketing
+#### Marketing
 
 - campañas;
 - calendario editorial;
@@ -885,7 +1036,7 @@ Herramientas contempladas:
 - Cloudinary;
 - n8n.
 
-## Operaciones
+#### Operaciones
 
 - locales;
 - espacios;
@@ -912,7 +1063,7 @@ Tecnologías posibles:
 - Blender;
 - Figma.
 
-## Finanzas
+#### Finanzas
 
 - flujo de caja;
 - ingresos;
@@ -927,7 +1078,7 @@ Tecnologías posibles:
 - rentabilidad;
 - alertas.
 
-## Contabilidad e integración tributaria
+#### Contabilidad e integración tributaria
 
 SBM Suite utilizará una capa de adaptación hacia proveedores externos de facturación electrónica.
 
@@ -956,9 +1107,9 @@ Esto permitirá:
 
 ---
 
-# 13. Inteligencia Artificial y agentes
+### 13. Inteligencia Artificial y agentes
 
-## Arquitectura objetivo
+#### Arquitectura objetivo
 
 ```
 Usuario
@@ -980,7 +1131,7 @@ sbm-ai-assistant
    └── Human Approval
 ```
 
-## Estado actual
+#### Estado actual
 
 Actualmente `sbm-ai-assistant` incluye:
 
@@ -997,9 +1148,9 @@ La siguiente etapa consiste en conectar el asistente con las APIs de negocio de 
 
 ---
 
-## Orden de implementación de agentes e integraciones
+#### Orden de implementación de agentes e integraciones
 
-### 1. SBM API Integration Agent
+##### 1. SBM API Integration Agent
 
 Será la primera integración operativa de `sbm-ai-assistant`.
 
@@ -1030,7 +1181,7 @@ SBM API Integration Agent
 
 ---
 
-### 2. Azure Boards Agent
+##### 2. Azure Boards Agent
 
 Será el agente responsable del backlog técnico de SBM Suite.
 
@@ -1051,7 +1202,7 @@ Azure Boards será la fuente oficial del trabajo de desarrollo.
 
 ---
 
-### 3. Notion Documentation Agent
+##### 3. Notion Documentation Agent
 
 Permitirá actualizar la documentación general y el roadmap mediante conversación.
 
@@ -1078,7 +1229,7 @@ Notion continuará funcionando como documentación general, visión global, road
 
 ---
 
-### 4. Jira Business Agent
+##### 4. Jira Business Agent
 
 Será responsable de las tareas operativas y de negocio, manteniéndolas separadas del backlog técnico.
 
@@ -1097,7 +1248,7 @@ Jira no será el backlog principal de desarrollo.
 
 ---
 
-## Flujo de gestión inicial
+#### Flujo de gestión inicial
 
 ```
 Usuario
@@ -1121,7 +1272,7 @@ sbm-ai-assistant
 
 ---
 
-## Agentes especializados planificados
+#### Agentes especializados planificados
 
 Después de implementar las integraciones prioritarias, se incorporarán progresivamente agentes especializados.
 
@@ -1150,7 +1301,7 @@ Después de implementar las integraciones prioritarias, se incorporarán progres
 
 ---
 
-## Modelo de operación
+#### Modelo de operación
 
 Cada agente deberá disponer de:
 
@@ -1170,7 +1321,7 @@ Los agentes no deberán acceder directamente a la base de datos ni ejecutar oper
 
 ---
 
-## Evolución futura
+#### Evolución futura
 
 La evolución de `sbm-ai-assistant` incluirá:
 
@@ -1188,7 +1339,7 @@ La evolución de `sbm-ai-assistant` incluirá:
 - agentes especializados por área;
 - coordinación de flujos multiagente.
 
-# 14. Machine Learning y Deep Learning
+### 14. Machine Learning y Deep Learning
 
 Las capacidades de ML y DL se incorporarán cuando exista un caso de negocio concreto.
 
@@ -1210,35 +1361,9 @@ El detalle se mantendrá en la página **Machine Learning & Deep Learning**.
 
 ---
 
-# 15. QA, seguridad y observabilidad
-
 Antes de continuar con nuevos módulos, SBM Suite implementará una base transversal.
 
-## QA
-
-- pruebas unitarias;
-- pruebas de integración;
-- pruebas de contrato;
-- pruebas E2E;
-- cobertura;
-- SonarQube;
-- pruebas de carga;
-- reportes automáticos.
-
-## Seguridad
-
-- SAST;
-- DAST;
-- dependencias;
-- secretos;
-- contenedores;
-- Kubernetes;
-- APIs;
-- redes;
-- seguridad LLM;
-- auditoría.
-
-## Observabilidad
+### Observabilidad
 
 - métricas;
 - logs;
@@ -1251,58 +1376,7 @@ Antes de continuar con nuevos módulos, SBM Suite implementará una base transve
 - monitoreo de Celery;
 - observabilidad LLM.
 
----
-
-# 16. Documentación y gestión
-
-## Notion
-
-Contendrá:
-
-- visión general;
-- roadmap;
-- tecnologías;
-- certificaciones;
-- prioridades;
-- estado global.
-
-La documentación técnica detallada se reducirá progresivamente a medida que migre hacia Azure DevOps y los repositorios.
-
-## Azure DevOps
-
-Se utilizará para:
-
-- Repos;
-- Boards;
-- Pipelines;
-- Wiki;
-- dashboards;
-- QA;
-- documentación técnica;
-- seguimiento;
-- evidencia empresarial.
-
-## GitHub
-
-Se mantendrá como vitrina pública y portafolio.
-
-## README por repositorio
-
-Cada repositorio tendrá documentación específica de:
-
-- objetivo;
-- arquitectura;
-- instalación;
-- configuración;
-- variables;
-- endpoints;
-- pruebas;
-- despliegue;
-- integración.
-
----
-
-# 17. Prioridad inmediata
+### 17. Prioridad inmediata
 
 1. Finalizar la separación entre `sbm-api` y `dp-api`.
 2. Eliminar endpoints y procesos duplicados.
@@ -1322,7 +1396,7 @@ Cada repositorio tendrá documentación específica de:
 
 ---
 
-# 18. Desarrollo posterior
+### 18. Desarrollo posterior
 
 1. `dp-store`.
 2. Configuración digital por marca.
@@ -1343,11 +1417,11 @@ Cada repositorio tendrá documentación específica de:
 
 ---
 
-# 19. Formación paralela
+### 19. Formación paralela
 
 El desarrollo avanzará en paralelo con certificaciones y formación técnica.
 
-## Prioridad urgente
+#### Prioridad urgente
 
 **AI-3016: Develop generative AI apps in Azure AI Foundry portal**
 
@@ -1362,7 +1436,7 @@ Objetivos:
 
 ---
 
-# 20. Visión final
+### 20. Visión final
 
 ```
 Human Leadership
@@ -1383,3 +1457,20 @@ Analytics
 ```
 
 SBM Suite busca convertirse en un **sistema operativo empresarial inteligente**, capaz de administrar organizaciones de distintas industrias, conectar sus canales y automatizar progresivamente sus funciones operativas, administrativas y estratégicas, manteniendo seguridad, trazabilidad y supervisión humana.
+
+## 13. Related pages
+
+| Page | Path | Relationship |
+|---|---|---|
+| ☸️ DevOps & Platform Engineering | `documentation/pages/🤖 AI Architect Roadmap/☸️ DevOps & Platform Engineering 3a50bde8acd580c980d3c690e3860045.md` | DevOps, platform engineering and lifecycle workflows used by SBM Suite. |
+
+## 14. Subpages
+
+| Subpage | Path | Description | Status |
+|---|---|---|---|
+
+## 15. Document boundary
+
+Esta página documenta la visión, arquitectura, componentes, estado, validación y roadmap de SBM Suite.
+
+No sustituye los contextos operacionales de `SBM-SUITE/context/`, los contextos de cada proyecto, los contratos de API, los scripts ejecutables ni la evidencia QA original. No contiene secretos ni acredita como completado un objetivo que permanezca `active` o `pending`.

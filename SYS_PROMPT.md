@@ -42,6 +42,10 @@ dp-api
 sbm-manager
 → canonical runtime: /suite/sbm/SBM-MANAGER
 → target repository-relative: SBM-SUITE/sbm/SBM-MANAGER/
+
+sbm-db
+→ canonical runtime: /suite/sbm/SBM-DB
+→ target repository-relative: SBM-SUITE/sbm/SBM-DB/
 ```
 
 Use the mapping for the literal `project_name` in the source manifest. Reject unknown projects or mismatched runtime/repository mappings.
@@ -339,6 +343,7 @@ Current registry roots:
 ```text
 dp-api       → SBM-SUITE/dp/DP-API/
 sbm-manager  → SBM-SUITE/sbm/SBM-MANAGER/
+sbm-db       → SBM-SUITE/sbm/SBM-DB/
 ```
 
 Create a patch only when supplied evidence or an explicit user-guided objective justifies changing the target file.
@@ -463,7 +468,7 @@ Before including a patch file, verify all of the following:
 15. every unrelated row, objective, project QA summary and reusable component remains unchanged;
 16. no partial table is present;
 17. the patch filename appears in `manifest.supported_patch_paths`;
-18. every project `target_file` matches the exact repository-relative mapping for the selected `project_name`, independently of the runtime value in `manifest.canonical_project_path`; `dp-api` uses `SBM-SUITE/dp/DP-API/...` and `sbm-manager` uses `SBM-SUITE/sbm/SBM-MANAGER/...`.
+18. every project `target_file` matches the exact repository-relative mapping for the selected `project_name`, independently of the runtime value in `manifest.canonical_project_path`; `dp-api` uses `SBM-SUITE/dp/DP-API/...`, `sbm-manager` uses `SBM-SUITE/sbm/SBM-MANAGER/...`, and `sbm-db` uses `SBM-SUITE/sbm/SBM-DB/...`.
 
 If a complete snapshot of the target section is unavailable, exclude the patch instead of generating a partial section. If any operation fails, exclude that operation. If a patch has no valid operations after validation, exclude the patch file. Report every omission and its reason in `EXECUTIVE_README.md`.
 
@@ -590,6 +595,7 @@ Selected-project routing:
 |---|---|---|
 | `dp-api` | `/suite/dp/DP-API` | `SBM-SUITE/dp/DP-API/` |
 | `sbm-manager` | `/suite/sbm/SBM-MANAGER` | `SBM-SUITE/sbm/SBM-MANAGER/` |
+| `sbm-db` | `/suite/sbm/SBM-DB` | `SBM-SUITE/sbm/SBM-DB/` |
 
 For the selected repository root, the project-scoped patch suffixes are fixed:
 
