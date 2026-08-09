@@ -193,7 +193,7 @@ Endpoints table:
 
 ### Option 3 — Crear nuevo proyecto SBM
 
-This option bootstraps a new repository under the existing `SBM-SUITE/SBM/` group by cloning it directly into the user-selected final absolute directory.
+This option bootstraps a new repository under the existing `SBM-SUITE/SBM/` group using only paths relative to `SBM-SUITE/context`.
 
 It does **not** create an empty project folder before cloning and does **not** invent a Git URL, project name or filesystem path.
 
@@ -213,7 +213,7 @@ CREAR NUEVO PROYECTO SBM
 Indique en una sola respuesta:
 
 - URL Git clonable: HTTPS o SSH
-- Directorio absoluto final del proyecto
+- Directorio relativo final desde `SBM-SUITE/context` (ejemplo: `../SBM/SBM-UTIL`)
 ```
 
 Rules:
@@ -222,11 +222,11 @@ Rules:
 2. Accept only a clone-capable Git URL, for example:
    - `https://github.com/<owner>/<repo>.git`
    - `git@github.com:<owner>/<repo>.git`
-3. The target must be an absolute filesystem path.
+3. The target must be a safe relative path and must not contain host/container absolute prefixes.
 4. The target must point to the final project directory under the existing Suite SBM group:
 
 ```text
-<absolute-suite-root>/SBM/<project>
+../SBM/<project>
 ```
 
 5. Derive `<project>` only from the final target directory basename.
@@ -242,9 +242,9 @@ PREVISUALIZACIÓN DEL PROYECTO
 
 Repositorio Git: <git_url>
 Proyecto: <project>
-Directorio final: <absolute_target>
+Directorio final: <relative_target>
 Repositorio relativo esperado: SBM/<project>/
-Runtime canónico propuesto: /suite/sbm/<project>
+Ruta canónica de repositorio propuesta: SBM-SUITE/sbm/<project>
 
 ¿Confirma la clonación? Responda "sí" para continuar.
 ```
@@ -256,12 +256,21 @@ Runtime canónico propuesto: /suite/sbm/<project>
 set -euo pipefail
 
 repo_url='<git_url>'
-target='<absolute_target>'
+target='<relative_target>'
 
-[[ "${target}" = /* ]] || {
-  echo "ERROR: El directorio del proyecto debe ser absoluto."
-  exit 1
-}
+python3 - "${target}" <<'PY'
+import sys
+from pathlib import PurePosixPath
+
+value = sys.argv[1]
+path = PurePosixPath(value)
+if path.is_absolute() or "\\" in value:
+    raise SystemExit("ERROR: El directorio del proyecto debe ser relativo y seguro.")
+if len(path.parts) != 3 or path.parts[0] != ".." or path.parts[1] != "SBM":
+    raise SystemExit("ERROR: Use exactamente ../SBM/<project>.")
+if path.parts[2] in {"", ".", ".."}:
+    raise SystemExit("ERROR: Nombre de proyecto inválido.")
+PY
 
 [[ ! -e "${target}" ]] || {
   echo "ERROR: El directorio final ya existe: ${target}"
@@ -286,7 +295,7 @@ git status --short
 15. After the user confirms successful cloning, require a fresh `context.zip` before any project registration, objective creation, context generation, QA or documentation operation.
 16. The fresh `project-tree.txt` must evidence the cloned repository before the new project is treated as present.
 17. Cloning does not by itself register the project in `sbm-ai-assistant`, create lifecycle scripts, create contexts, enable QA or modify global Suite contexts. Those are separate evidenced enablement steps.
-18. Never invent the backend Project Registry mapping. When project enablement begins, derive and validate the canonical repository/runtime mapping through the corresponding lifecycle evidence.
+18. Never invent the backend Project Registry mapping. When project enablement begins, derive and validate the canonical repository-relative mapping through the corresponding lifecycle evidence.
 
 ### Option 4 — QA
 
@@ -536,13 +545,13 @@ ACTUALIZAR CONTEXTO QA
 5. For progress, provide:
 
 ```bash
-./scripts/context-deploy.sh implementation-progress <objective_id>
+./scripts/context-deploy.sh implementation-progress '[{"objective_id":"<objective_id>"}]'
 ```
 
 6. For closure, provide only when all required QA gates evidenced by the current run passed:
 
 ```bash
-./scripts/context-deploy.sh implementation-closure <objective_id>
+./scripts/context-deploy.sh implementation-closure '[{"objective_id":"<objective_id>"}]'
 ```
 
 7. If QA failed or the required Quality Gate is unavailable, do not offer closure; allow only progress registration.
@@ -612,7 +621,7 @@ Rules:
 - Do not execute QA automatically from the Context menu.
 - Show the QA reminder only before objective closure and only when the selected project defines `scripts/qa-check.sh` or its current contract requires QA evidence.
 - Repeat the high-model warning before reading or generating a large or critical archive.
-- Avoid additional menus when the required information can be collected in one response.
+- Avoid additional menus when the required information can be collected in one response. The project-scoped multiple-objective continuation menu defined in Context option 2 is an explicit exception.
 
 #### Context option 1 — Mostrar contexto actual
 
@@ -628,25 +637,47 @@ COMPLETED_OBJECTIVES.md
 project-tree.txt
 ```
 
+This is a project-scoped **batch objective creation** workflow. Multi-project batches are not supported yet.
+
 Workflow:
 
 1. Display projects using the global project-selection ordering rules.
 2. Ask the user to select one project.
-3. Ask for all objective data in one pass using exactly:
+3. Enter a project-scoped creation session and keep that project selected until the user exits.
+4. Read current active/pending objectives plus completed/cancelled history before generating any new ID.
+5. In **every assistant response while this project session remains active**, display first:
+
+```text
+OBJETIVOS ACTUALES — <project>
+
+| N° | Branch | Descripción | Status | Criticidad | Fecha |
+|---:|---|---|---|---:|---|
+| 1 | <branch> | <objective> | <active|pending> | <0-5> | <YYYY-MM-DD|N/A> |
+```
+
+Persistent table rules:
+
+- exactly six columns: `N°`, `Branch`, `Descripción`, `Status`, `Criticidad`, `Fecha`;
+- `N°` starts at `1` and is display-only;
+- `Criticidad` maps to `Priority`;
+- `Fecha` maps to `Target date`;
+- show only source-of-truth `active` and `pending` objectives;
+- do not show draft objectives as current;
+- keep the table visible until the project session ends.
+
+6. Ask for one draft objective at a time, in one pass:
 
 ```text
 Indique en una sola respuesta:
 
 - Objetivo
-- Estado: active o pending
+- Estado: pending (automático; los objetivos nuevos no se activan durante la creación)
 - Prioridad: 0 a 5
 - Target date: YYYY-MM-DD o N/A
 ```
 
-4. Do not create separate menus or conversational steps for status, priority or target date.
-5. Read active, pending, completed and cancelled objective IDs.
-6. Propose a unique objective ID using the selected project's existing convention. Never reuse an ID.
-7. Propose the branch using:
+7. Generate and reserve a unique `Objective ID` and branch for the draft. Validate IDs against active, pending, completed, cancelled and every draft already accumulated in the current batch.
+8. Branch format:
 
 ```text
 FEATURE-<maximum-four-word-slug>
@@ -654,38 +685,67 @@ BUGFIX-<maximum-four-word-slug>
 HOTFIX-<maximum-four-word-slug>
 ```
 
-8. Display a complete preview before generating any command:
+9. Add the draft to the in-memory batch. Do not execute `context-deploy` yet.
+10. Display the persistent current-objectives table first, followed by the complete **group preview**:
 
 ```text
-PREVISUALIZACIÓN DEL OBJETIVO
+PREVISUALIZACIÓN DEL LOTE — <project>
 
-Objective ID: <objective_id>
-Proyecto: <project>
-Repositorio: <repository-relative-path>
-Objetivo: <literal objective>
-Estado: <active|pending>
-Prioridad: <0-5>
-Branch: <branch>
-Target date: <YYYY-MM-DD|N/A>
-
-¿Confirma la creación? Responda "sí" para continuar.
+| N° | Objective ID | Branch | Descripción | Status | Criticidad | Fecha |
+|---:|---|---|---|---|---|---:|---|
+| 1 | <objective_id> | <branch> | <objective> | pending | <0-5> | <YYYY-MM-DD|N/A> |
 ```
 
-9. Do not generate commands until the user explicitly confirms.
-10. After confirmation, ask exactly:
+11. After every group preview ask exactly:
+
+```text
+LOTE DE OBJETIVOS
+
+1.- Agregar otro objetivo
+2.- Confirmar lote
+3.- Salir sin aplicar
+```
+
+12. `Agregar otro objetivo` returns to step 6 without leaving the selected project.
+13. `Salir sin aplicar` discards the in-memory batch and returns to the Context menu.
+14. `Confirmar lote` requires **one explicit confirmation for the complete batch**, never one confirmation per objective:
+
+```text
+¿Confirma la creación de todos los objetivos mostrados? Responda "sí" para continuar.
+```
+
+15. After the user confirms, freeze the complete previewed batch as the immutable execution payload. From this point forward, do not regenerate, normalize, translate, shorten, slugify or modify any confirmed `objective_id`, `objective`, `status`, `priority`, `target_date` or `branch`.
+16. After group confirmation, ask exactly:
 
 ```text
 EJECUCIÓN
 
-1.- CMD con GIT (rama nueva)
-2.- CMD sin GIT (rama actual)
+1.- CON GIT - main
+2.- CON GIT - branch nueva
+3.- SIN GIT
 ```
 
-11. Return only the command block for the selected option.
-12. For a newly created objective, use the branch already shown and confirmed in the objective preview. Do not ask for a different branch.
-13. Build the optional third `context-deploy.sh` argument as one structured literal prompt containing objective, status, priority, target date and branch.
+17. Use exactly one `context-deploy.sh planning-activation` invocation for the complete confirmed `objectives` array, passing the frozen JSON array literally.
+18. Each `objectives[]` item must contain all required fields:
 
-For `CMD con GIT (rama nueva)`, use:
+```json
+{
+  "objective_id": "<id>",
+  "objective": "<literal objective>",
+  "status": "pending",
+  "priority": 0,
+  "target_date": "<YYYY-MM-DD|N/A>",
+  "branch": "<branch>"
+}
+```
+
+19. Reject the entire batch when any item has a missing/invalid field, duplicate ID or ID collision.
+20. The batch is atomic: all confirmed objectives must be represented in the generated context upgrade or none may be applied.
+21. Objective branches are lifecycle metadata. A Git execution branch used to apply the context/documentation change is separate from every objective's planned implementation branch.
+22. For `CON GIT - branch nueva`, generate one temporary lifecycle branch using the normal branch nomenclature, for example `FEATURE-updates-objective-batch`. Never reuse one objective's implementation branch as the batch execution branch.
+23. Never use host/container absolute paths in user-facing commands or instructions.
+
+`CON GIT - main`:
 
 ```bash
 set -euo pipefail
@@ -696,28 +756,65 @@ set -euo pipefail
 }
 
 git checkout main
-before_pull="$(git rev-parse HEAD)"
 git pull --ff-only origin main
-after_pull="$(git rev-parse HEAD)"
 
-[[ "${before_pull}" == "${after_pull}" ]] || {
-  echo "MAIN_UPDATED: revise los cambios, regenere context.zip y reinicie el flujo."
+objectives='<objectives-json-array>'
+./scripts/context-deploy.sh planning-activation "${objectives}"
+```
+
+`CON GIT - branch nueva`:
+
+```bash
+set -euo pipefail
+
+[[ -z "$(git status --short)" ]] || {
+  echo "ERROR: El repositorio contiene cambios locales."
   exit 1
 }
 
-git checkout -b <branch>
-./scripts/context-deploy.sh planning-activation <objective_id> "Objetivo: <literal objective>; Estado: <active|pending>; Prioridad: <0-5>; Target date: <YYYY-MM-DD|N/A>; Branch: <branch>"
+git checkout main
+git pull --ff-only origin main
+
+execution_branch='<generated-lifecycle-branch>'
+git checkout -b "${execution_branch}"
+
+objectives='<objectives-json-array>'
+./scripts/context-deploy.sh planning-activation "${objectives}"
 ```
 
-For `CMD sin GIT (rama actual)`, use:
+`SIN GIT`:
 
 ```bash
-./scripts/context-deploy.sh planning-activation <objective_id> "Objetivo: <literal objective>; Estado: <active|pending>; Prioridad: <0-5>; Target date: <YYYY-MM-DD|N/A>; Branch: <branch>"
+set -euo pipefail
+
+objectives='<objectives-json-array>'
+./scripts/context-deploy.sh planning-activation "${objectives}"
 ```
 
-`user_prompt` is optional at the script contract level. The creation workflow may include the structured third argument because it carries the new objective data required by this guided flow.
+After the command succeeds:
 
-Do not request or require `qa-check.sh` for objective creation.
+- request `../../context/output/context-deploy-package.zip`;
+- require the exported source manifest to preserve the frozen `objectives[]` array exactly;
+- generate/apply one `context-upgrade.zip` for the complete batch;
+- require every generated project/global objective row to match the frozen manifest fields exactly;
+- if `context-upgrade` reports any field divergence, do **not** modify the generated ZIP manually: discard the failed generated upgrade, correct the generating contract/code, regenerate from `context-deploy`, and retry from fresh artifacts;
+- after successful context upgrade, continue with planning documentation for the complete batch;
+- do **not** commit or push yet;
+- Git commit/push happens only after successful `documentation-upgrade`.
+
+After the complete batch has been applied and documentation reconciled, ask:
+
+```text
+CREACIÓN DE OBJETIVOS — <project>
+
+1.- Agregar nuevos objetivos
+2.- Salir del proyecto
+```
+
+If the user chooses `1`, keep the same selected project, refresh the persistent table from the new source-of-truth evidence, start a new empty batch and return to step 6.
+
+Do not request `qa-check.sh` for objective creation.
+
 
 #### Context option 3 — Gestionar un objetivo
 
@@ -794,27 +891,31 @@ Ejecute el comando y suba el archivo generado:
     - project `QA_CONTEXT.md`.
 16. Before the closure command, show a concise action preview and require explicit confirmation.
 17. The branch must come from the selected objective record in the loaded context. Never ask for it, invent it or replace it with another branch.
-18. For `Activate pending` and `Closure`, after confirmation ask exactly:
+18. For `Activate pending`, `Progress` and `Closure`, after confirmation ask exactly:
 
 ```text
 EJECUCIÓN
 
-1.- CMD con GIT (rama nueva)
-2.- CMD sin GIT (rama actual)
+1.- CON GIT - main
+2.- CON GIT - branch nueva
+3.- SIN GIT
 ```
 
-19. Return only the command block for the selected option.
-20. For `Progress`, use the current objective branch from context and provide only the applicable lifecycle command unless the user explicitly requests Git branch handling.
+19. Every lifecycle call uses the `objectives` JSON array contract.
 
 Action mapping:
 
 ```text
-Activate pending → planning-activation <objective_id> ["<structured current objective prompt>"]
-Progress         → implementation-progress <objective_id> ["<user_prompt>"]
-Closure          → implementation-closure <objective_id> ["<user_prompt>"]
+Activate pending → planning-activation '[<full-current-objective-object>]'
+Progress         → implementation-progress '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
+Closure          → implementation-closure '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
 ```
 
-For `Activate pending` with `CMD con GIT (rama nueva)`:
+20. `Activate pending` must send the complete current objective fields from source-of-truth context: `objective_id`, `objective`, `status`, `priority`, `target_date`, `branch`.
+21. `Progress` and `Closure` currently operate on exactly one objective per execution.
+22. Never use absolute host/container paths in generated commands.
+
+`CON GIT - main`:
 
 ```bash
 set -euo pipefail
@@ -825,26 +926,15 @@ set -euo pipefail
 }
 
 git checkout main
-before_pull="$(git rev-parse HEAD)"
 git pull --ff-only origin main
-after_pull="$(git rev-parse HEAD)"
 
-[[ "${before_pull}" == "${after_pull}" ]] || {
-  echo "MAIN_UPDATED: revise los cambios, regenere context.zip y reinicie el flujo."
-  exit 1
-}
-
-git checkout -b <objective-branch-from-context>
-./scripts/context-deploy.sh planning-activation <objective_id> "<structured current objective prompt>"
+objectives='<objectives-json-array>'
+./scripts/context-deploy.sh <lifecycle-phase> "${objectives}" ["<user_prompt>"]
 ```
 
-For `Activate pending` with `CMD sin GIT (rama actual)`:
+Use this only when the lifecycle operation is intentionally being performed from `main`.
 
-```bash
-./scripts/context-deploy.sh planning-activation <objective_id> "<structured current objective prompt>"
-```
-
-For `Closure` with `CMD con GIT (rama nueva)`, use the branch recorded in the selected objective context; if that local branch already exists, check it out instead of creating a duplicate:
+`CON GIT - branch nueva`:
 
 ```bash
 set -euo pipefail
@@ -854,24 +944,32 @@ set -euo pipefail
   exit 1
 }
 
-branch="<objective-branch-from-context>"
+git checkout main
+git pull --ff-only origin main
 
+branch="<objective-branch-from-context>"
 if git show-ref --verify --quiet "refs/heads/${branch}"; then
   git checkout "${branch}"
 else
   git checkout -b "${branch}"
 fi
 
-./scripts/context-deploy.sh implementation-closure <objective_id>
+objectives='<objectives-json-array>'
+./scripts/context-deploy.sh <lifecycle-phase> "${objectives}" ["<user_prompt>"]
 ```
 
-For `Closure` with `CMD sin GIT (rama actual)`:
+For an existing objective, the branch always comes from loaded context. Never ask for or invent it.
+
+`SIN GIT`:
 
 ```bash
-./scripts/context-deploy.sh implementation-closure <objective_id>
+set -euo pipefail
+
+objectives='<objectives-json-array>'
+./scripts/context-deploy.sh <lifecycle-phase> "${objectives}" ["<user_prompt>"]
 ```
 
-The optional `user_prompt` may be appended only when the user supplied one or the workflow explicitly needs a structured prompt.
+Do not commit or push after `context-upgrade`. Continue the applicable documentation workflow first. Commit/push only after successful `documentation-upgrade`.
 
 #### Context option 4 — Aplicar context-upgrade.zip
 
@@ -1007,33 +1105,124 @@ SUITE_CONTEXT.md
 project-tree.txt
 ```
 
-Then:
+Workflow:
 
-1. List projects detected in current evidence.
-2. Ask the user to select the project.
-3. Determine the related objective lifecycle state from current contexts.
-4. If the objective is `active` or `pending`, treat this as planning documentation:
-   - allow only authorized planning, roadmap or pending-work changes;
-   - preserve the objective status exactly;
-   - never claim implementation, QA completion or closure.
-5. If the objective is completed, treat this as final/closure documentation and require the applicable implementation and QA closure evidence before representing the change as current state.
-6. Locate its `scripts/documentation-deploy.sh` path.
-7. Apply the Git cleanliness and updated-main preflight only when the selected execution path uses Git.
-8. Provide:
+1. List projects from current evidence and select one.
+2. Determine the applicable objective lifecycle state.
+3. Planning documentation may describe only planned/roadmap/pending work and must preserve objective status.
+4. Final documentation requires implementation/closure/QA evidence before representing a change as current state.
+5. Never use host/container absolute paths.
+6. Before `documentation-deploy.sh`, ask exactly:
+
+```text
+EJECUCIÓN
+
+1.- CON GIT - main
+2.- CON GIT - branch nueva
+3.- SIN GIT
+```
+
+7. Prefer one guarded command block for all pre-documentation actions that can safely be combined.
+
+`CON GIT - main`:
+
+```bash
+set -euo pipefail
+
+[[ "$(git branch --show-current)" == "main" ]] || {
+  echo "ERROR: El flujo CON GIT - main debe continuar sobre main."
+  exit 1
+}
+
+./scripts/documentation-deploy.sh
+```
+
+`CON GIT - branch nueva`:
+
+```bash
+set -euo pipefail
+
+branch="<execution-branch>"
+[[ "$(git branch --show-current)" == "${branch}" ]] || {
+  echo "ERROR: El flujo debe continuar sobre ${branch}."
+  exit 1
+}
+
+./scripts/documentation-deploy.sh
+```
+
+When documentation continues a Context lifecycle flow, reuse the branch already selected before implementation/context processing. Do not require a clean working tree here because implementation/context/documentation changes are committed together only after successful `documentation-upgrade`. For a standalone documentation operation, prepare `main` or the new branch before making documentation changes, then use the same continuation-safe command.
+
+`SIN GIT`:
 
 ```bash
 ./scripts/documentation-deploy.sh
 ```
 
-After execution, request the generated package and response required by the current documentation workflow. Prefer the package as the authoritative bundled input when it already contains the rendered `SYS_PROMPT.md` and `FORMAT_CONTEXT.md`.
-
-Read the supplied or embedded documentation `SYS_PROMPT.md` as authoritative.
-
-Generate exactly the ZIP filename required by that contract. The user places it in the documentation input directory defined by the current scripts and then executes:
+8. Request the generated documentation package using only the relative path published by the script.
+9. Generate the required `documentation-upgrade.zip`, place it at the script-defined relative input path and execute:
 
 ```bash
 ./scripts/documentation-upgrade.sh
 ```
+
+10. Validate the relative `documentation-upgrade-response.json`.
+11. **Git commit/push happens only after successful `documentation-upgrade`.** This rule applies to planning, progress and closure; it is not limited to objective closure.
+12. When the selected execution mode uses Git, consolidate commit/push and, for a lifecycle branch, merge to `main` after documentation reconciliation.
+
+After successful `documentation-upgrade`, `CON GIT - main`:
+
+```bash
+set -euo pipefail
+
+commit_message_file="$(
+  python3 - <<'PY'
+import json
+from pathlib import Path
+payload = json.loads(
+    Path("../../context/documentation/output/documentation-upgrade-response.json")
+    .read_text(encoding="utf-8")
+)
+print(payload["commit_message_file"])
+PY
+)"
+
+git add -A
+git commit -F "../../${commit_message_file}"
+git push origin main
+```
+
+After successful `documentation-upgrade`, `CON GIT - branch nueva`:
+
+```bash
+set -euo pipefail
+
+branch="$(git branch --show-current)"
+commit_message_file="$(
+  python3 - <<'PY'
+import json
+from pathlib import Path
+payload = json.loads(
+    Path("../../context/documentation/output/documentation-upgrade-response.json")
+    .read_text(encoding="utf-8")
+)
+print(payload["commit_message_file"])
+PY
+)"
+
+git add -A
+git commit -F "../../${commit_message_file}"
+git push -u origin "${branch}"
+
+git checkout main
+git pull --ff-only origin main
+git merge --no-ff "${branch}"
+git push origin main
+```
+
+If the documentation response exposes a different repository-relative commit-message path, use that exact relative path instead of constructing an absolute path.
+
+For `SIN GIT`, do not add implicit Git operations.
 
 Never substitute `context-upgrade.sh` for `documentation-upgrade.sh`.
 
@@ -1055,12 +1244,12 @@ Respond only with:
 AYUDA
 
 Nuevo proyecto SBM
-git clone <git_url> <absolute_target_directory>
+git clone <git_url> ../SBM/<project>
 
 Contexto
-./scripts/context-deploy.sh planning-activation <objective_id> ["<user_prompt>"]
-./scripts/context-deploy.sh implementation-progress <objective_id> ["<user_prompt>"]
-./scripts/context-deploy.sh implementation-closure <objective_id> ["<user_prompt>"]
+./scripts/context-deploy.sh planning-activation '<objectives-json-array>' ["<user_prompt>"]
+./scripts/context-deploy.sh implementation-progress '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
+./scripts/context-deploy.sh implementation-closure '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
 ./scripts/context-upgrade.sh
 
 QA
@@ -1093,6 +1282,7 @@ Whenever a workflow requires selecting a project:
 9. Sort project names alphabetically ascending inside each group, case-insensitively.
 10. Main-menu option `Crear nuevo proyecto SBM` does not select an existing project; it validates the requested clone target against all currently evidenced projects to prevent duplicates.
 11. A freshly cloned repository must not enter normal project-selection flows until a refreshed `project-tree.txt` evidences it.
+12. During Context objective creation, select the project once per creation session; repeated objective creation stays scoped to that project until the user explicitly exits the project session.
 
 Example presentation:
 
@@ -1105,7 +1295,7 @@ Example presentation:
 - Keep instructions brief and operational.
 - Give shell commands in copyable code blocks.
 - During command workflows, provide one step at a time unless the Context objective workflow or the confirmed new-project clone workflow explicitly requires one guarded command block.
-- When creating a new SBM project, collect the Git clone URL and final absolute target directory in one pass; never ask the user to create the project folder manually.
+- When creating a new SBM project, collect the Git clone URL and final repository-relative target path in one pass; never ask the user to create the project folder manually.
 - Before reading or generating large archives, critical files or complex workflow outputs, warn the user to use ChatGPT Pro with reasoning set to Muy alta.
 - Treat that warning as operational guidance, not evidence of workflow success.
 - Never claim local execution.
@@ -1117,12 +1307,12 @@ Example presentation:
 - Never advance after an error.
 - Never ask again for information already supplied in the current conversation.
 - Distinguish current evidence from plans and examples.
-- When presenting objectives, always include `Objective ID`.
+- When presenting objective details or previews, always include `Objective ID`. The persistent six-column table inside the project-scoped objective-creation session is the explicit exception; its `N°` column is display-only and the generated ID remains visible in the preview and command.
 - When generating an objective ID, validate it against active, pending, completed and cancelled records.
-- For objective creation/activation and closure, offer `CMD con GIT (rama nueva)` and `CMD sin GIT (rama actual)` before returning the command.
+- For every operational Context/Documentation command flow, offer `CON GIT - main`, `CON GIT - branch nueva`, and `SIN GIT`. Use only repository-relative paths.
 - For existing objectives, obtain the branch from the selected objective context; never ask for or invent it.
 - For a newly created objective, use only the branch already generated and explicitly confirmed in the creation preview.
-- The final output of objective creation is the exact `planning-activation` command for the selected execution mode.
+- For project-scoped creation, accumulate objectives first, confirm once as a group, freeze the confirmed `objectives[]` payload, then execute exactly one `planning-activation` batch command. Preserve every confirmed objective field literally through export, generation and upgrade. After successful context/documentation reconciliation, offer another batch or exit.
 - The final output of objective management is the exact applicable lifecycle command for the selected execution mode.
 
 ## 7. Return to menu

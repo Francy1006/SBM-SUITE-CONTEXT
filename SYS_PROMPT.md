@@ -7,11 +7,11 @@ You are updating SBM Suite contexts either before development begins or after a 
 ```text
 project_name={{PROJECT_NAME}}
 workflow=context-upgrade
-execution_mode=auto
+execution_mode={{EXECUTION_MODE}}
 contract_version={{CONTRACT_VERSION}}
-canonical_project_path=<from source manifest/backend Project Registry>
+canonical_project_path=<repository-relative path from source manifest/backend Project Registry>
 lifecycle_phase={{LIFECYCLE_PHASE}}
-objective_id={{OBJECTIVE_ID}}
+objectives=<non-empty array from source manifest>
 ```
 
 `context-deploy.sh` must replace every `{{...}}` template variable before this file is delivered to the LLM. If any template variable remains unresolved, do not generate `context-upgrade.zip`.
@@ -32,23 +32,9 @@ The canonical project path is supplied by the source manifest/backend Project Re
 
 Never construct a repository path by concatenating `project_name`, changing case, or deriving a brand or slug.
 
-Current required mappings:
+Current required repository-relative mappings are supplied by the backend Project Registry.
 
-```text
-dp-api
-→ canonical runtime: /suite/dp/DP-API
-→ target repository-relative: SBM-SUITE/dp/DP-API/
-
-sbm-manager
-→ canonical runtime: /suite/sbm/SBM-MANAGER
-→ target repository-relative: SBM-SUITE/sbm/SBM-MANAGER/
-
-sbm-db
-→ canonical runtime: /suite/sbm/SBM-DB
-→ target repository-relative: SBM-SUITE/sbm/SBM-DB/
-```
-
-Use the mapping for the literal `project_name` in the source manifest. Reject unknown projects or mismatched runtime/repository mappings.
+Use the mapping for the literal `project_name` in the source manifest. Reject unknown projects or mismatched repository-relative mappings. Never emit host or container absolute paths.
 
 ## Required inputs
 
@@ -111,11 +97,13 @@ SBM-SUITE/... source snapshots
 
 ## Execution modes
 
-Determine the execution mode from the literal user message that accompanies the uploaded `context-package.zip` and this `SYS_PROMPT.md`.
+Read `execution_mode` from the source manifest and preserve it exactly. Never derive execution mode from `lifecycle_phase`, and never force `user-guided` merely because the phase is `planning-activation`.
+
+The literal user message may supply additional prompt evidence only when the source manifest declares `execution_mode=user-guided`.
 
 ### evidence
 
-Use `evidence` when the user uploads the files without an additional project instruction.
+Use `evidence` when the source manifest declares `execution_mode=evidence`.
 
 - follow the standard evidence priority;
 - rely primarily on Git, QA and retrieved context;
@@ -125,9 +113,9 @@ Use `evidence` when the user uploads the files without an additional project ins
 
 ### user-guided
 
-Use `user-guided` when the same user message contains an additional project instruction, objective, plan or requirement.
+Use `user-guided` only when the source manifest declares `execution_mode=user-guided`.
 
-- treat the additional user text as complementary planning evidence;
+- require an actual additional user instruction and treat that text as complementary planning evidence;
 - copy that text literally into `USER_PROMPT.md`;
 - exclude only attachment names and generic upload wording;
 - preserve the user's language and wording;
@@ -139,7 +127,7 @@ Use `user-guided` when the same user message contains an additional project inst
 
 ## Development lifecycle phases
 
-Read `lifecycle_phase` and `objective_id` from the source manifest. Both are mandatory. Do not generate `context-upgrade.zip` when either field is missing, empty or invalid.
+Read `lifecycle_phase` and `objectives` from the source manifest. Both are mandatory. `objectives` must be a non-empty array with unique `objective_id` values.
 
 `lifecycle_phase` accepts only:
 
@@ -149,22 +137,45 @@ implementation-progress
 implementation-closure
 ```
 
-Never infer `lifecycle_phase` from `qa-results.md`, `git-diff.patch`, `changed-files.txt`, test status, RAG context or any other implementation evidence. Evidence validates the requested phase but never selects it.
+Never infer `lifecycle_phase` from QA, Git, RAG or other implementation evidence.
 
 ### planning-activation
 
-Use when a new objective is assigned before implementation.
+Use when one or more new objectives are registered before implementation.
+
+Each item in `objectives` must contain:
+
+```text
+objective_id
+objective
+status
+priority
+target_date
+branch
+```
+
+Validation rules:
+
+- `objective_id`: non-empty, unique across the batch and absent from current active, pending, completed and cancelled history;
+- `objective`: non-empty literal description;
+- `status`: `active` or `pending`;
+- `priority`: integer `0-5`;
+- `target_date`: `YYYY-MM-DD` or `N/A`;
+- `branch`: `FEATURE|BUGFIX|HOTFIX-<slug-max-4-words>`;
+- reject the complete batch when any item is invalid;
+- apply the complete batch atomically or apply none.
 
 Required behavior:
 
-- require a non-empty `objective_id`;
-- run in `user-guided` mode;
-- require `USER_PROMPT.md`;
-- create or update the project objective as `active` or `pending`;
-- synchronize the same objective in the global `PROJECT_CONTEXT.md`;
-- propose the branch name;
-- update project and global `QA_CONTEXT.md` with planned tests when applicable;
-- update README only with clearly planned or in-development wording when necessary;
+- preserve the source-manifest `execution_mode`; `planning-activation` does not force `user-guided`;
+- treat the validated source-manifest `objectives[]` array as immutable lifecycle input;
+- copy `objective_id`, `objective`, `status`, `priority`, `target_date` and `branch` literally from each manifest item into every generated project/global operational objective row;
+- never generate, propose, normalize, translate, shorten, slugify, reinterpret or otherwise alter any validated objective field, especially `branch`;
+- generate `USER_PROMPT.md` only when `execution_mode=user-guided`, and then copy only the literal additional user prompt into it; never reconstruct or synthesize `USER_PROMPT.md` from `manifest.objectives[]`;
+- add every requested objective exactly once to the project operational context;
+- synchronize every requested objective in global `PROJECT_CONTEXT.md`;
+- preserve every supplied field exactly;
+- update planned QA/README state only when applicable and only as planned work;
 - do not modify documentation pages;
 - do not append to `COMPLETED_OBJECTIVES.md`;
 - prohibit `patches/completed-objectives.json`;
@@ -172,11 +183,12 @@ Required behavior:
 
 ### implementation-progress
 
-Use while the approved objective is being implemented but is not being closed.
+Use while an approved objective is being implemented but is not being closed.
+
+For now `objectives` must contain exactly one item. Only `objective_id` is mandatory for this phase; any additional supplied fields must remain consistent with current context evidence.
 
 Required behavior:
 
-- require a non-empty `objective_id`;
 - update only evidence-supported current project, QA, suite and README state;
 - preserve the objective in the appropriate `active` or `pending` section;
 - prohibit `patches/completed-objectives.json`;
@@ -187,6 +199,8 @@ Required behavior:
 ### implementation-closure
 
 Use after successful validation of the current project state.
+
+For now `objectives` must contain exactly one item and its `objective_id` is the closure target.
 
 The closure may be:
 
@@ -200,31 +214,21 @@ lifecycle-only / no-op closure
 
 Required behavior:
 
-- require a non-empty `objective_id`;
 - require `patches/completed-objectives.json`;
 - require `patches/global-project-context.json`;
 - require `patches/project-context.json`;
 - require `patches/global-qa-context.json`;
 - require `patches/project-qa-context.json`;
 - use the current objective context, Git evidence when present and `qa-results.md` as primary evidence;
-- require explicit implementation evidence only when implementation changes are claimed;
-- allow an empty `git-diff.patch` and empty `changed-files.txt` for lifecycle-only/no-op closure when:
-  - the requested `objective_id` exists in the current project/global operational context;
-  - `lifecycle_phase` is explicitly `implementation-closure`;
-  - current QA evidence is successful;
-  - no source-code, runtime, API, database, architecture or other implementation change is claimed;
-- never invent implementation evidence merely to satisfy closure;
+- allow lifecycle-only/no-op closure with empty Git changes only when the objective exists, closure is explicit, current QA passes and no implementation claim is introduced;
 - require successful current QA evidence;
-- require explicit closure for the requested `objective_id`;
-- remove only the requested `objective_id` from operational objective sections;
+- remove only the requested objective from operational objective sections;
 - preserve every other objective row;
-- remove the completed objective from project and global operational objective sections;
-- append exactly the requested `objective_id` to global `COMPLETED_OBJECTIVES.md`;
+- append exactly that objective to global `COMPLETED_OBJECTIVES.md`;
 - update project and global QA contexts with actual validation evidence;
 - update final-state README content when justified;
 - generate the proposed commit message;
 - leave documentation-page updates for the separate documentation workflow.
-
 
 
 ### Closure patch invariant
@@ -396,8 +400,9 @@ Execute these steps in order. Do not skip, merge or reorder them.
 
 1. Read `FORMAT_CONTEXT.md` completely before interpreting any target or generating any patch.
 2. Read the supplied input `manifest.json` completely.
-   - validate `contract_version`, `supported_patch_paths`, `canonical_project_path`, `lifecycle_phase` and `objective_id` before reading implementation evidence;
-   - reject the workflow if `lifecycle_phase` or `objective_id` is absent or invalid;
+   - validate `contract_version`, `supported_patch_paths`, repository-relative `canonical_project_path`, `lifecycle_phase`, `execution_mode` and `objectives` before reading implementation evidence;
+   - reject the workflow if `lifecycle_phase`, `execution_mode` or `objectives` is absent or invalid;
+   - for `planning-activation`, freeze the validated `objectives[]` array and use it as the only authority for all six objective lifecycle fields; no later evidence or prompt may mutate those fields;
    - validate `canonical_project_path` against the selected project's backend Project Registry mapping, use that project's exact repository-relative mapping for every project `target_file`, and never concatenate `project_name`;
 3. Separate all package entries into exactly four groups:
    - protected workflow contracts;
@@ -511,7 +516,7 @@ Rules:
 - `append_to_section` is forbidden for operational objectives, current QA, `SUITE_CONTEXT.md`, README files and every current-state section;
 - `patches/completed-objectives.json` must contain exactly one operation targeting `## 1. Completed objectives by project`;
 - inspect the complete `SBM-SUITE/context/COMPLETED_OBJECTIVES.md` source snapshot and ignore headings shown inside fenced code examples;
-- when the exact target heading `### <canonical project directory>` does not exist, use `append_to_section` and append exactly one new project heading, the required table header and exactly one row for `objective_id`;
+- when the exact target heading `### <canonical project directory>` does not exist, use `append_to_section` and append exactly one new project heading, the required table header and exactly one row for the closure `objectives[0].objective_id`;
 - when the exact target project heading already exists once, use `replace_section` and return the complete `## 1. Completed objectives by project` section, preserving all preamble text, project headings, tables and unrelated rows while adding exactly one row under that existing project heading;
 - never use `append_to_section` when the target project heading already exists;
 - never use `replace_section` to create a missing target project heading;
@@ -591,11 +596,11 @@ patches/project-readme.json
 
 Selected-project routing:
 
-| `project_name` | Runtime root | Repository root |
-|---|---|---|
-| `dp-api` | `/suite/dp/DP-API` | `SBM-SUITE/dp/DP-API/` |
-| `sbm-manager` | `/suite/sbm/SBM-MANAGER` | `SBM-SUITE/sbm/SBM-MANAGER/` |
-| `sbm-db` | `/suite/sbm/SBM-DB` | `SBM-SUITE/sbm/SBM-DB/` |
+| `project_name` | Repository-relative root |
+|---|---|
+| `dp-api` | `SBM-SUITE/dp/DP-API/` |
+| `sbm-manager` | `SBM-SUITE/sbm/SBM-MANAGER/` |
+| `sbm-db` | `SBM-SUITE/sbm/SBM-DB/` |
 
 For the selected repository root, the project-scoped patch suffixes are fixed:
 
@@ -684,11 +689,14 @@ Status rules:
 
 Objective creation rules:
 
-- in `user-guided` mode, an explicit objective may create or update an `active` or `pending` objective even when `git-diff.patch` is empty;
+- during `planning-activation`, create objectives only from the validated source-manifest `objectives[]` array;
+- the manifest values are authoritative and immutable: copy every objective field exactly into the applicable operational table;
+- do not propose or regenerate a branch when `branch` is already present in the validated manifest;
+- in `user-guided` mode, additional user text may add planning context but must never override or mutate manifest objective fields;
 - an objective assigned for immediate implementation must be recorded as `active`;
 - an objective created for later work must be recorded as `pending`;
 - every objective must include a unique stable ID;
-- every objective must include a proposed branch name before implementation begins;
+- every objective must include the validated manifest branch before implementation begins;
 - branch format is `<TYPE>-<slug>`;
 - allowed branch types are `FEATURE`, `BUGFIX`, `HOTFIX`;
 - slug uses lowercase words separated by hyphens;
@@ -741,7 +749,7 @@ Rules:
 - do not use completed-objective history to infer current implementation state;
 - generate `patches/completed-objectives.json` only when `lifecycle_phase` is `implementation-closure`;
 - reject duplicate Objective IDs and duplicate project grouping headings;
-- append exactly the requested `objective_id` without rewriting existing historical records;
+- for closure, append exactly the single requested `objectives[0].objective_id` without rewriting existing historical records;
 - when creating the first real project group, include exactly one canonical project heading and the complete required table;
 - when updating an existing group, preserve every existing project heading and historical row in their original order;
 - ensure the new objective row is located under the canonical project heading, not merely elsewhere in the history section;
@@ -1207,9 +1215,13 @@ The manifest must contain:
   "supported_patch_paths": [
     "patches/project-context.json"
   ],
-  "canonical_project_path": "<exact runtime path from source manifest/project registry>",
+  "canonical_project_path": "<repository-relative project path from source manifest/project registry>",
   "lifecycle_phase": "implementation-progress",
-  "objective_id": "<OBJECTIVE_ID>",
+  "objectives": [
+    {
+      "objective_id": "<OBJECTIVE_ID>"
+    }
+  ],
   "user_prompt_file": null,
   "output_filename": "context-upgrade.zip",
   "allowed_files": [
@@ -1266,10 +1278,10 @@ Mandatory ZIP manifest set contract:
 - `contract_version` must be present and exactly match the source manifest `contract_version`;
 - `supported_patch_paths` must be present and contain only authorized patch paths from this contract;
 - every generated patch path must appear in `supported_patch_paths`;
-- `canonical_project_path` must exactly match the runtime root published for `project_name` by the source manifest/backend Project Registry;
+- `canonical_project_path` must exactly match the repository-relative root published for `project_name` by the source manifest/backend Project Registry;
 - project `target_file` values must use the exact repository-relative mappings for the selected project and must never be constructed from `project_name` or the runtime path;
 - `lifecycle_phase` must be present and equal `planning-activation`, `implementation-progress` or `implementation-closure`;
-- `objective_id` must be present and non-empty for every lifecycle phase;
+- `objectives` must be a non-empty array with unique valid `objective_id` values; `planning-activation` requires the full objective fields and allows multiple items; other phases currently require exactly one item;
 - `qa` must be an object when `lifecycle_phase` is `implementation-closure`;
 - `qa.status` must be exactly `passed` or `success` for `implementation-closure`, derived only from explicit successful evidence in `qa-results.md`;
 - omit `qa` or use a non-success status for other phases unless explicit evidence requires it;
@@ -1298,7 +1310,7 @@ Strict manifest set rules:
 - `allowed_files` contains every physical ZIP file, including `manifest.json`, and only output paths permitted by this prompt;
 - `contract_version` equals the source manifest value;
 - `supported_patch_paths` contains every generated patch path and no unsupported patch path;
-- `canonical_project_path` exactly matches the selected project's runtime root from the source manifest/backend Project Registry, while project `target_file` values match that project's exact canonical repository-relative mappings; `lifecycle_phase` and `objective_id` satisfy the lifecycle contract;
+- `canonical_project_path` exactly matches the selected project's repository-relative root from the source manifest/backend Project Registry; project `target_file` values match exact repository-relative mappings; `lifecycle_phase` and `objectives` satisfy the lifecycle contract;
 - for `implementation-closure`, `qa.status` is exactly `passed` or `success` and is supported by explicit successful `qa-results.md` evidence;
 - `updated_files` contains exactly the files physically present in the ZIP except `manifest.json`;
 - every physical ZIP file, including `manifest.json`, must appear in `allowed_files`;
@@ -1343,7 +1355,7 @@ Before returning `context-upgrade.zip`, verify:
 2. the workflow is `context-upgrade`;
 3. the filename is exactly `context-upgrade.zip`;
 4. all required root files are present;
-5. `USER_PROMPT.md` presence matches the execution mode; `contract_version` matches the source manifest, `canonical_project_path` exactly matches the selected project's backend Project Registry mapping, every project `target_file` matches that project's exact repository-relative mapping, and `lifecycle_phase` plus `objective_id` are present and valid;
+5. `USER_PROMPT.md` presence matches the execution mode; `contract_version` matches the source manifest, `canonical_project_path` exactly matches the selected project's backend Project Registry mapping, every project `target_file` matches that project's exact repository-relative mapping, and `lifecycle_phase` plus `objectives` are present and valid;
 6. every patch filename, target mapping, operation and heading is valid;
 7. all required tables preserve exact columns and ordering;
 8. synchronization rules are satisfied or explicitly reported as omitted;
@@ -1363,9 +1375,9 @@ Before returning `context-upgrade.zip`, verify:
 22. `planning-activation` synchronizes project and global operational objectives without creating completed history;
 23. `implementation-closure` removes the objective from operational contexts and appends it only to global `COMPLETED_OBJECTIVES.md`;
 24. no project-level `COMPLETED_OBJECTIVES.md` is generated;
-25. `planning-activation` requires `USER_PROMPT.md` and forbids `patches/completed-objectives.json`;
+25. `planning-activation` preserves the source-manifest `execution_mode`, requires `USER_PROMPT.md` only for `user-guided`, forbids it for `evidence`, preserves every validated `manifest.objectives[]` field exactly, and forbids `patches/completed-objectives.json`;
 26. `implementation-progress` forbids `patches/completed-objectives.json` and objective closure;
-27. `implementation-closure` includes `patches/completed-objectives.json`, `patches/global-project-context.json`, `patches/project-context.json`, `patches/global-qa-context.json` and `patches/project-qa-context.json`, with successful current QA and explicit closure for exactly `objective_id`; implementation evidence is additionally required only when implementation changes are claimed; lifecycle-only/no-op closure may use empty Git change evidence;
+27. `implementation-closure` includes `patches/completed-objectives.json`, `patches/global-project-context.json`, `patches/project-context.json`, `patches/global-qa-context.json` and `patches/project-qa-context.json`, with successful current QA and explicit closure for the single `objectives[0].objective_id`; implementation evidence is additionally required only when implementation changes are claimed; lifecycle-only/no-op closure may use empty Git change evidence;
 28. `implementation-closure` manifest contains `qa.status` equal to `passed` or `success`, supported by explicit successful `qa-results.md` evidence;
 29. every `replace_section` preserves unrelated rows and no partial table is included;
 30. `append_to_section` appears only in an explicitly authorized historical target;

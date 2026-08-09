@@ -825,6 +825,16 @@ Limitaciones y transiciones explícitas en el documento fuente:
 
 ## 12. Roadmap
 
+### Objetivos actuales de `SBM-MANAGER`
+
+| Objective ID | Objective | Status | Priority | Target date | Branch |
+|---|---|---|---:|---|---|
+| SBM-MANAGER-001 | Integrar SBM-MANAGER completamente a SBM Suite, incluyendo contextos, lifecycle scripts, QA/SonarQube, registro en sbm-ai-assistant, sincronización global y actualización del diagrama canónico de arquitectura en SUITE_CONTEXT.md. | active | 5 | 2026-08-07 | `FEATURE-integrates-sbm-manager` |
+| SBM-MANAGER-002 | Corregir SBM-MANAGER para consumir correctamente SBM-API y DP-API según ownership canónico. | pending | 5 | N/A | `BUGFIX-corrects-api-ownership` |
+| SBM-MANAGER-003 | Corregir y completar QA de SBM-MANAGER. | pending | 5 | N/A | `BUGFIX-completes-manager-qa` |
+
+Estos objetivos permanecen **active/pending**. Su presencia en el roadmap representa planificación vigente y no acredita cierre ni implementación completada.
+
 ### Objetivo activo de `SBM-DB`
 
 | Objective ID | Objective | Status | Priority | Target date | Branch |

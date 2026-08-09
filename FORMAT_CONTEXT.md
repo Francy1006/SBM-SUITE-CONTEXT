@@ -38,12 +38,15 @@
 29. Every output file except `manifest.json` requires a SHA-256 hash matching its final ZIP content.
 30. Any global validation failure must prevent context replacement.
 31. Project repositories use repository-relative paths under `SBM-SUITE/<brand>/<project>/`. Canonical project routing is defined by the backend Project Registry and must be consumed from the source manifest/contract rather than inferred from `project_name`.
-32. Container project roots use canonical runtime paths under `/suite/<brand>/<project>` and must match the backend Project Registry exactly. Current required mappings include:
-    - `dp-api` → `/suite/dp/DP-API` → `SBM-SUITE/dp/DP-API/`
-    - `sbm-manager` → `/suite/sbm/SBM-MANAGER` → `SBM-SUITE/sbm/SBM-MANAGER/`
-    - `sbm-db` → `/suite/sbm/SBM-DB` → `SBM-SUITE/sbm/SBM-DB/`
+32. Project roots exposed by the context contract are repository-relative and must match the backend Project Registry exactly. Current required mappings include:
+    - `dp-api` → `SBM-SUITE/dp/DP-API/`
+    - `sbm-manager` → `SBM-SUITE/sbm/SBM-MANAGER/`
+    - `sbm-db` → `SBM-SUITE/sbm/SBM-DB/`
    Never change path casing or derive brand/project segments heuristically.
 33. All workflow backups are stored below `SBM-SUITE/context/backup/`; no workflow may use or create a pluralized or workflow-local backup directory.
+34. For `planning-activation`, the validated source-manifest `objectives[]` array is immutable lifecycle input. Every `objective_id`, `objective`, `status`, `priority`, `target_date` and `branch` value must be copied literally into generated operational objective rows.
+35. A context generator must never regenerate, normalize, translate, shorten, slugify, reinterpret or otherwise alter any field already present in a validated `planning-activation` `manifest.objectives[]` item.
+36. `execution_mode` is independent from `lifecycle_phase`. `USER_PROMPT.md` is required only when `execution_mode=user-guided` and forbidden when `execution_mode=evidence`; `planning-activation` alone must never force `USER_PROMPT.md`.
 
 ---
 
@@ -104,9 +107,15 @@ Objective rules:
 
 - `Status` must match the owning section: `active` in Active objectives and `pending` in Pending objectives.
 - `Priority`: integer from `0` to `5`.
-- `Target date`: optional, format `YYYY-MM-DD`.
+- `Target date`: required lifecycle field; use `YYYY-MM-DD` or `N/A`.
 - `Branch`: mandatory before development begins.
 - Multiple objectives are allowed.
+- `planning-activation` may carry multiple objectives in one `objectives` array.
+- Every planning item must contain all six lifecycle fields: ID, objective, status, priority, target date and branch.
+- Treat those six values as an immutable tuple supplied by `manifest.objectives[]`; generated project/global rows must match them exactly, character for character for string fields and exactly for numeric fields.
+- Never regenerate or normalize an Objective ID, description, status, priority, target date or branch after the batch has been validated.
+- Reject the complete batch on any missing/invalid field, duplicate ID or collision with current/history IDs.
+- A planning batch is atomic: every requested objective is synchronized exactly once in both project/global operational contexts or none is applied.
 - Every project objective change must update this global file.
 - The global file stores only high-level project summaries.
 - Detailed objectives remain in the project context.
@@ -1058,17 +1067,17 @@ Every context export and upgrade workflow must:
 60. Require `BACKUP_MANIFEST.json` to record `project_name`, `workflow`, `generated_at`, `motivo` and every backed-up file with its original path, backup-relative path and SHA-256 hash.
 61. Reject a backup manifest when `workflow` is not `context-upgrade`, a required field is absent, a path escapes the backup directory, or a recorded hash does not match the backed-up bytes.
 62. When evidence shows changes to services, `.sh` scripts, models, structure, runtime, configuration or reusable components, require the applicable project-context and project-README patches; also apply every global synchronization rule triggered by the change.
-63. Require `planning-activation` to synchronize project and global operational objectives.
+63. Require `planning-activation` to synchronize the complete validated `objectives` batch atomically across project and global operational objectives.
 64. Require `implementation-closure` to remove the objective from both operational contexts, append it only to global `COMPLETED_OBJECTIVES.md`, and update project and global QA contexts with actual validation evidence.
 65. Reject any project-level `COMPLETED_OBJECTIVES.md` target.
-66. Require source-manifest fields `contract_version`, `supported_patch_paths`, `canonical_project_path`, `lifecycle_phase` and `objective_id`.
+66. Require source-manifest fields `contract_version`, `supported_patch_paths`, repository-relative `canonical_project_path`, `lifecycle_phase` and non-empty `objectives`.
 67. Accept only `planning-activation`, `implementation-progress` and `implementation-closure` as `lifecycle_phase` values.
 68. Never infer `lifecycle_phase` from `qa-results.md`, `git-diff.patch`, `changed-files.txt`, test status or RAG context.
-69. Require a non-empty `objective_id` for every lifecycle phase.
-70. Require `planning-activation` to include `USER_PROMPT.md` and prohibit `patches/completed-objectives.json`.
+69. Require `objectives` to be a non-empty array with unique valid `objective_id` values. For `planning-activation`, each item requires `objective_id`, `objective`, `status`, `priority`, `target_date` and `branch`; allow multiple items. Treat every validated planning item as immutable and require all generated operational rows to preserve every field exactly. For `implementation-progress` and `implementation-closure`, currently require exactly one item.
+70. Do not derive `execution_mode` from `lifecycle_phase`. `planning-activation` may run in `evidence` or `user-guided` mode. Require `USER_PROMPT.md` only when `execution_mode=user-guided`, forbid it when `execution_mode=evidence`, and never synthesize `USER_PROMPT.md` from `manifest.objectives[]`. Prohibit `patches/completed-objectives.json` for `planning-activation`.
 71. Require `implementation-progress` to prohibit `patches/completed-objectives.json` and objective closure.
 72. Require `implementation-closure` to include `patches/completed-objectives.json`, `patches/global-project-context.json`, `patches/project-context.json`, `patches/global-qa-context.json` and `patches/project-qa-context.json`, plus successful current QA and explicit closure. Require implementation evidence only when implementation changes are claimed; allow lifecycle-only or no-op closure with an empty Git diff when the objective exists in the current operational context and no implementation claim is generated.
-73. During closure, remove only the requested `objective_id`, preserve every other objective and append exactly that ID to `COMPLETED_OBJECTIVES.md`.
+73. During closure, remove only `objectives[0].objective_id`, preserve every other objective and append exactly that ID to `COMPLETED_OBJECTIVES.md`.
 74. Require both closure QA patches to use explicit successful `qa-results.md` evidence and preserve every unrelated project summary, test row and current QA record.
 75. Require `replace_section` to return the complete section, preserve all unrelated rows and reject partial tables.
 76. Reject any patch that removes another objective, another project from global QA or an unrelated reusable component.
@@ -1076,13 +1085,13 @@ Every context export and upgrade workflow must:
 78. Allow `append_to_section` for `patches/completed-objectives.json` only when the canonical project heading is absent; also allow it for `## 18. Historical decisions` in global `PROJECT_CONTEXT.md` and `## 22. Historical decisions` in project `PROJECT_CONTEXT.md`.
 79. Require `patches/completed-objectives.json` to contain exactly one operation targeting `## 1. Completed objectives by project`.
 80. Determine the canonical project heading from the complete source snapshot outside fenced code blocks and from the Project Registry.
-81. When the canonical project heading is absent, require `append_to_section` with exactly one new project heading, the exact required table header and exactly one row for `objective_id`.
+81. When the canonical project heading is absent during closure, require `append_to_section` with exactly one new project heading, the exact required table header and exactly one row for `objectives[0].objective_id`.
 82. When the canonical project heading exists exactly once, require `replace_section` with the complete current history section, preserving every existing project heading and historical row while adding exactly one row under the existing canonical heading.
 83. Never allow `append_to_section` when the canonical project heading exists; never allow `replace_section` to create a missing canonical project heading; reject multiple canonical project heading matches.
 84. Forbid `append_to_section` for operational objectives, current QA, `SUITE_CONTEXT.md`, README files and all other current-state sections.
 85. Reject duplicate Objective IDs, duplicate project grouping headings and modifications, reordering or removal of existing `COMPLETED_OBJECTIVES.md` history.
 86. Do not copy a closed objective to `Completed work` in any `PROJECT_CONTEXT.md`.
-87. Require `canonical_project_path` to equal the exact runtime root published for `project_name` by the backend Project Registry/source contract; never construct runtime or repository paths from `project_name` or alter path casing.
+87. Require `canonical_project_path` to equal the exact repository-relative root published for `project_name` by the backend Project Registry/source contract; never construct host/container absolute paths from `project_name`.
 88. Require every project `target_file` to match the exact repository-relative mapping published for the selected project. The patch archive contract below exposes exactly one concrete project mapping set as the backend format-validation anchor; this anchor does not select the runtime project. The actual project mapping for each run comes from the source manifest/backend Project Registry. Current repository roots include `SBM-SUITE/dp/DP-API/` for `dp-api`, `SBM-SUITE/sbm/SBM-MANAGER/` for `sbm-manager`, and `SBM-SUITE/sbm/SBM-DB/` for `sbm-db`. Never derive `target_file` by string manipulation of `canonical_project_path`.
 89. Generate only patch files listed in `supported_patch_paths`.
 90. Require the output `contract_version` to equal the source manifest `contract_version`.
@@ -1150,11 +1159,11 @@ patches/project-readme.json
 
 Actual project routing is always resolved from the source manifest/backend Project Registry:
 
-| `project_name` | Canonical runtime root | Canonical repository root |
-|---|---|---|
-| `dp-api` | `/suite/dp/DP-API` | `SBM-SUITE/dp/DP-API/` |
-| `sbm-manager` | `/suite/sbm/SBM-MANAGER` | `SBM-SUITE/sbm/SBM-MANAGER/` |
-| `sbm-db` | `/suite/sbm/SBM-DB` | `SBM-SUITE/sbm/SBM-DB/` |
+| `project_name` | Canonical repository-relative root |
+|---|---|
+| `dp-api` | `SBM-SUITE/dp/DP-API/` |
+| `sbm-manager` | `SBM-SUITE/sbm/SBM-MANAGER/` |
+| `sbm-db` | `SBM-SUITE/sbm/SBM-DB/` |
 
 For a given run, every project-scoped patch must target only the exact repository path belonging to the literal `project_name` selected by the source manifest. The validation anchor above must never be used to override that selected-project routing.
 
@@ -1215,9 +1224,18 @@ Required lifecycle and routing fields:
 {
   "contract_version": "<source contract_version>",
   "supported_patch_paths": [],
-  "canonical_project_path": "<exact runtime path from source manifest/project registry>",
+  "canonical_project_path": "<repository-relative project path from source manifest/project registry>",
   "lifecycle_phase": "<planning-activation|implementation-progress|implementation-closure>",
-  "objective_id": "<required objective ID>"
+  "objectives": [
+    {
+      "objective_id": "<required objective ID>",
+      "objective": "<required for planning-activation>",
+      "status": "<active|pending; required for planning-activation>",
+      "priority": "<0-5; required for planning-activation>",
+      "target_date": "<YYYY-MM-DD|N/A; required for planning-activation>",
+      "branch": "<required for planning-activation>"
+    }
+  ]
 }
 ```
 
@@ -1251,8 +1269,8 @@ Rules:
 - `allowed_files` contains every physical ZIP file, including `manifest.json`, and only authorized output paths.
 - `contract_version` exactly matches the source manifest value.
 - `supported_patch_paths` contains every generated patch and only paths authorized by the patch archive contract.
-- `canonical_project_path` exactly matches the selected project's runtime root from the source manifest/backend Project Registry; every project `target_file` independently matches that project's exact canonical repository-relative mapping.
-- `lifecycle_phase` and `objective_id` satisfy the applicable lifecycle rules.
+- `canonical_project_path` exactly matches the selected project's repository-relative root from the source manifest/backend Project Registry; every project `target_file` independently matches that project's exact canonical repository-relative mapping.
+- `lifecycle_phase` and `objectives` satisfy the applicable lifecycle rules; planning batches are all-or-nothing.
 - No output path may be absolute, duplicated, contain `..` or reference a symlink.
 - The source manifest must never be copied as the output manifest.
 

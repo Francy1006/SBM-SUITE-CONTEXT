@@ -37,14 +37,14 @@ The project being processed is:
 {{PROJECT_NAME}}
 ```
 
-Resolve it only through these canonical repository and container mappings:
+Resolve it only through these canonical repository-relative mappings:
 
 ```text
-dp-api            → SBM-SUITE/dp/DP-API/            → /suite/dp/DP-API
-sbm-api           → SBM-SUITE/sbm/SBM-API/          → /suite/sbm/SBM-API
-sbm-db            → SBM-SUITE/sbm/SBM-DB/           → /suite/sbm/SBM-DB
-sbm-manager       → SBM-SUITE/sbm/SBM-MANAGER/      → /suite/sbm/SBM-MANAGER
-sbm-ai-assistant  → SBM-SUITE/sbm/sbm-ai-assistant/ → /suite/sbm/sbm-ai-assistant
+dp-api            → SBM-SUITE/dp/DP-API/
+sbm-api           → SBM-SUITE/sbm/SBM-API/
+sbm-db            → SBM-SUITE/sbm/SBM-DB/
+sbm-manager       → SBM-SUITE/sbm/SBM-MANAGER/
+sbm-ai-assistant  → SBM-SUITE/sbm/sbm-ai-assistant/
 ```
 
 ## Required inputs
