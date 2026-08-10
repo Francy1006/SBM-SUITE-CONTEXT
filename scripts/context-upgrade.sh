@@ -6,9 +6,6 @@ CONTEXT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SBM_SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
 cd "${CONTEXT_ROOT}"
 
-PROJECT_NAME="sbm-suite-context"
-EXPECTED_CANONICAL_PROJECT_PATH="SBM-SUITE/context"
-
 INPUT_DIR="${CONTEXT_ROOT}/input"
 OUTPUT_DIR="${CONTEXT_ROOT}/output"
 UPGRADE_ZIP="${INPUT_DIR}/context-upgrade.zip"
@@ -60,6 +57,28 @@ ZIP_COUNT="$(find "${INPUT_DIR}" -maxdepth 1 -type f -name '*.zip' | wc -l | tr 
   exit 1
 }
 
+PROJECT_NAME="$(
+  python3 - "${UPGRADE_ZIP}" <<'PY'
+import json
+import re
+import sys
+from zipfile import BadZipFile, ZipFile
+
+try:
+    with ZipFile(sys.argv[1]) as archive:
+        manifest = json.loads(archive.read("manifest.json").decode("utf-8"))
+except (BadZipFile, KeyError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+    raise SystemExit(f"ERROR: No se pudo leer manifest.project_name: {exc}") from exc
+
+project_name = manifest.get("project_name")
+if not isinstance(project_name, str) or not re.fullmatch(
+    r"[A-Za-z0-9][A-Za-z0-9._-]*", project_name
+):
+    raise SystemExit("ERROR: manifest.project_name inválido")
+print(project_name)
+PY
+)"
+
 CONTRACT_FILE="$(mktemp)"
 trap 'rm -f "${CONTRACT_FILE}"' EXIT
 
@@ -79,8 +98,7 @@ HTTP_STATUS="$(
 python3 - \
   "${UPGRADE_ZIP}" \
   "${CONTRACT_FILE}" \
-  "${PROJECT_NAME}" \
-  "${EXPECTED_CANONICAL_PROJECT_PATH}" <<'PY'
+  "${PROJECT_NAME}" <<'PY'
 import json
 import re
 import sys
@@ -88,7 +106,7 @@ from datetime import date
 from pathlib import PurePosixPath
 from zipfile import BadZipFile, ZipFile
 
-zip_path, contract_path, project_name, expected_canonical = sys.argv[1:]
+zip_path, contract_path, project_name = sys.argv[1:]
 
 try:
     contract = json.loads(open(contract_path, encoding="utf-8").read())
@@ -133,10 +151,29 @@ if not isinstance(phases, list) or phase not in phases:
     raise SystemExit("ERROR: lifecycle_phase no soportada")
 
 projects = contract.get("canonical_projects")
-if not isinstance(projects, dict) or projects.get(project_name) != expected_canonical:
-    raise SystemExit("ERROR: mapping canónico del proyecto no coincide")
+if not isinstance(projects, dict) or project_name not in projects:
+    raise SystemExit("ERROR: manifest.project_name no está publicado por Project Registry")
+expected_canonical = projects[project_name]
 if manifest.get("canonical_project_path") != expected_canonical:
     raise SystemExit("ERROR: manifest.canonical_project_path no coincide")
+
+supported_patches = contract.get("supported_patch_paths")
+manifest_supported_patches = manifest.get("supported_patch_paths")
+if not isinstance(supported_patches, list):
+    raise SystemExit("ERROR: backend.supported_patch_paths inválido")
+if (
+    not isinstance(manifest_supported_patches, list)
+    or not manifest_supported_patches
+    or not all(isinstance(path, str) for path in manifest_supported_patches)
+    or len(manifest_supported_patches) != len(set(manifest_supported_patches))
+):
+    raise SystemExit("ERROR: manifest.supported_patch_paths inválido")
+unknown_supported = sorted(set(manifest_supported_patches) - set(supported_patches))
+if unknown_supported:
+    raise SystemExit(
+        "ERROR: manifest.supported_patch_paths contiene rutas no publicadas: "
+        + ", ".join(unknown_supported)
+    )
 
 objectives = manifest.get("objectives")
 if not isinstance(objectives, list) or not objectives:
@@ -208,29 +245,41 @@ generated_patches = {
     name for name in names if name.startswith("patches/") and name.endswith(".json")
 }
 required_patches = {"patches/global-project-context.json"}
+if project_name != "sbm-suite-context":
+    required_patches.add("patches/project-context.json")
 if phase == "implementation-closure":
     required_patches |= {
         "patches/completed-objectives.json",
         "patches/global-qa-context.json",
     }
+    if project_name != "sbm-suite-context":
+        required_patches.add("patches/project-qa-context.json")
 
 missing_patches = sorted(required_patches - generated_patches)
 if missing_patches:
     raise SystemExit(
-        "ERROR: faltan patches requeridos para SBM-SUITE/context: "
+        f"ERROR: faltan patches requeridos para {project_name}: "
         + ", ".join(missing_patches)
     )
 
-for forbidden in {
-    "patches/project-context.json",
-    "patches/project-qa-context.json",
-    "patches/project-deploy-context.json",
-    "patches/project-readme.json",
-}:
-    if forbidden in generated_patches:
-        raise SystemExit(
-            f"ERROR: {forbidden} no aplica a SBM-SUITE/context"
-        )
+if project_name == "sbm-suite-context":
+    for forbidden in {
+        "patches/project-context.json",
+        "patches/project-qa-context.json",
+        "patches/project-deploy-context.json",
+        "patches/project-readme.json",
+    }:
+        if forbidden in generated_patches:
+            raise SystemExit(
+                f"ERROR: {forbidden} no aplica a SBM-SUITE/context"
+            )
+
+unsupported_generated = sorted(generated_patches - set(manifest_supported_patches))
+if unsupported_generated:
+    raise SystemExit(
+        "ERROR: ZIP contiene patches fuera de manifest.supported_patch_paths: "
+        + ", ".join(unsupported_generated)
+    )
 
 print(f"Preflight validado: {phase}")
 print(f"Modo: {execution_mode}")

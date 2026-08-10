@@ -52,6 +52,10 @@
 38. `sbm-suite-context` is a suite-scoped lifecycle target. Its operational objective and QA state live directly in global `SBM-SUITE/context/PROJECT_CONTEXT.md` and `SBM-SUITE/context/QA_CONTEXT.md`. Project-scoped patches (`project-context`, `project-qa-context`, `project-deploy-context`, `project-readme`) are forbidden for this target. Global objective rows for this target use `Project = SBM-SUITE`.
 39. Every Markdown table must be one continuous block: no blank line is allowed between its header row, separator row or any data rows belonging to that table.
 40. When adding rows to an existing Markdown table, all new rows must form one contiguous block immediately after its last existing data row and before any blank line, prose, heading or later section. Never create a second visually similar row block outside the table. This applies to every table and especially to the lifecycle `Pending objectives`, `Active objectives` and `Completed objectives` tables.
+41. `SBM-SUITE/context/scripts/` is the sole canonical orchestration point for Context deploy, Context upgrade, Documentation deploy and Documentation upgrade. Project-local scripts are not workflow authorities.
+42. Global deploy scripts must accept the selected `project_name`, validate it against the backend Project Registry contract and resolve its real project root only from the published `canonical_project_path`; they must never derive project paths from the project name.
+43. Global upgrade scripts must obtain `project_name` from the trusted input ZIP manifest, validate it against the backend Project Registry contract and apply suite-scoped restrictions only when the selected target is `sbm-suite-context`.
+44. `SBM-SUITE/context` owns the global workflow contracts, input/output directories and `project-tree.sh`. Project Git changes and QA evidence are collected from the Project Registry-selected project root without duplicating those global resources.
 
 ---
 
@@ -1110,6 +1114,8 @@ Every context export and upgrade workflow must:
 90. Require the output `contract_version` to equal the source manifest `contract_version`.
 91. Reject any Markdown table containing a blank line between its header, separator or data rows.
 92. Require all new rows added to an existing Markdown table to form one contiguous block immediately after the last existing data row and before any blank line, prose, heading or later section; reject detached or second row blocks, especially in `Pending objectives`, `Active objectives` and `Completed objectives` lifecycle tables.
+93. Require every manual Context and Documentation workflow to use only the canonical scripts under `SBM-SUITE/context/scripts/`.
+94. Require deploy workflows to validate their explicit selected `project_name` through the backend Project Registry and require upgrade workflows to validate the manifest-owned `project_name` through that same registry; reject manually constructed project mappings.
 
 
 ### Patch archive contract

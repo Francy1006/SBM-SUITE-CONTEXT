@@ -1,6 +1,6 @@
 # FORMAT_CONTEXT.md
 
-> **Last updated:** 2026-07-30
+> **Last updated:** 2026-08-10
 >
 > **Purpose:**
 >
@@ -57,6 +57,12 @@
 40. Metadata labels must appear exactly once and in the order defined for the page type.
 41. Documentation files live only below `SBM-SUITE/context/documentation/pages/`.
 42. Workflow backups use the suite-wide `SBM-SUITE/context/backup/` root; documentation-local and alternate backup roots are forbidden.
+43. Global Context is the canonical source for the current objective lifecycle state across every registered project. Documentation may lag behind Context temporarily, and a Context objective missing from Documentation does not invalidate Context.
+44. Every `documentation-deploy` must reconcile authorized Documentation candidates against the complete current global Context objective state, including active, pending and completed objectives from all projects, regardless of which project originated the current execution.
+45. Context-to-Documentation reconciliation must be safe and idempotent: preserve all unrelated documentation, update only evidenced lifecycle differences and produce no replacement for a page that is already synchronized.
+46. Lifecycle values copied into Documentation must remain literal and must not be wrapped in Markdown formatting.
+47. Every Markdown table must remain one continuous block with no blank line between its header, separator or data rows. All new rows must form one contiguous block immediately after the last existing row and before any blank line, prose, heading or later section; detached or second row blocks are forbidden.
+48. Manual Context and Documentation orchestration remains synchronous under `SBM-SUITE/context`; do not introduce flags, queues or asynchronous processing.
 
 
 ---
@@ -92,6 +98,8 @@ Documentation-deploy package requirements:
 12. Record both workflow contract files in the source package manifest.
 13. Do not require a separate user upload of either workflow file.
 14. Treat workflow contracts and packaged source snapshots as input evidence for `documentation-upgrade`; source snapshots are never copied unchanged into the output ZIP.
+15. Include the complete current global active, pending and completed objective state from Context as reconciliation evidence, independent of the selected origin project.
+16. Select complete source snapshots for every existing authorized roadmap or pending-work candidate needed to reconcile accumulated objective differences across projects.
 
 Required workflow directories:
 
@@ -856,6 +864,12 @@ Every documentation export and upgrade workflow must:
 60. Fail export when any RAG-selected candidate lacks a complete authorized source snapshot.
 61. Require every generated documentation replacement to have a corresponding complete source snapshot in the input package; never reconstruct missing sections, tables, metadata or links from RAG chunks.
 62. A lifecycle-only/no-op closure may update QA, validation, roadmap or workflow documentation when supported by closure evidence, but must not introduce implementation-state claims without implementation evidence.
+63. Treat global Context as authoritative for objective lifecycle state and permit Documentation to be temporarily behind it; never reject a valid Context objective merely because Documentation does not yet contain it.
+64. Require every documentation deployment to reconcile active, pending and completed objectives from the complete current global Context, not only objectives owned by the project that originated the workflow.
+65. Require reconciliation to preserve unrelated documentation and omit already synchronized files from the upgrade ZIP.
+66. Reject formatted or altered lifecycle values copied from Context.
+67. Reject any Markdown table split by a blank line or any new table rows that do not form one contiguous block immediately after the last existing row.
+68. Preserve synchronous manual orchestration and forbid new flags, queues or asynchronous processing.
 
 
 ---

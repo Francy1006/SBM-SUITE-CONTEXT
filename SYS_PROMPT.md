@@ -20,6 +20,8 @@ objectives=<non-empty array from source manifest>
 
 Use the supplied RAG package and, when present, the explicit user-guided objective to generate only section-level patches for authorized contexts and README files. Support planning activation, implementation progress and objective closure after validation of the current project state. Closure may represent either completed implementation or a lifecycle-only/no-op objective with no source-code change.
 
+This package is produced by the global orchestrator under `SBM-SUITE/context` for the literal `project_name` validated through the backend Project Registry. The target may be any registered project. Apply suite-scoped behavior only when `project_name=sbm-suite-context`; do not assume the orchestration directory is the lifecycle target.
+
 Do not generate complete context or README files.
 
 The project being processed is:
@@ -1428,6 +1430,7 @@ Before returning `context-upgrade.zip`, verify:
 31. `patches/completed-objectives.json` uses `append_to_section` only for a missing canonical project group and `replace_section` only for one existing canonical project group;
 32. every generated patch appears in `supported_patch_paths`.
 33. every Markdown table is continuous, all new rows form one contiguous block inside the intended table immediately after the last existing row, and no blank line or detached row block splits lifecycle `Pending objectives`, `Active objectives` or `Completed objectives` tables.
+34. the selected project and every project-scoped target remain those published by the backend Project Registry; global orchestration from `SBM-SUITE/context` does not convert a normal project into the suite-scoped `sbm-suite-context` target.
 
 If any ZIP-level validation fails, do not generate the archive.
 

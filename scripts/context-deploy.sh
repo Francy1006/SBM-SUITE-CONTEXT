@@ -4,9 +4,9 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Uso:
-  ./scripts/context-deploy.sh planning-activation '<objectives-json-array>' [user_prompt]
-  ./scripts/context-deploy.sh implementation-progress '<objectives-json-array>' [user_prompt]
-  ./scripts/context-deploy.sh implementation-closure '<objectives-json-array>' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> planning-activation '<objectives-json-array>' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> implementation-progress '<objectives-json-array>' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> implementation-closure '<objectives-json-array>' [user_prompt]
 
 planning-activation:
   - acepta uno o más objetivos;
@@ -17,14 +17,15 @@ implementation-progress / implementation-closure:
 EOF
 }
 
-[[ "$#" -ge 2 && "$#" -le 3 ]] || {
+[[ "$#" -ge 3 && "$#" -le 4 ]] || {
   usage >&2
   exit 1
 }
 
-LIFECYCLE_PHASE="$1"
-OBJECTIVES_JSON="$2"
-USER_PROMPT="${3:-}"
+PROJECT_NAME="$1"
+LIFECYCLE_PHASE="$2"
+OBJECTIVES_JSON="$3"
+USER_PROMPT="${4:-}"
 
 if [[ -n "${USER_PROMPT//[[:space:]]/}" ]]; then
   EXECUTION_MODE="user-guided"
@@ -46,14 +47,10 @@ CONTEXT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SBM_SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
 cd "${CONTEXT_ROOT}"
 
-PROJECT_NAME="sbm-suite-context"
-EXPECTED_CANONICAL_PROJECT_PATH="SBM-SUITE/context"
-
 INPUT_DIR="${CONTEXT_ROOT}/input"
 OUTPUT_DIR="${CONTEXT_ROOT}/output"
 PROMPT_TEMPLATE="${CONTEXT_ROOT}/SYS_PROMPT.md"
 FORMAT_CONTEXT_FILE="${CONTEXT_ROOT}/FORMAT_CONTEXT.md"
-QA_RESULTS_FILE="${CONTEXT_ROOT}/qa-results.md"
 PROJECT_TREE_SCRIPT="${CONTEXT_ROOT}/project-tree.sh"
 PROJECT_TREE_FILE="${CONTEXT_ROOT}/project-tree.txt"
 SYSTEM_PROMPT_FILE="${OUTPUT_DIR}/SYS_PROMPT.md"
@@ -212,14 +209,13 @@ HTTP_STATUS="$(
 python3 - \
   "${CONTRACT_FILE}" \
   "${PROJECT_NAME}" \
-  "${EXPECTED_CANONICAL_PROJECT_PATH}" \
   "${LIFECYCLE_PHASE}" \
   "${META_FILE}" <<'PY'
 import json
 import sys
 from pathlib import Path
 
-contract_path, project, expected, phase, meta_path = sys.argv[1:]
+contract_path, project, phase, meta_path = sys.argv[1:]
 contract = json.loads(Path(contract_path).read_text(encoding="utf-8"))
 
 version = contract.get("contract_version")
@@ -231,30 +227,75 @@ if not isinstance(version, str) or not version:
     raise SystemExit("ERROR: contract_version inválido")
 if not isinstance(phases, list) or phase not in phases:
     raise SystemExit(f"ERROR: lifecycle phase no publicada: {phase}")
-if not isinstance(projects, dict) or projects.get(project) != expected:
-    raise SystemExit(
-        f"ERROR: {project} no está registrado con mapping {expected}"
-    )
+if not isinstance(projects, dict) or project not in projects:
+    raise SystemExit(f"ERROR: {project} no está publicado por Project Registry")
+canonical_project_path = projects[project]
+if not isinstance(canonical_project_path, str) or not canonical_project_path:
+    raise SystemExit(f"ERROR: mapping canónico inválido para {project}")
 if not isinstance(patches, list):
     raise SystemExit("ERROR: supported_patch_paths inválido")
 
 required = {"patches/global-project-context.json"}
+if project != "sbm-suite-context":
+    required.add("patches/project-context.json")
 if phase == "implementation-closure":
     required |= {
         "patches/completed-objectives.json",
         "patches/global-qa-context.json",
     }
+    if project != "sbm-suite-context":
+        required.add("patches/project-qa-context.json")
 
 missing = sorted(required - set(patches))
 if missing:
     raise SystemExit("ERROR: contrato incompleto: " + ", ".join(missing))
 
 Path(meta_path).write_text(
-    json.dumps({"contract_version": version}),
+    json.dumps({
+        "contract_version": version,
+        "canonical_project_path": canonical_project_path,
+    }),
     encoding="utf-8",
 )
-print(f"Contrato validado: {version}")
+print(f"Contrato validado: {version} ({canonical_project_path})")
 PY
+
+CANONICAL_PROJECT_PATH="$(
+  python3 - "${META_FILE}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+print(json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["canonical_project_path"])
+PY
+)"
+
+PROJECT_ROOT="$(
+  python3 - "${SBM_SUITE_ROOT}" "${CANONICAL_PROJECT_PATH}" <<'PY'
+import os
+import sys
+from pathlib import Path, PurePosixPath
+
+suite_root = Path(sys.argv[1]).resolve(strict=True)
+canonical = PurePosixPath(sys.argv[2])
+if canonical.is_absolute() or ".." in canonical.parts:
+    raise SystemExit("ERROR: canonical_project_path no es seguro")
+if not canonical.parts or canonical.parts[0] != suite_root.name:
+    raise SystemExit("ERROR: canonical_project_path no pertenece a SBM-SUITE")
+candidate = (suite_root.parent / Path(*canonical.parts)).resolve(strict=True)
+if os.path.commonpath((suite_root, candidate)) != str(suite_root):
+    raise SystemExit("ERROR: PROJECT_ROOT escapa de SBM-SUITE")
+if not candidate.is_dir():
+    raise SystemExit("ERROR: PROJECT_ROOT no es un directorio")
+print(candidate)
+PY
+)"
+
+if [[ "${PROJECT_NAME}" == "sbm-suite-context" ]]; then
+  QA_RESULTS_FILE="${PROJECT_ROOT}/qa-results.md"
+else
+  QA_RESULTS_FILE="${PROJECT_ROOT}/context/qa-results.md"
+fi
 
 mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}"
 find "${INPUT_DIR}" -mindepth 1 ! -name ".gitkeep" -delete
@@ -298,10 +339,10 @@ PY
 
 GIT_DIFF="$(
   {
-    git diff --no-ext-diff -- . \
+    git -C "${PROJECT_ROOT}" diff --no-ext-diff -- . \
       ':(exclude).env' ':(exclude).env.*' \
       ':(exclude)**/.env' ':(exclude)**/.env.*'
-    git diff --cached --no-ext-diff -- . \
+    git -C "${PROJECT_ROOT}" diff --cached --no-ext-diff -- . \
       ':(exclude).env' ':(exclude).env.*' \
       ':(exclude)**/.env' ':(exclude)**/.env.*'
   } 2>/dev/null
@@ -309,13 +350,13 @@ GIT_DIFF="$(
 
 CHANGED_FILES="$(
   {
-    git diff --name-only -- . \
+    git -C "${PROJECT_ROOT}" diff --name-only -- . \
       ':(exclude).env' ':(exclude).env.*' \
       ':(exclude)**/.env' ':(exclude)**/.env.*'
-    git diff --cached --name-only -- . \
+    git -C "${PROJECT_ROOT}" diff --cached --name-only -- . \
       ':(exclude).env' ':(exclude).env.*' \
       ':(exclude)**/.env' ':(exclude)**/.env.*'
-    git ls-files --others --exclude-standard
+    git -C "${PROJECT_ROOT}" ls-files --others --exclude-standard
   } 2>/dev/null \
     | awk '!/(^|\/)\.env($|\.)/' \
     | sort -u
@@ -368,11 +409,12 @@ print(json.dumps({
 PY
 )"
 
-curl --fail-with-body --silent --show-error \
-  --request POST "${AI_ASSISTANT_URL%/}/contexts/export" \
-  --header "Content-Type: application/json" \
-  --data-binary "${PAYLOAD}" \
-  --output "${RESPONSE_FILE}"
+printf '%s' "${PAYLOAD}" \
+  | curl --fail-with-body --silent --show-error \
+      --request POST "${AI_ASSISTANT_URL%/}/contexts/export" \
+      --header "Content-Type: application/json" \
+      --data-binary @- \
+      --output "${RESPONSE_FILE}"
 
 python3 - \
   "${RESPONSE_FILE}" \

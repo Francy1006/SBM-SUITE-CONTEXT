@@ -21,6 +21,10 @@ execution_mode=auto
 
 Use the supplied documentation package to generate only complete, format-compliant Markdown replacements for existing authorized documentation pages and subpages.
 
+Global Context is authoritative for current objective lifecycle state across all registered projects. Documentation may be temporarily behind Context. Reconcile every supplied authorized roadmap or pending-work candidate against the complete current global active, pending and completed objective evidence, regardless of which project originated this execution.
+
+An objective present in Context but absent from Documentation is a synchronization difference, not an invalid Context state. Preserve all unrelated documentation and omit replacements for files that are already synchronized.
+
 For active or pending objectives, update only authorized planning or roadmap content supported by the supplied evidence.
 
 For completed objectives, document completed, tangible and validated implementation only when implementation evidence exists. For lifecycle-only/no-op closure, document only supported QA, validation, roadmap or workflow-state changes and do not invent implementation changes.
@@ -37,15 +41,7 @@ The project being processed is:
 {{PROJECT_NAME}}
 ```
 
-Resolve it only through these canonical repository-relative mappings:
-
-```text
-dp-api            → SBM-SUITE/dp/DP-API/
-sbm-api           → SBM-SUITE/sbm/SBM-API/
-sbm-db            → SBM-SUITE/sbm/SBM-DB/
-sbm-manager       → SBM-SUITE/sbm/SBM-MANAGER/
-sbm-ai-assistant  → SBM-SUITE/sbm/sbm-ai-assistant/
-```
+Treat it only as the validated origin project published by the backend Project Registry. Never infer or reconstruct its path, and never restrict global objective reconciliation to this project.
 
 ## Required inputs
 
@@ -75,7 +71,7 @@ RAG is used only to select candidate documentation. Every candidate listed in `d
 
 `retrieved-documentation.md` contains relevant documentation chunks selected from Qdrant collection `sbm_documentation`; these chunks identify relevant candidates and provide retrieval evidence, but they are never a substitute for the complete source snapshot.
 
-`retrieved-context.md` contains relevant current global and project context chunks selected from Qdrant collection `sbm_contexts`.
+`retrieved-context.md` contains the complete current global active, pending and completed objective sections required for reconciliation, plus any relevant current project or structural context evidence.
 
 `documentation-files.txt` lists exactly the RAG-selected documentation candidates whose complete source snapshots are packaged and authorized for possible replacement.
 
@@ -175,6 +171,8 @@ Use `user-guided` when the same user message contains an additional documentatio
 ## Documentation lifecycle gate
 
 Determine the lifecycle state from the supplied current contexts and objective records.
+
+Evaluate the global objective state as a whole. Reconcile accumulated changes from multiple projects in one execution when the supplied complete source snapshots authorize those pages. Never remove or overwrite an unrelated project objective while synchronizing another one. Copy lifecycle values literally without Markdown formatting, and keep every Markdown table structurally continuous with no blank line or detached row block.
 
 ### Planning state
 
@@ -954,6 +952,10 @@ Before generating the ZIP, verify:
 33. every generated documentation target had exactly one complete packaged source snapshot declared by `manifest.documentation_files`;
 34. every source snapshot hash matched before generation;
 35. no replacement was reconstructed from RAG chunks without its complete source snapshot;
+36. global active, pending and completed objective evidence was reconciled across all registered projects represented in Context, independently of the origin project;
+37. missing Documentation entries were treated as synchronization differences and did not invalidate Context;
+38. unrelated documentation and objectives were preserved, and already synchronized files were omitted;
+39. lifecycle values remain literal and every Markdown table remains one continuous block with all new rows contiguous after the last existing row;
 
 If any file-level validation fails, omit that documentation file and report the exact limitation in `EXECUTIVE_README.md`.
 

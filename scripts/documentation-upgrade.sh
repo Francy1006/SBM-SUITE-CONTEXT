@@ -3,11 +3,7 @@ set -euo pipefail
 
 CONTEXT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${CONTEXT_ROOT}/.env.dev"
-
-[[ -f "${ENV_FILE}" ]] || {
-  echo "ERROR: No existe ${ENV_FILE}"
-  exit 1
-}
+SBM_SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
 
 get_env() {
   local key="$1"
@@ -23,44 +19,27 @@ get_env() {
   ' "${ENV_FILE}"
 }
 
-PROJECT_NAME="$(get_env DOPPLER_PROJECT)"
-AI_ASSISTANT_URL="$(get_env AI_ASSISTANT_URL)"
-SBM_SUITE_ROOT_RAW="$(get_env SBM_SUITE_ROOT)"
-
-[[ "${PROJECT_NAME}" == "sbm-suite-context" ]] || {
-  echo "ERROR: DOPPLER_PROJECT debe ser sbm-suite-context"
-  exit 1
-}
+AI_ASSISTANT_URL="${AI_ASSISTANT_URL:-}"
+if [[ -z "${AI_ASSISTANT_URL}" && -f "${ENV_FILE}" ]]; then
+  AI_ASSISTANT_URL="$(get_env AI_ASSISTANT_URL)"
+fi
+if [[ -z "${AI_ASSISTANT_URL}" ]]; then
+  for candidate in \
+    "${SBM_SUITE_ROOT}/SBM/sbm-ai-assistant/.env.dev" \
+    "${SBM_SUITE_ROOT}/sbm/sbm-ai-assistant/.env.dev"
+  do
+    if [[ -f "${candidate}" ]]; then
+      ENV_FILE="${candidate}"
+      AI_ASSISTANT_URL="$(get_env AI_ASSISTANT_URL)"
+      break
+    fi
+  done
+fi
 
 [[ -n "${AI_ASSISTANT_URL}" ]] || {
   echo "ERROR: Falta AI_ASSISTANT_URL"
   exit 1
 }
-
-[[ -n "${SBM_SUITE_ROOT_RAW}" ]] || {
-  echo "ERROR: Falta SBM_SUITE_ROOT"
-  exit 1
-}
-
-resolve_suite_root() {
-  local configured_path="$1"
-  local candidate
-
-  if [[ "${configured_path}" = /* ]]; then
-    candidate="${configured_path}"
-  else
-    candidate="${CONTEXT_ROOT}/${configured_path}"
-  fi
-
-  [[ -d "${candidate}" ]] || {
-    echo "ERROR: No existe SBM_SUITE_ROOT resuelto en ${candidate}" >&2
-    return 1
-  }
-
-  (cd "${candidate}" && pwd)
-}
-
-SBM_SUITE_ROOT="$(resolve_suite_root "${SBM_SUITE_ROOT_RAW}")"
 
 [[ "${CONTEXT_ROOT}" == "${SBM_SUITE_ROOT}/context" ]] || {
   echo "ERROR: CONTEXT_ROOT no corresponde a ${SBM_SUITE_ROOT}/context"
@@ -96,6 +75,54 @@ ZIP_COUNT="$(
   exit 1
 }
 
+PROJECT_NAME="$(
+  python3 - "${UPGRADE_ZIP}" <<'PY'
+import json
+import re
+import sys
+from zipfile import BadZipFile, ZipFile
+
+try:
+    with ZipFile(sys.argv[1]) as archive:
+        manifest = json.loads(archive.read("manifest.json").decode("utf-8"))
+except (BadZipFile, KeyError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+    raise SystemExit(f"ERROR: No se pudo leer manifest.project_name: {exc}") from exc
+
+project_name = manifest.get("project_name")
+if not isinstance(project_name, str) or not re.fullmatch(
+    r"[A-Za-z0-9][A-Za-z0-9._-]*", project_name
+):
+    raise SystemExit("ERROR: manifest.project_name inválido")
+if manifest.get("workflow") != "documentation-upgrade":
+    raise SystemExit("ERROR: manifest.workflow debe ser documentation-upgrade")
+print(project_name)
+PY
+)"
+
+CONTRACT_FILE="$(mktemp)"
+trap 'rm -f "${CONTRACT_FILE}"' EXIT
+HTTP_STATUS="$(
+  curl --silent --show-error \
+    --output "${CONTRACT_FILE}" \
+    --write-out "%{http_code}" \
+    --request GET \
+    "${AI_ASSISTANT_URL%/}/contexts/contract"
+)"
+[[ "${HTTP_STATUS}" == "200" ]] || {
+  echo "ERROR: /contexts/contract HTTP ${HTTP_STATUS}"
+  exit 1
+}
+python3 - "${CONTRACT_FILE}" "${PROJECT_NAME}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+contract = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+projects = contract.get("canonical_projects")
+if not isinstance(projects, dict) or sys.argv[2] not in projects:
+    raise SystemExit("ERROR: manifest.project_name no está publicado por Project Registry")
+PY
+
 HTTP_STATUS="$(
   curl --silent --show-error \
     --output "${RESPONSE_FILE}" \
@@ -126,18 +153,19 @@ if [[ "${HTTP_STATUS}" -lt 200 || "${HTTP_STATUS}" -ge 300 ]]; then
   exit 1
 fi
 
-python3 - "${RESPONSE_FILE}" <<'PY'
+python3 - "${RESPONSE_FILE}" "${PROJECT_NAME}" <<'PY'
 import json
 import sys
 from pathlib import Path
 
 response_path = Path(sys.argv[1])
 payload = json.loads(response_path.read_text(encoding="utf-8"))
+project_name = sys.argv[2]
 
 if payload.get("workflow") != "documentation-upgrade":
     raise SystemExit("ERROR: La respuesta no corresponde a documentation-upgrade")
-if payload.get("project_name") != "sbm-suite-context":
-    raise SystemExit("ERROR: La respuesta no corresponde al proyecto sbm-suite-context")
+if payload.get("project_name") != project_name:
+    raise SystemExit("ERROR: La respuesta no corresponde al proyecto del manifest")
 errors = payload.get("errors")
 if errors is not None and (not isinstance(errors, list) or errors):
     raise SystemExit(f"ERROR: El upgrade informó errores: {errors}")

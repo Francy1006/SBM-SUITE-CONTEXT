@@ -44,15 +44,22 @@ Global contracts are `FORMAT_CONTEXT.md` and `SYS_PROMPT.md`. Documentation-spec
 
 ## Installation
 
-No standalone installation is required for the Markdown contracts. Project-owned scripts consume this repository from the suite root.
+No standalone installation is required for the Markdown contracts. All manual Context and Documentation workflows use the canonical scripts in this repository; project-local scripts are not orchestration authorities.
 
 ## Runtime
 
-`context-deploy` validates the lifecycle phase and objective batch, refreshes `project-tree.txt`, gathers bounded evidence, and requests the RAG package. For `sbm-suite-context`, `SBM-SUITE/context` is the suite-scoped lifecycle target: planning objectives are synchronized directly in global `PROJECT_CONTEXT.md`, and project-scoped lifecycle patches are not used. The closing upgrade reconciles applicable QA state, removes the objective from operational context, and appends it to `COMPLETED_OBJECTIVES.md`. Documentation uses a separate deploy/upgrade flow only after implementation closure.
+`context-deploy` receives a registered project name, validates its canonical path through the backend Project Registry, refreshes the global `project-tree.txt`, gathers Git and QA evidence from that project, and requests the RAG package. `context-upgrade` obtains the project from the ZIP manifest and applies project-scoped or suite-scoped rules accordingly. Documentation deploy uses the origin project's Git/QA evidence while reconciling the complete global active, pending and completed objective state; Documentation may lag behind Context without invalidating Context.
 
 ## Usage
 
 Use `input/` and `output/` for the global context workflow. Active and pending objectives remain in project and global `PROJECT_CONTEXT.md` files. Completed objectives are stored only in global `COMPLETED_OBJECTIVES.md`. Documentation pages live only below `documentation/pages/<page>/`, with subpages below `documentation/pages/<page>/subpages/`.
+
+```bash
+./scripts/context-deploy.sh <project_name> <lifecycle_phase> '<objectives-json-array>' [user_prompt]
+./scripts/context-upgrade.sh
+./scripts/documentation-deploy.sh <project_name>
+./scripts/documentation-upgrade.sh
+```
 
 Every successful context upgrade writes one backup to `backup/<timestamp>_<project>/`, including original files, `EXECUTIVE_README.md`, `COMMIT_MESSAGE.md`, and `BACKUP_MANIFEST.json`.
 
