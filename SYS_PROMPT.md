@@ -170,6 +170,7 @@ Required behavior:
 - preserve the source-manifest `execution_mode`; `planning-activation` does not force `user-guided`;
 - treat the validated source-manifest `objectives[]` array as immutable lifecycle input;
 - copy `objective_id`, `objective`, `status`, `priority`, `target_date` and `branch` literally from each manifest item into every generated project/global operational objective row;
+- write those lifecycle values as plain literal table-cell values only; never wrap `objective_id`, `objective`, `status`, `priority`, `target_date` or `branch` in Markdown formatting such as backticks, bold, italics, links or code spans;
 - never generate, propose, normalize, translate, shorten, slugify, reinterpret or otherwise alter any validated objective field, especially `branch`;
 - generate `USER_PROMPT.md` only when `execution_mode=user-guided`, and then copy only the literal additional user prompt into it; never reconstruct or synthesize `USER_PROMPT.md` from `manifest.objectives[]`;
 - add every requested objective exactly once to the project operational context;

@@ -46,7 +46,8 @@
 33. All workflow backups are stored below `SBM-SUITE/context/backup/`; no workflow may use or create a pluralized or workflow-local backup directory.
 34. For `planning-activation`, the validated source-manifest `objectives[]` array is immutable lifecycle input. Every `objective_id`, `objective`, `status`, `priority`, `target_date` and `branch` value must be copied literally into generated operational objective rows.
 35. A context generator must never regenerate, normalize, translate, shorten, slugify, reinterpret or otherwise alter any field already present in a validated `planning-activation` `manifest.objectives[]` item.
-36. `execution_mode` is independent from `lifecycle_phase`. `USER_PROMPT.md` is required only when `execution_mode=user-guided` and forbidden when `execution_mode=evidence`; `planning-activation` alone must never force `USER_PROMPT.md`.
+36. Lifecycle field values must be plain literal table-cell values. Never wrap `objective_id`, `objective`, `status`, `priority`, `target_date` or `branch` in Markdown formatting such as backticks, bold, italics, links or code spans.
+37. `execution_mode` is independent from `lifecycle_phase`. `USER_PROMPT.md` is required only when `execution_mode=user-guided` and forbidden when `execution_mode=evidence`; `planning-activation` alone must never force `USER_PROMPT.md`.
 
 ---
 
@@ -114,6 +115,7 @@ Objective rules:
 - Every planning item must contain all six lifecycle fields: ID, objective, status, priority, target date and branch.
 - Treat those six values as an immutable tuple supplied by `manifest.objectives[]`; generated project/global rows must match them exactly, character for character for string fields and exactly for numeric fields.
 - Never regenerate or normalize an Objective ID, description, status, priority, target date or branch after the batch has been validated.
+- Store lifecycle field values as plain literal table-cell values; never wrap `objective_id`, `objective`, `status`, `priority`, `target_date` or `branch` in Markdown formatting such as backticks, bold, italics, links or code spans.
 - Reject the complete batch on any missing/invalid field, duplicate ID or collision with current/history IDs.
 - A planning batch is atomic: every requested objective is synchronized exactly once in both project/global operational contexts or none is applied.
 - Every project objective change must update this global file.
@@ -727,6 +729,7 @@ Rules:
 - `Target date`: optional.
 - Branch is mandatory before implementation.
 - Branch nomenclature follows section 2.
+- Lifecycle field values must remain plain literal table-cell values; do not wrap them in Markdown formatting.
 - Completed or discarded objectives are removed.
 - Completed objectives are appended only to the global `COMPLETED_OBJECTIVES.md`.
 - Every objective change updates the global project context.
