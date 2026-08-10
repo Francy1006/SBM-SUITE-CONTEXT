@@ -48,7 +48,7 @@ No standalone installation is required for the Markdown contracts. Project-owned
 
 ## Runtime
 
-`context-deploy` reads `SBM_SUITE_ROOT`, refreshes `project-tree.txt`, gathers bounded evidence, and requests a RAG package. The first `context-upgrade` activates or registers an objective before development; the closing upgrade reconciles QA, removes the objective from operational contexts, and appends it to `COMPLETED_OBJECTIVES.md`. Documentation uses a separate deploy/upgrade flow only after implementation closure.
+`context-deploy` validates the lifecycle phase and objective batch, refreshes `project-tree.txt`, gathers bounded evidence, and requests the RAG package. For `sbm-suite-context`, `SBM-SUITE/context` is the suite-scoped lifecycle target: planning objectives are synchronized directly in global `PROJECT_CONTEXT.md`, and project-scoped lifecycle patches are not used. The closing upgrade reconciles applicable QA state, removes the objective from operational context, and appends it to `COMPLETED_OBJECTIVES.md`. Documentation uses a separate deploy/upgrade flow only after implementation closure.
 
 ## Usage
 

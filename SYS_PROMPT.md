@@ -139,6 +139,27 @@ implementation-closure
 
 Never infer `lifecycle_phase` from QA, Git, RAG or other implementation evidence.
 
+### Suite-scoped target: `sbm-suite-context`
+
+When the source manifest declares:
+
+```text
+project_name=sbm-suite-context
+canonical_project_path=SBM-SUITE/context
+```
+
+apply this suite-scoped lifecycle contract. It overrides every generic project-local requirement below:
+
+- `SBM-SUITE/context` is the target itself; never construct `SBM-SUITE/context/context/...`;
+- project-scoped patches are forbidden: `patches/project-context.json`, `patches/project-qa-context.json`, `patches/project-deploy-context.json`, `patches/project-readme.json`;
+- operational objectives live only in `SBM-SUITE/context/PROJECT_CONTEXT.md`; global objective rows use the literal project value `SBM-SUITE`;
+- `planning-activation` requires `patches/global-project-context.json` only for objective synchronization;
+- `implementation-progress` preserves the objective in global `PROJECT_CONTEXT.md` and uses only applicable suite-scoped patches;
+- `implementation-closure` requires `patches/completed-objectives.json`, `patches/global-project-context.json` and `patches/global-qa-context.json`; project-scoped closure patches are forbidden;
+- completed history uses canonical project heading `### SBM-SUITE`;
+- reusable or structural changes to the suite context use `patches/global-project-context.json` and, when README synchronization is justified, `patches/global-readme.json`;
+- use only patch paths present in the source manifest `supported_patch_paths`; never reintroduce project-scoped patch paths omitted by the backend.
+
 ### planning-activation
 
 Use when one or more new objectives are registered before implementation.
@@ -173,8 +194,8 @@ Required behavior:
 - write those lifecycle values as plain literal table-cell values only; never wrap `objective_id`, `objective`, `status`, `priority`, `target_date` or `branch` in Markdown formatting such as backticks, bold, italics, links or code spans;
 - never generate, propose, normalize, translate, shorten, slugify, reinterpret or otherwise alter any validated objective field, especially `branch`;
 - generate `USER_PROMPT.md` only when `execution_mode=user-guided`, and then copy only the literal additional user prompt into it; never reconstruct or synthesize `USER_PROMPT.md` from `manifest.objectives[]`;
-- add every requested objective exactly once to the project operational context;
-- synchronize every requested objective in global `PROJECT_CONTEXT.md`;
+- for project-scoped targets, add every requested objective exactly once to the project operational context and synchronize it in global `PROJECT_CONTEXT.md`;
+- for `sbm-suite-context`, add every requested objective exactly once to global `PROJECT_CONTEXT.md` only, with `Project = SBM-SUITE`;
 - preserve every supplied field exactly;
 - update planned QA/README state only when applicable and only as planned work;
 - do not modify documentation pages;
@@ -217,16 +238,16 @@ Required behavior:
 
 - require `patches/completed-objectives.json`;
 - require `patches/global-project-context.json`;
-- require `patches/project-context.json`;
 - require `patches/global-qa-context.json`;
-- require `patches/project-qa-context.json`;
+- for project-scoped targets, also require `patches/project-context.json` and `patches/project-qa-context.json`;
+- for `sbm-suite-context`, forbid all project-scoped patches;
 - use the current objective context, Git evidence when present and `qa-results.md` as primary evidence;
 - allow lifecycle-only/no-op closure with empty Git changes only when the objective exists, closure is explicit, current QA passes and no implementation claim is introduced;
 - require successful current QA evidence;
 - remove only the requested objective from operational objective sections;
 - preserve every other objective row;
 - append exactly that objective to global `COMPLETED_OBJECTIVES.md`;
-- update project and global QA contexts with actual validation evidence;
+- update every applicable QA context with actual validation evidence: project + global for project-scoped targets, global only for `sbm-suite-context`;
 - update final-state README content when justified;
 - generate the proposed commit message;
 - leave documentation-page updates for the separate documentation workflow.
@@ -234,7 +255,9 @@ Required behavior:
 
 ### Closure patch invariant
 
-Even when `git-diff.patch` and `changed-files.txt` are empty, a valid lifecycle-only/no-op `implementation-closure` must still generate the five lifecycle patches when complete source snapshots are available:
+Even when `git-diff.patch` and `changed-files.txt` are empty, a valid lifecycle-only/no-op `implementation-closure` must still generate all applicable lifecycle patches when complete source snapshots are available.
+
+Project-scoped targets require:
 
 ```text
 patches/global-project-context.json
@@ -242,6 +265,14 @@ patches/project-context.json
 patches/completed-objectives.json
 patches/global-qa-context.json
 patches/project-qa-context.json
+```
+
+`sbm-suite-context` requires only:
+
+```text
+patches/global-project-context.json
+patches/completed-objectives.json
+patches/global-qa-context.json
 ```
 
 These patches represent objective lifecycle and QA synchronization, not implementation changes.
@@ -346,9 +377,10 @@ README.md
 Current registry roots:
 
 ```text
-dp-api       → SBM-SUITE/dp/DP-API/
-sbm-manager  → SBM-SUITE/sbm/SBM-MANAGER/
-sbm-db       → SBM-SUITE/sbm/SBM-DB/
+dp-api             → SBM-SUITE/dp/DP-API/
+sbm-manager        → SBM-SUITE/sbm/SBM-MANAGER/
+sbm-db             → SBM-SUITE/sbm/SBM-DB/
+sbm-suite-context  → SBM-SUITE/context/
 ```
 
 Create a patch only when supplied evidence or an explicit user-guided objective justifies changing the target file.
@@ -474,7 +506,7 @@ Before including a patch file, verify all of the following:
 15. every unrelated row, objective, project QA summary and reusable component remains unchanged;
 16. no partial table is present;
 17. the patch filename appears in `manifest.supported_patch_paths`;
-18. every project `target_file` matches the exact repository-relative mapping for the selected `project_name`, independently of the runtime value in `manifest.canonical_project_path`; `dp-api` uses `SBM-SUITE/dp/DP-API/...`, `sbm-manager` uses `SBM-SUITE/sbm/SBM-MANAGER/...`, and `sbm-db` uses `SBM-SUITE/sbm/SBM-DB/...`.
+18. every project-scoped `target_file` matches the exact repository-relative mapping for the selected `project_name`, independently of the runtime value in `manifest.canonical_project_path`; `dp-api` uses `SBM-SUITE/dp/DP-API/...`, `sbm-manager` uses `SBM-SUITE/sbm/SBM-MANAGER/...`, and `sbm-db` uses `SBM-SUITE/sbm/SBM-DB/...`. `sbm-suite-context` uses `SBM-SUITE/context/...` suite-scoped targets only and forbids every project-scoped patch.
 
 If a complete snapshot of the target section is unavailable, exclude the patch instead of generating a partial section. If any operation fails, exclude that operation. If a patch has no valid operations after validation, exclude the patch file. Report every omission and its reason in `EXECUTIVE_README.md`.
 
@@ -602,8 +634,9 @@ Selected-project routing:
 | `dp-api` | `SBM-SUITE/dp/DP-API/` |
 | `sbm-manager` | `SBM-SUITE/sbm/SBM-MANAGER/` |
 | `sbm-db` | `SBM-SUITE/sbm/SBM-DB/` |
+| `sbm-suite-context` | `SBM-SUITE/context/` |
 
-For the selected repository root, the project-scoped patch suffixes are fixed:
+For project-scoped targets, the selected repository root uses these fixed patch suffixes:
 
 ```text
 patches/project-context.json        → context/PROJECT_CONTEXT.md
@@ -612,7 +645,7 @@ patches/project-deploy-context.json → context/DEPLOY_CONTEXT.md
 patches/project-readme.json         → README.md
 ```
 
-The backend Project Registry/source manifest is authoritative for joining the selected repository root with these suffixes.
+The backend Project Registry/source manifest is authoritative for joining the selected repository root with these suffixes. `sbm-suite-context` does not use these suffixes and must never generate project-scoped patches.
 ```
 
 Include only patch files that contain at least one valid operation.
@@ -621,23 +654,25 @@ Include only patch files that contain at least one valid operation.
 
 Apply these rules together:
 
-1. Every project `PROJECT_CONTEXT.md` update must also update `SBM-SUITE/context/PROJECT_CONTEXT.md`.
-2. Every project `QA_CONTEXT.md` update must also update `SBM-SUITE/context/QA_CONTEXT.md`.
+1. Every project-scoped `PROJECT_CONTEXT.md` update must also update `SBM-SUITE/context/PROJECT_CONTEXT.md`; `sbm-suite-context` already owns the global target and must not generate a duplicate project-local patch.
+2. Every project-scoped `QA_CONTEXT.md` update must also update `SBM-SUITE/context/QA_CONTEXT.md`; `sbm-suite-context` uses the global QA context directly.
 3. API, endpoint, request body, response, technology, language, framework, version, application, service, container, architecture or integration changes must update `SUITE_CONTEXT.md`.
 4. Business behavior, brand, franchise or enabled-module changes must update `BUSINESS_CONTEXT.md`.
 5. Authentication, authorization, roles, permissions, tenant isolation, secret handling, security controls, protocols or security risks must update `SECURITY_CONTEXT.md`.
 6. Database, schema, entity, ownership, relationship, data flow, classification, retention, backup or migration changes must update `DATA_CONTEXT.md`.
 7. Proposed, accepted, superseded or rejected architecture and product decisions must update `DECISIONS_CONTEXT.md`.
-8. Documentation paths affected by an objective must be recorded in project and global project contexts.
+8. Documentation paths affected by an objective must be recorded in every applicable operational context; project + global for project-scoped targets and global only for `sbm-suite-context`.
 9. Context changes do not directly modify documentation files.
-10. Every objective activation, status change or closure in a project context must be synchronized with the global project context in the same archive.
-11. Completed objectives must be removed from project and global current-objective sections and appended only to `SBM-SUITE/context/COMPLETED_OBJECTIVES.md`.
+10. Every objective activation, status change or closure in a project-scoped context must be synchronized with the global project context in the same archive; `sbm-suite-context` changes the global project context directly.
+11. Completed objectives must be removed from every applicable current-objective section and appended only to `SBM-SUITE/context/COMPLETED_OBJECTIVES.md`.
 12. When synchronization is required but evidence is insufficient, omit unsafe operations and report the limitation.
-13. Changes to services, `.sh` scripts, models, project structure, runtime, configuration or reusable components require a project-context patch when supported by evidence.
-14. Stable changes to reusable components require a project-README patch in the same archive.
+13. Changes to services, `.sh` scripts, models, project structure, runtime, configuration or reusable components require the applicable lifecycle context patch when supported by evidence: project-context for project-scoped targets, global-project-context for `sbm-suite-context`.
+14. Stable changes to reusable components require the applicable README patch in the same archive: project-README for project-scoped targets, global-README for `sbm-suite-context`.
 15. Structural or functional changes that affect suite relationships or behavior require a `SUITE_CONTEXT.md` patch.
 
 ## Project context rules
+
+These rules apply only to project-scoped lifecycle targets. `sbm-suite-context` uses global `SBM-SUITE/context/PROJECT_CONTEXT.md` directly and forbids `patches/project-context.json`.
 
 The project `PROJECT_CONTEXT.md` stores detailed project state.
 
@@ -714,7 +749,7 @@ Objective closure rules:
 - implementation evidence is required only when the objective claims implementation changes;
 - lifecycle-only/no-op closure is valid with an empty Git diff when the objective exists in current operational context, `implementation-closure` is explicit and current QA passes;
 - lifecycle-only/no-op closure must not add or modify implemented behavior, API, runtime, database, architecture or README claims unless separately evidenced;
-- move the objective out of both project and global operational objective sections;
+- move the objective out of every applicable operational objective section: project + global for project-scoped targets, global only for `sbm-suite-context`;
 - append the completed record only to `SBM-SUITE/context/COMPLETED_OBJECTIVES.md`;
 - never create a project-level completed-objectives file;
 - the global completed-objectives file groups records by project;
@@ -756,7 +791,7 @@ Rules:
 - ensure the new objective row is located under the canonical project heading, not merely elsewhere in the history section;
 - reject duplicate target project headings and duplicate Objective IDs;
 - do not copy the closed objective to `Completed work` in any `PROJECT_CONTEXT.md`;
-- the project and global `PROJECT_CONTEXT.md` patches that remove the closed objective are mandatory in the same archive.
+- project-scoped closure requires both project and global `PROJECT_CONTEXT.md` patches; `sbm-suite-context` requires only the global `PROJECT_CONTEXT.md` patch and forbids the project patch.
 
 Required completed-objective fields:
 
@@ -1169,8 +1204,8 @@ context-upgrade.zip
     ├── decisions-context.json          (optional)
     ├── global-readme.json              (optional)
     ├── completed-objectives.json       (implementation-closure only)
-    ├── project-context.json            (optional)
-    ├── project-qa-context.json         (mandatory for implementation-closure)
+    ├── project-context.json            (project-scoped targets only)
+    ├── project-qa-context.json         (project-scoped closure only)
     ├── project-deploy-context.json     (optional)
     └── project-readme.json             (optional)
 ```
@@ -1204,6 +1239,8 @@ SBM-SUITE/context/backup/<timestamp>_<project>/
 The backup must contain every original file being replaced, plus `EXECUTIVE_README.md`, `COMMIT_MESSAGE.md` and `BACKUP_MANIFEST.json`. `BACKUP_MANIFEST.json` must record `project_name`, `workflow`, `generated_at`, `motivo`, and for each backed-up file its original path, backup-relative path and SHA-256 hash. The workflow must not use or create any other backup root.
 
 ## Manifest
+
+The example below is project-scoped. For `sbm-suite-context`, use only suite-scoped patch paths present in the source manifest `supported_patch_paths`; never copy the example's project-scoped patch paths.
 
 The manifest must contain:
 
@@ -1370,15 +1407,15 @@ Before returning `context-upgrade.zip`, verify:
 16. commit metadata matches `COMMIT_MESSAGE.md`;
 17. the archive structure is not flattened;
 18. every validation failure is resolved before output;
-19. evidence-triggered project-context and project-README patches are present when services, `.sh` scripts, models, structure, runtime, configuration or reusable components changed;
+19. evidence-triggered lifecycle context/README patches are present when services, `.sh` scripts, models, structure, runtime, configuration or reusable components changed: project-scoped patches for project targets, suite-scoped global patches for `sbm-suite-context`;
 20. the applying workflow is contractually bound to `SBM-SUITE/context/backup/<timestamp>_<project>/` and the required `BACKUP_MANIFEST.json` contents;
 21. `FORMAT_CONTEXT.md` and every `SYS_PROMPT.md` remain protected and absent from patches;
-22. `planning-activation` synchronizes project and global operational objectives without creating completed history;
+22. `planning-activation` synchronizes project + global operational objectives for project-scoped targets and global operational objectives only for `sbm-suite-context`, without creating completed history;
 23. `implementation-closure` removes the objective from operational contexts and appends it only to global `COMPLETED_OBJECTIVES.md`;
 24. no project-level `COMPLETED_OBJECTIVES.md` is generated;
 25. `planning-activation` preserves the source-manifest `execution_mode`, requires `USER_PROMPT.md` only for `user-guided`, forbids it for `evidence`, preserves every validated `manifest.objectives[]` field exactly, and forbids `patches/completed-objectives.json`;
 26. `implementation-progress` forbids `patches/completed-objectives.json` and objective closure;
-27. `implementation-closure` includes `patches/completed-objectives.json`, `patches/global-project-context.json`, `patches/project-context.json`, `patches/global-qa-context.json` and `patches/project-qa-context.json`, with successful current QA and explicit closure for the single `objectives[0].objective_id`; implementation evidence is additionally required only when implementation changes are claimed; lifecycle-only/no-op closure may use empty Git change evidence;
+27. `implementation-closure` includes `patches/completed-objectives.json`, `patches/global-project-context.json` and `patches/global-qa-context.json` for every target; project-scoped targets additionally include `patches/project-context.json` and `patches/project-qa-context.json`, while `sbm-suite-context` forbids those project-scoped patches; successful current QA and explicit closure are required for the single `objectives[0].objective_id`; implementation evidence is additionally required only when implementation changes are claimed; lifecycle-only/no-op closure may use empty Git change evidence;
 28. `implementation-closure` manifest contains `qa.status` equal to `passed` or `success`, supported by explicit successful `qa-results.md` evidence;
 29. every `replace_section` preserves unrelated rows and no partial table is included;
 30. `append_to_section` appears only in an explicitly authorized historical target;

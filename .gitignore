@@ -17,3 +17,7 @@ documentation/backup/*
 !documentation/backup/.gitkeep
 
 project-tree.txt
+
+
+.env.dev
+.env.prod
