@@ -1,6 +1,6 @@
 # ☸️ DevOps & Platform Engineering
 
-> **Last updated:** 2026-08-07
+> **Last updated:** 2026-08-10
 >
 > **Purpose:**
 >
@@ -256,6 +256,7 @@ The documentation upgrade validator additionally requires exact metadata labels,
 
 ## 12. Roadmap
 
+- `OBJ-CTX-013` — Corregir y validar el workflow de documentación de `SBM-SUITE/context`, incluyendo `documentation-deploy.sh`, `documentation-upgrade.sh` y el flujo completo posterior a `context-upgrade`. Estado: `pending`; prioridad: `5`; target date: `N/A`; branch: `BUGFIX-fixes-context-documentation-workflow`.
 - Complete and validate `SBM-MANAGER` lifecycle integration across context and documentation workflows, QA/SonarQube evidence, and the canonical `sbm-ai-assistant` project contract before promoting it to current-state documentation.
 - Implement asynchronous workflow orchestration when approved.
 - Add downstream Notion synchronization without changing Git ownership.
