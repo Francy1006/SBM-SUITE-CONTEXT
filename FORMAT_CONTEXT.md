@@ -50,6 +50,8 @@
 36. Lifecycle field values must be plain literal table-cell values. Never wrap `objective_id`, `objective`, `status`, `priority`, `target_date` or `branch` in Markdown formatting such as backticks, bold, italics, links or code spans.
 37. `execution_mode` is independent from `lifecycle_phase`. `USER_PROMPT.md` is required only when `execution_mode=user-guided` and forbidden when `execution_mode=evidence`; `planning-activation` alone must never force `USER_PROMPT.md`.
 38. `sbm-suite-context` is a suite-scoped lifecycle target. Its operational objective and QA state live directly in global `SBM-SUITE/context/PROJECT_CONTEXT.md` and `SBM-SUITE/context/QA_CONTEXT.md`. Project-scoped patches (`project-context`, `project-qa-context`, `project-deploy-context`, `project-readme`) are forbidden for this target. Global objective rows for this target use `Project = SBM-SUITE`.
+39. Every Markdown table must be one continuous block: no blank line is allowed between its header row, separator row or any data rows belonging to that table.
+40. When adding rows to an existing Markdown table, all new rows must form one contiguous block immediately after its last existing data row and before any blank line, prose, heading or later section. Never create a second visually similar row block outside the table. This applies to every table and especially to the lifecycle `Pending objectives`, `Active objectives` and `Completed objectives` tables.
 
 ---
 
@@ -1106,6 +1108,8 @@ Every context export and upgrade workflow must:
 88. Require every project `target_file` to match the exact repository-relative mapping published for the selected project. The patch archive contract below exposes exactly one concrete project mapping set as the backend format-validation anchor; this anchor does not select the runtime project. The actual project mapping for each run comes from the source manifest/backend Project Registry. Current repository roots include `SBM-SUITE/dp/DP-API/` for `dp-api`, `SBM-SUITE/sbm/SBM-MANAGER/` for `sbm-manager`, and `SBM-SUITE/sbm/SBM-DB/` for `sbm-db`. Never derive `target_file` by string manipulation of `canonical_project_path`.
 89. Generate only patch files listed in `supported_patch_paths`.
 90. Require the output `contract_version` to equal the source manifest `contract_version`.
+91. Reject any Markdown table containing a blank line between its header, separator or data rows.
+92. Require all new rows added to an existing Markdown table to form one contiguous block immediately after the last existing data row and before any blank line, prose, heading or later section; reject detached or second row blocks, especially in `Pending objectives`, `Active objectives` and `Completed objectives` lifecycle tables.
 
 
 ### Patch archive contract

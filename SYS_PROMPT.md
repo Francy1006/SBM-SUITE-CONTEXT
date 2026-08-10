@@ -507,6 +507,9 @@ Before including a patch file, verify all of the following:
 16. no partial table is present;
 17. the patch filename appears in `manifest.supported_patch_paths`;
 18. every project-scoped `target_file` matches the exact repository-relative mapping for the selected `project_name`, independently of the runtime value in `manifest.canonical_project_path`; `dp-api` uses `SBM-SUITE/dp/DP-API/...`, `sbm-manager` uses `SBM-SUITE/sbm/SBM-MANAGER/...`, and `sbm-db` uses `SBM-SUITE/sbm/SBM-DB/...`. `sbm-suite-context` uses `SBM-SUITE/context/...` suite-scoped targets only and forbids every project-scoped patch.
+19. every Markdown table is one continuous block with no blank line between its header row, separator row or data rows;
+20. all new rows added to an existing table form one contiguous block immediately after its last existing data row and before any blank line, prose, heading or later section;
+21. no operation creates a second visually similar row block outside the intended table, especially for lifecycle `Pending objectives`, `Active objectives` and `Completed objectives` tables.
 
 If a complete snapshot of the target section is unavailable, exclude the patch instead of generating a partial section. If any operation fails, exclude that operation. If a patch has no valid operations after validation, exclude the patch file. Report every omission and its reason in `EXECUTIVE_README.md`.
 
@@ -545,6 +548,9 @@ Rules:
 - `replace_section` replaces exactly one existing section identified by its exact heading;
 - `replace_section` returns the complete section and preserves every unrelated row;
 - `replace_section` must never return a partial table or remove another objective, another global QA project, or an unrelated reusable component;
+- every Markdown table must remain a single continuous block: never place a blank line between its header, separator or data rows;
+- when adding rows to an existing table, all new rows must form one contiguous block immediately after its last existing data row and before any blank line, prose, heading or later section;
+- never emit a second visually similar block of rows outside the intended table; apply this rule to all tables and especially to lifecycle `Pending objectives`, `Active objectives` and `Completed objectives` tables;
 - `append_to_section` is allowed only for historical sections explicitly authorized by `FORMAT_CONTEXT.md`;
 - `append_to_section` is forbidden for operational objectives, current QA, `SUITE_CONTEXT.md`, README files and every current-state section;
 - `patches/completed-objectives.json` must contain exactly one operation targeting `## 1. Completed objectives by project`;
@@ -1421,6 +1427,7 @@ Before returning `context-upgrade.zip`, verify:
 30. `append_to_section` appears only in an explicitly authorized historical target;
 31. `patches/completed-objectives.json` uses `append_to_section` only for a missing canonical project group and `replace_section` only for one existing canonical project group;
 32. every generated patch appears in `supported_patch_paths`.
+33. every Markdown table is continuous, all new rows form one contiguous block inside the intended table immediately after the last existing row, and no blank line or detached row block splits lifecycle `Pending objectives`, `Active objectives` or `Completed objectives` tables.
 
 If any ZIP-level validation fails, do not generate the archive.
 
