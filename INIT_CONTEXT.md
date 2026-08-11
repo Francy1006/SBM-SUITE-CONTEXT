@@ -23,6 +23,9 @@ When this file is first read in a new conversation, respond only with:
 ```text
 SBM LLM
 
+DIRECTORIO DE EJECUCIÓN
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
+
 Bienvenido a SBM Agent. Indique qué desea hacer:
 
 1.- Resumen de SBM-SUITE
@@ -43,6 +46,12 @@ Do not request files before the user selects an option.
 ## 3. Mandatory loading flow
 
 After the user selects any main-menu option:
+
+0. Treat `/Users/franciscomendoza/Documents/DEV/SBM-SUITE/context` as the working directory for the complete Context and Documentation management session. Before any critical Context or Documentation command, print and execute exactly:
+
+```bash
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
+```
 
 1. Request `context.zip` containing the complete current local folder:
 
@@ -545,15 +554,15 @@ ACTUALIZAR CONTEXTO QA
 5. For progress, provide:
 
 ```bash
-context_root="<resolved-relative-path-to-SBM-SUITE/context>"
-(cd "${context_root}" && ./scripts/context-deploy.sh "<project_name>" implementation-progress '[{"objective_id":"<objective_id>"}]')
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
+./scripts/context-deploy.sh "<project_name>" implementation-progress '[{"objective_id":"<objective_id>"}]'
 ```
 
 6. For closure, provide only when all required QA gates evidenced by the current run passed:
 
 ```bash
-context_root="<resolved-relative-path-to-SBM-SUITE/context>"
-(cd "${context_root}" && ./scripts/context-deploy.sh "<project_name>" implementation-closure '[{"objective_id":"<objective_id>"}]')
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
+./scripts/context-deploy.sh "<project_name>" implementation-closure '[{"objective_id":"<objective_id>"}]'
 ```
 
 7. If QA failed or the required Quality Gate is unavailable, do not offer closure; allow only progress registration.
@@ -619,9 +628,9 @@ ADVERTENCIAS
 
 Rules:
 
-- Run every Context and Documentation workflow exclusively from `SBM-SUITE/context` using its global `scripts/` directory. Never invoke a project-local lifecycle script.
+- Run every Context and Documentation workflow exclusively from `/Users/franciscomendoza/Documents/DEV/SBM-SUITE/context` using its global `scripts/` directory. Every critical command block must begin with the literal `cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context`; never invoke a project-local lifecycle script.
 - Resolve the selected project through the current Project Registry evidence and pass its literal `project_name` to each deploy script. Upgrade scripts obtain `project_name` from their input ZIP manifest.
-- Do not require `qa-check.sh` for `planning-activation`.
+- Do not require `qa-check.sh` for objective creation (`planning-activation`) or pending activation (`objective-activation`).
 - Do not execute QA automatically from the Context menu.
 - Show the QA reminder only before objective closure and only when the selected project defines `scripts/qa-check.sh` or its current contract requires QA evidence.
 - Repeat the high-model warning before reading or generating a large or critical archive.
@@ -747,12 +756,14 @@ EJECUCIÓN
 20. The batch is atomic: all confirmed objectives must be represented in the generated context upgrade or none may be applied.
 21. Objective branches are lifecycle metadata. A Git execution branch used to apply the context/documentation change is separate from every objective's planned implementation branch.
 22. For `CON GIT - branch nueva`, generate one temporary lifecycle branch using the normal branch nomenclature, for example `FEATURE-updates-objective-batch`. Never reuse one objective's implementation branch as the batch execution branch.
-23. Never use host/container absolute paths in user-facing commands or instructions.
+23. Use the literal host path `/Users/franciscomendoza/Documents/DEV/SBM-SUITE/context` only for the required initial `cd`; after it, use paths relative to that directory and never construct alternate host/container paths.
 
 `CON GIT - main`:
 
 ```bash
 set -euo pipefail
+
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
 
 [[ -z "$(git status --short)" ]] || {
   echo "ERROR: El repositorio contiene cambios locales."
@@ -763,14 +774,15 @@ git checkout main
 git pull --ff-only origin main
 
 objectives='<objectives-json-array>'
-context_root="<resolved-relative-path-to-SBM-SUITE/context>"
-(cd "${context_root}" && ./scripts/context-deploy.sh "<project_name>" planning-activation "${objectives}")
+./scripts/context-deploy.sh "<project_name>" planning-activation "${objectives}"
 ```
 
 `CON GIT - branch nueva`:
 
 ```bash
 set -euo pipefail
+
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
 
 [[ -z "$(git status --short)" ]] || {
   echo "ERROR: El repositorio contiene cambios locales."
@@ -784,8 +796,7 @@ execution_branch='<generated-lifecycle-branch>'
 git checkout -b "${execution_branch}"
 
 objectives='<objectives-json-array>'
-context_root="<resolved-relative-path-to-SBM-SUITE/context>"
-(cd "${context_root}" && ./scripts/context-deploy.sh "<project_name>" planning-activation "${objectives}")
+./scripts/context-deploy.sh "<project_name>" planning-activation "${objectives}"
 ```
 
 `SIN GIT`:
@@ -793,14 +804,14 @@ context_root="<resolved-relative-path-to-SBM-SUITE/context>"
 ```bash
 set -euo pipefail
 
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
 objectives='<objectives-json-array>'
-context_root="<resolved-relative-path-to-SBM-SUITE/context>"
-(cd "${context_root}" && ./scripts/context-deploy.sh "<project_name>" planning-activation "${objectives}")
+./scripts/context-deploy.sh "<project_name>" planning-activation "${objectives}"
 ```
 
 After the command succeeds:
 
-- request `<context_root>/output/context-deploy-package.zip`;
+- request `output/context-deploy-package.zip`;
 - require the exported source manifest to preserve the frozen `objectives[]` array exactly;
 - generate/apply one `context-upgrade.zip` for the complete batch;
 - require every generated project/global objective row to match the frozen manifest fields exactly;
@@ -913,19 +924,31 @@ EJECUCIÓN
 Action mapping:
 
 ```text
-Activate pending → planning-activation '[<full-current-objective-object>]'
+Activate pending → objective-activation '[<full-objective-with-status-active>]'
 Progress         → implementation-progress '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
 Closure          → implementation-closure '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
 ```
 
-20. `Activate pending` must send the complete current objective fields from source-of-truth context: `objective_id`, `objective`, `status`, `priority`, `target_date`, `branch`.
-21. `Progress` and `Closure` currently operate on exactly one objective per execution.
-22. Never use absolute host/container paths in generated commands.
+20. `Activate pending` is an existing-objective transition, never objective creation. It must verify that the selected ID exists exactly once with current status `pending`, reject missing, `active`, completed or otherwise invalid IDs, and send exactly one complete objective item with desired `status=active`.
+21. For `Activate pending`, preserve `objective_id`, `objective`, `priority`, `target_date` and `branch` literally from source-of-truth context. Change only `status` from `pending` to `active`; never send the existing `status=pending` value and never insert a second row.
+22. Before confirmation, show a transition preview containing the selected ID, `pending → active`, and the preserved branch without asking again for known objective data.
+23. `Progress` and `Closure` currently operate on exactly one objective per execution.
+24. Begin every generated lifecycle command block with the literal canonical `cd` and use only paths relative to that directory afterward.
+
+For `Activate pending`, the command rendered in any selected execution mode must resolve to this lifecycle call with the complete preserved payload:
+
+```bash
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
+objectives='[{"objective_id":"<existing-pending-id>","objective":"<literal-current-objective>","status":"active","priority":<literal-current-priority>,"target_date":"<literal-current-target-date>","branch":"<literal-current-branch>"}]'
+./scripts/context-deploy.sh "<project_name>" objective-activation "${objectives}"
+```
 
 `CON GIT - main`:
 
 ```bash
 set -euo pipefail
+
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
 
 [[ -z "$(git status --short)" ]] || {
   echo "ERROR: El repositorio contiene cambios locales."
@@ -936,8 +959,7 @@ git checkout main
 git pull --ff-only origin main
 
 objectives='<objectives-json-array>'
-context_root="<resolved-relative-path-to-SBM-SUITE/context>"
-(cd "${context_root}" && ./scripts/context-deploy.sh "<project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"])
+./scripts/context-deploy.sh "<project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"]
 ```
 
 Use this only when the lifecycle operation is intentionally being performed from `main`.
@@ -946,6 +968,8 @@ Use this only when the lifecycle operation is intentionally being performed from
 
 ```bash
 set -euo pipefail
+
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
 
 [[ -z "$(git status --short)" ]] || {
   echo "ERROR: El repositorio contiene cambios locales."
@@ -963,8 +987,7 @@ else
 fi
 
 objectives='<objectives-json-array>'
-context_root="<resolved-relative-path-to-SBM-SUITE/context>"
-(cd "${context_root}" && ./scripts/context-deploy.sh "<project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"])
+./scripts/context-deploy.sh "<project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"]
 ```
 
 For an existing objective, the branch always comes from loaded context. Never ask for or invent it.
@@ -974,9 +997,9 @@ For an existing objective, the branch always comes from loaded context. Never as
 ```bash
 set -euo pipefail
 
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
 objectives='<objectives-json-array>'
-context_root="<resolved-relative-path-to-SBM-SUITE/context>"
-(cd "${context_root}" && ./scripts/context-deploy.sh "<project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"])
+./scripts/context-deploy.sh "<project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"]
 ```
 
 Do not commit or push after `context-upgrade`. Continue the applicable documentation workflow first. Commit/push only after successful `documentation-upgrade`.
@@ -990,10 +1013,10 @@ ADVERTENCIA
 Este proceso lee y valida archivos críticos. Use ChatGPT Pro con razonamiento Muy alta para generar context-upgrade.zip.
 ```
 
-Resolve `context_root` as the repository-relative path from the selected project repository to `SBM-SUITE/context`. For current project-scoped repositories this is normally `../../context`; for `sbm-suite-context` it is `.`. Place the generated upgrade at:
+Keep the working directory fixed at `/Users/franciscomendoza/Documents/DEV/SBM-SUITE/context`. Place the generated upgrade at:
 
 ```text
-<context_root>/input/context-upgrade.zip
+input/context-upgrade.zip
 ```
 
 Never place the ZIP in a project-local `context/input/` directory.
@@ -1001,15 +1024,15 @@ Never place the ZIP in a project-local `context/input/` directory.
 Then provide exactly:
 
 ```bash
-context_root="<resolved-relative-path-to-SBM-SUITE/context>"
-(cd "${context_root}" && ./scripts/context-upgrade.sh)
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
+./scripts/context-upgrade.sh
 ```
 
 Validate the returned output before claiming any context was updated.
 
 #### Context option 5 — Ver artefactos generados
 
-Show paths relative to the selected project repository, using the resolved `context_root` for every global workflow artifact.
+Show all global workflow artifacts relative to `/Users/franciscomendoza/Documents/DEV/SBM-SUITE/context`.
 
 For any selected project repository at:
 
@@ -1021,9 +1044,9 @@ use:
 
 ```text
 context/qa-results.md
-<context_root>/output/context-deploy-package.zip
-<context_root>/input/context-upgrade.zip
-<context_root>/output/context-upgrade-response.json
+output/context-deploy-package.zip
+input/context-upgrade.zip
+output/context-upgrade-response.json
 ```
 
 Resolve `<group>` and `<project>` from current evidence. Do not reuse a path belonging to another project.
@@ -1034,16 +1057,16 @@ Explain:
 context/qa-results.md
 → current project QA evidence
 
-<context_root>/output/context-deploy-package.zip
+output/context-deploy-package.zip
 → the only file uploaded to ChatGPT; it contains:
    - context-export-response.json
    - context-package.zip
    - SYS_PROMPT.md
 
-<context_root>/input/context-upgrade.zip
+input/context-upgrade.zip
 → upgrade package consumed by context-upgrade.sh
 
-<context_root>/output/context-upgrade-response.json
+output/context-upgrade-response.json
 → context-upgrade execution result
 ```
 
@@ -1054,7 +1077,7 @@ Never infer that an artifact exists; require current evidence.
 After `context-deploy.sh` succeeds, request only:
 
 ```text
-<context_root>/output/context-deploy-package.zip
+output/context-deploy-package.zip
 ```
 
 Do not request its three internal files separately.
@@ -1079,7 +1102,7 @@ Read the embedded `SYS_PROMPT.md` as the authoritative generation contract and t
 Generate exactly the ZIP filename required by the contract. The user places it in the global Context input directory:
 
 ```text
-<context_root>/input/context-upgrade.zip
+input/context-upgrade.zip
 ```
 
 Use the global Context scripts and the backend Project Registry mapping as the only workflow authority.
@@ -1087,21 +1110,22 @@ Use the global Context scripts and the backend Project Registry mapping as the o
 Then instruct:
 
 ```bash
-context_root="<resolved-relative-path-to-SBM-SUITE/context>"
-(cd "${context_root}" && ./scripts/context-upgrade.sh)
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
+./scripts/context-upgrade.sh
 ```
 
 Validate:
 
 ```text
-<context_root>/output/context-upgrade-response.json
+output/context-upgrade-response.json
 ```
 
 before suggesting a commit.
 
 Lifecycle continuation:
 
-- after `planning-activation` + successful `context-upgrade.sh`, continue the objective creation/activation flow with `documentation-deploy.sh` and `documentation-upgrade.sh`;
+- after objective creation through `planning-activation` + successful `context-upgrade.sh`, continue planning documentation with `documentation-deploy.sh` and `documentation-upgrade.sh`;
+- after pending activation through `objective-activation` + successful `context-upgrade.sh`, continue documentation reconciliation with the same preserved objective now `active`;
 - during that planning documentation stage, an `active` or `pending` objective may appear only in authorized planning, roadmap or pending-work sections and must never be represented as implemented, validated or completed;
 - after successful planning documentation upgrade, preserve the selected objective status exactly (`active` or `pending`); begin implementation only when the objective is `active`;
 - after `implementation-progress` + successful `context-upgrade.sh`, continue implementation; do not represent progress as completed implementation;
@@ -1123,7 +1147,7 @@ Workflow:
 2. Determine the applicable objective lifecycle state.
 3. Planning documentation may describe only planned/roadmap/pending work and must preserve objective status.
 4. Final documentation requires implementation/closure/QA evidence before representing a change as current state.
-5. Never use host/container absolute paths.
+5. Use `/Users/franciscomendoza/Documents/DEV/SBM-SUITE/context` only as the explicit working-directory `cd`; every subsequent workflow and artifact path must be relative to it.
 6. Before `documentation-deploy.sh`, ask exactly:
 
 ```text
@@ -1141,13 +1165,14 @@ EJECUCIÓN
 ```bash
 set -euo pipefail
 
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
+
 [[ "$(git branch --show-current)" == "main" ]] || {
   echo "ERROR: El flujo CON GIT - main debe continuar sobre main."
   exit 1
 }
 
-context_root="<resolved-relative-path-to-SBM-SUITE/context>"
-(cd "${context_root}" && ./scripts/documentation-deploy.sh "<project_name>")
+./scripts/documentation-deploy.sh "<project_name>"
 ```
 
 `CON GIT - branch nueva`:
@@ -1155,14 +1180,15 @@ context_root="<resolved-relative-path-to-SBM-SUITE/context>"
 ```bash
 set -euo pipefail
 
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
+
 branch="<execution-branch>"
 [[ "$(git branch --show-current)" == "${branch}" ]] || {
   echo "ERROR: El flujo debe continuar sobre ${branch}."
   exit 1
 }
 
-context_root="<resolved-relative-path-to-SBM-SUITE/context>"
-(cd "${context_root}" && ./scripts/documentation-deploy.sh "<project_name>")
+./scripts/documentation-deploy.sh "<project_name>"
 ```
 
 When documentation continues a Context lifecycle flow, reuse the branch already selected before implementation/context processing. Do not require a clean working tree here because implementation/context/documentation changes are committed together only after successful `documentation-upgrade`. For a standalone documentation operation, prepare `main` or the new branch before making documentation changes, then use the same continuation-safe command.
@@ -1170,19 +1196,19 @@ When documentation continues a Context lifecycle flow, reuse the branch already 
 `SIN GIT`:
 
 ```bash
-context_root="<resolved-relative-path-to-SBM-SUITE/context>"
-(cd "${context_root}" && ./scripts/documentation-deploy.sh "<project_name>")
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
+./scripts/documentation-deploy.sh "<project_name>"
 ```
 
-8. Request the generated documentation package using only the relative path published by the script.
-9. Generate the required `documentation-upgrade.zip`, place it at the script-defined relative input path and execute:
+8. Request the generated package at `documentation/output/documentation-package.zip`.
+9. Generate the required `documentation-upgrade.zip`, place it at `documentation/input/documentation-upgrade.zip` and execute:
 
 ```bash
-context_root="<resolved-relative-path-to-SBM-SUITE/context>"
-(cd "${context_root}" && ./scripts/documentation-upgrade.sh)
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
+./scripts/documentation-upgrade.sh
 ```
 
-10. Validate the relative `documentation-upgrade-response.json`.
+10. Validate `documentation/output/documentation-upgrade-response.json`.
 11. **Git commit/push happens only after successful `documentation-upgrade`.** This rule applies to planning, progress and closure; it is not limited to objective closure.
 12. When the selected execution mode uses Git, consolidate commit/push and, for a lifecycle branch, merge to `main` after documentation reconciliation.
 
@@ -1191,10 +1217,9 @@ After successful `documentation-upgrade`, `CON GIT - main`:
 ```bash
 set -euo pipefail
 
-suite_root="<resolved-relative-path-to-SBM-SUITE>"
-context_root="${suite_root}/context"
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
 commit_message_file="$(
-  python3 - "${context_root}/documentation/output/documentation-upgrade-response.json" <<'PY'
+  python3 - documentation/output/documentation-upgrade-response.json <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -1205,9 +1230,10 @@ payload = json.loads(
 print(payload["commit_message_file"])
 PY
 )"
+commit_message_file="${commit_message_file#context/}"
 
 git add -A
-git commit -F "${suite_root}/${commit_message_file}"
+git commit -F "${commit_message_file}"
 git push origin main
 ```
 
@@ -1216,11 +1242,10 @@ After successful `documentation-upgrade`, `CON GIT - branch nueva`:
 ```bash
 set -euo pipefail
 
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
 branch="$(git branch --show-current)"
-suite_root="<resolved-relative-path-to-SBM-SUITE>"
-context_root="${suite_root}/context"
 commit_message_file="$(
-  python3 - "${context_root}/documentation/output/documentation-upgrade-response.json" <<'PY'
+  python3 - documentation/output/documentation-upgrade-response.json <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -1231,9 +1256,10 @@ payload = json.loads(
 print(payload["commit_message_file"])
 PY
 )"
+commit_message_file="${commit_message_file#context/}"
 
 git add -A
-git commit -F "${suite_root}/${commit_message_file}"
+git commit -F "${commit_message_file}"
 git push -u origin "${branch}"
 
 git checkout main
@@ -1265,22 +1291,27 @@ Respond only with:
 ```text
 AYUDA
 
+Directorio de ejecución
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
+
 Nuevo proyecto SBM
 git clone <git_url> ../SBM/<project>
 
 Contexto
-context_root="<resolved-relative-path-to-SBM-SUITE/context>"
-(cd "${context_root}" && ./scripts/context-deploy.sh "<project_name>" planning-activation '<objectives-json-array>' ["<user_prompt>"])
-(cd "${context_root}" && ./scripts/context-deploy.sh "<project_name>" implementation-progress '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"])
-(cd "${context_root}" && ./scripts/context-deploy.sh "<project_name>" implementation-closure '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"])
-(cd "${context_root}" && ./scripts/context-upgrade.sh)
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
+./scripts/context-deploy.sh "<project_name>" planning-activation '<objectives-json-array>' ["<user_prompt>"]
+./scripts/context-deploy.sh "<project_name>" objective-activation '[<full-objective-with-status-active>]' ["<user_prompt>"]
+./scripts/context-deploy.sh "<project_name>" implementation-progress '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
+./scripts/context-deploy.sh "<project_name>" implementation-closure '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
+./scripts/context-upgrade.sh
 
 QA
 ./scripts/qa-check.sh
 
 Documentación
-(cd "${context_root}" && ./scripts/documentation-deploy.sh "<project_name>")
-(cd "${context_root}" && ./scripts/documentation-upgrade.sh)
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
+./scripts/documentation-deploy.sh "<project_name>"
+./scripts/documentation-upgrade.sh
 
 0.- Volver al menú principal
 ```
@@ -1336,6 +1367,7 @@ Example presentation:
 - For existing objectives, obtain the branch from the selected objective context; never ask for or invent it.
 - For a newly created objective, use only the branch already generated and explicitly confirmed in the creation preview.
 - For project-scoped creation, accumulate objectives first, confirm once as a group, freeze the confirmed `objectives[]` payload, then execute exactly one `planning-activation` batch command. Preserve every confirmed objective field literally through export, generation and upgrade. After successful context/documentation reconciliation, offer another batch or exit.
+- For an existing pending objective, use only `objective-activation`, preserve every lifecycle field except `status`, send desired `status=active`, and reject creation semantics.
 - The final output of objective management is the exact applicable lifecycle command for the selected execution mode.
 
 ## 7. Return to menu

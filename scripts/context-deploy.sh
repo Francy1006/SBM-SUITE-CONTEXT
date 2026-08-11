@@ -5,12 +5,17 @@ usage() {
   cat <<'EOF'
 Uso:
   ./scripts/context-deploy.sh <project_name> planning-activation '<objectives-json-array>' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> objective-activation '<objectives-json-array>' [user_prompt]
   ./scripts/context-deploy.sh <project_name> implementation-progress '<objectives-json-array>' [user_prompt]
   ./scripts/context-deploy.sh <project_name> implementation-closure '<objectives-json-array>' [user_prompt]
 
 planning-activation:
   - acepta uno o más objetivos;
   - cada objetivo requiere: objective_id, objective, status, priority, target_date, branch.
+
+objective-activation:
+  - requiere exactamente un objetivo pending existente;
+  - el payload conserva todos sus campos y solicita status=active.
 
 implementation-progress / implementation-closure:
   - actualmente requieren exactamente un objetivo.
@@ -34,7 +39,7 @@ else
 fi
 
 case "${LIFECYCLE_PHASE}" in
-  planning-activation|implementation-progress|implementation-closure) ;;
+  planning-activation|objective-activation|implementation-progress|implementation-closure) ;;
   *)
     echo "ERROR: Fase no válida: ${LIFECYCLE_PHASE}" >&2
     usage >&2
@@ -141,7 +146,7 @@ for index, objective in enumerate(objectives, start=1):
         raise SystemExit(f"ERROR: objectives[{index}].objective_id inválido")
     ids.append(objective_id)
 
-    if phase == "planning-activation":
+    if phase in {"planning-activation", "objective-activation"}:
         missing = sorted(required_planning - set(objective))
         if missing:
             raise SystemExit(
@@ -156,8 +161,14 @@ for index, objective in enumerate(objectives, start=1):
 
         if not isinstance(description, str) or not description.strip():
             raise SystemExit(f"ERROR: objectives[{index}].objective es obligatorio")
-        if status not in {"active", "pending"}:
-            raise SystemExit(f"ERROR: objectives[{index}].status debe ser active o pending")
+        allowed_statuses = (
+            {"active"} if phase == "objective-activation" else {"active", "pending"}
+        )
+        if status not in allowed_statuses:
+            expected = "active" if phase == "objective-activation" else "active o pending"
+            raise SystemExit(
+                f"ERROR: objectives[{index}].status debe ser {expected}"
+            )
         if isinstance(priority, bool) or not isinstance(priority, int) or not 0 <= priority <= 5:
             raise SystemExit(f"ERROR: objectives[{index}].priority debe ser 0-5")
         if target_date != "N/A":
@@ -295,6 +306,26 @@ if [[ "${PROJECT_NAME}" == "sbm-suite-context" ]]; then
   QA_RESULTS_FILE="${PROJECT_ROOT}/qa-results.md"
 else
   QA_RESULTS_FILE="${PROJECT_ROOT}/context/qa-results.md"
+fi
+
+if [[ "${LIFECYCLE_PHASE}" == "objective-activation" ]]; then
+  ACTIVATION_VALIDATOR="${SCRIPT_DIR}/objective_lifecycle.py"
+  [[ -f "${ACTIVATION_VALIDATOR}" ]] || {
+    echo "ERROR: No existe ${ACTIVATION_VALIDATOR}" >&2
+    exit 1
+  }
+  ACTIVATION_CONTEXT_ARGS=(
+    --operational-context "${CONTEXT_ROOT}/PROJECT_CONTEXT.md"
+  )
+  if [[ "${PROJECT_NAME}" != "sbm-suite-context" ]]; then
+    ACTIVATION_CONTEXT_ARGS+=(
+      --operational-context "${PROJECT_ROOT}/context/PROJECT_CONTEXT.md"
+    )
+  fi
+  python3 "${ACTIVATION_VALIDATOR}" \
+    --objectives-json "${NORMALIZED_OBJECTIVES}" \
+    --completed-context "${CONTEXT_ROOT}/COMPLETED_OBJECTIVES.md" \
+    "${ACTIVATION_CONTEXT_ARGS[@]}"
 fi
 
 mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}"

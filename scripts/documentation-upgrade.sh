@@ -75,6 +75,13 @@ ZIP_COUNT="$(
   exit 1
 }
 
+DOCUMENTATION_UPGRADE_VALIDATOR="${CONTEXT_ROOT}/scripts/validate_documentation_upgrade.py"
+[[ -f "${DOCUMENTATION_UPGRADE_VALIDATOR}" ]] || {
+  echo "ERROR: No existe ${DOCUMENTATION_UPGRADE_VALIDATOR}"
+  exit 1
+}
+python3 "${DOCUMENTATION_UPGRADE_VALIDATOR}" "${UPGRADE_ZIP}"
+
 PROJECT_NAME="$(
   python3 - "${UPGRADE_ZIP}" <<'PY'
 import json

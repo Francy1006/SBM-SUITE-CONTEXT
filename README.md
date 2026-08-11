@@ -50,16 +50,23 @@ No standalone installation is required for the Markdown contracts. All manual Co
 
 `context-deploy` receives a registered project name, validates its canonical path through the backend Project Registry, refreshes the global `project-tree.txt`, gathers Git and QA evidence from that project, and requests the RAG package. `context-upgrade` obtains the project from the ZIP manifest and applies project-scoped or suite-scoped rules accordingly. Documentation deploy uses the origin project's Git/QA evidence while reconciling the complete global active, pending and completed objective state; Documentation may lag behind Context without invalidating Context.
 
+Objective creation uses `planning-activation`. Activating an objective that already exists as pending uses `objective-activation` with the complete objective payload expressing desired `status=active`; that transition preserves ID, description, priority, target date and branch and never inserts a second objective.
+
 ## Usage
 
 Use `input/` and `output/` for the global context workflow. Active and pending objectives remain in project and global `PROJECT_CONTEXT.md` files. Completed objectives are stored only in global `COMPLETED_OBJECTIVES.md`. Documentation pages live only below `documentation/pages/<page>/`, with subpages below `documentation/pages/<page>/subpages/`.
 
 ```bash
+cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
 ./scripts/context-deploy.sh <project_name> <lifecycle_phase> '<objectives-json-array>' [user_prompt]
 ./scripts/context-upgrade.sh
 ./scripts/documentation-deploy.sh <project_name>
 ./scripts/documentation-upgrade.sh
 ```
+
+All Context and Documentation commands and artifact paths are relative to this working directory.
+
+Supported lifecycle phases are `planning-activation` (new objectives), `objective-activation` (one existing `pending → active` transition), `implementation-progress`, and `implementation-closure`.
 
 Every successful context upgrade writes one backup to `backup/<timestamp>_<project>/`, including original files, `EXECUTIVE_README.md`, `COMMIT_MESSAGE.md`, and `BACKUP_MANIFEST.json`.
 
@@ -74,6 +81,8 @@ Keep this README suite-level. Update it only for structural, architectural, shar
 ## Validation
 
 Validate exact headings and tables, objective synchronization, completed-objective append-only history, authorized targets, repository-relative paths, manifest/file agreement, SHA-256 hashes, backup contents, and absence of secrets before applying an upgrade.
+
+Before contacting the backend, `documentation-upgrade.sh` rejects any archive unless `manifest.updated_files` equals the complete set of physical non-manifest ZIP files and reports both undeclared physical files and declared paths missing from the ZIP.
 
 ## Security
 

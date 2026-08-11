@@ -98,15 +98,31 @@ HTTP_STATUS="$(
 python3 - \
   "${UPGRADE_ZIP}" \
   "${CONTRACT_FILE}" \
-  "${PROJECT_NAME}" <<'PY'
+  "${PROJECT_NAME}" \
+  "${CONTEXT_ROOT}" \
+  "${SBM_SUITE_ROOT}" \
+  "${SCRIPT_DIR}/objective_lifecycle.py" <<'PY'
 import json
 import re
 import sys
 from datetime import date
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from zipfile import BadZipFile, ZipFile
 
-zip_path, contract_path, project_name = sys.argv[1:]
+(
+    zip_path,
+    contract_path,
+    project_name,
+    context_root,
+    suite_root,
+    lifecycle_helper,
+) = sys.argv[1:]
+sys.path.insert(0, str(Path(lifecycle_helper).parent))
+from objective_lifecycle import (  # noqa: E402
+    ObjectiveLifecycleError,
+    resolve_project_root,
+    validate_activation,
+)
 
 try:
     contract = json.loads(open(contract_path, encoding="utf-8").read())
@@ -202,7 +218,7 @@ for index, objective in enumerate(objectives, start=1):
         raise SystemExit(f"ERROR: manifest.objectives[{index}].objective_id inválido")
     ids.append(objective_id)
 
-    if phase == "planning-activation":
+    if phase in {"planning-activation", "objective-activation"}:
         missing = sorted(required_planning - set(objective))
         if missing:
             raise SystemExit(
@@ -211,7 +227,10 @@ for index, objective in enumerate(objectives, start=1):
             )
         if not isinstance(objective.get("objective"), str) or not objective["objective"].strip():
             raise SystemExit(f"ERROR: manifest.objectives[{index}].objective inválido")
-        if objective.get("status") not in {"active", "pending"}:
+        allowed_statuses = (
+            {"active"} if phase == "objective-activation" else {"active", "pending"}
+        )
+        if objective.get("status") not in allowed_statuses:
             raise SystemExit(f"ERROR: manifest.objectives[{index}].status inválido")
 
         priority = objective.get("priority")
@@ -237,6 +256,22 @@ if len(ids) != len(set(ids)):
     raise SystemExit("ERROR: manifest.objectives contiene IDs duplicados")
 if phase != "planning-activation" and len(objectives) != 1:
     raise SystemExit(f"ERROR: {phase} actualmente requiere exactamente un objetivo")
+
+if phase == "objective-activation":
+    try:
+        project_root = resolve_project_root(Path(suite_root), expected_canonical)
+        operational_contexts = [Path(context_root) / "PROJECT_CONTEXT.md"]
+        if project_name != "sbm-suite-context":
+            operational_contexts.append(
+                project_root / "context" / "PROJECT_CONTEXT.md"
+            )
+        validate_activation(
+            objectives,
+            operational_contexts,
+            Path(context_root) / "COMPLETED_OBJECTIVES.md",
+        )
+    except ObjectiveLifecycleError as exc:
+        raise SystemExit(f"ERROR: {exc}") from exc
 
 if manifest.get("output_filename") != "context-upgrade.zip":
     raise SystemExit("ERROR: manifest.output_filename debe ser context-upgrade.zip")

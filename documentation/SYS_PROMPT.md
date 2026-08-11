@@ -433,7 +433,7 @@ Complete these steps in order before creating the ZIP:
 10. Preserve every required section and all unchanged content not affected by supported evidence.
 11. Validate the complete replacement against every applicable `FORMAT_CONTEXT.md` rule.
 12. Exclude any documentation file that fails validation.
-13. Build `manifest.json` from the final valid ZIP contents only.
+13. Freeze the final non-manifest ZIP member list, then build `manifest.json` from those exact repository-relative archive paths only.
 14. Calculate SHA-256 hashes from the exact final file bytes.
 15. Revalidate ZIP paths, manifest entries, hashes and file contents.
 16. Return `documentation-upgrade.zip` only after every global validation passes.
@@ -862,7 +862,8 @@ Manifest rules:
 - `output_filename` must be exactly `documentation-upgrade.zip`;
 - `documentation_root` must be `documentation`;
 - `allowed_files` lists every output path authorized by this prompt;
-- `updated_files` lists only files included in the ZIP;
+- `updated_files` equals the complete set of physical ZIP files except `manifest.json`; it is not a subset and has no metadata-file exception;
+- when present in the ZIP, `COMMIT_MESSAGE.md`, `EXECUTIVE_README.md` and `USER_PROMPT.md` must appear in `updated_files` exactly like documentation pages;
 - all documentation output paths begin with `documentation/`;
 - `content_hashes` uses SHA-256;
 - every included file except `manifest.json` has a hash;
@@ -897,19 +898,21 @@ Construct the output manifest from scratch after all valid output files are fina
 Rules:
 
 1. `allowed_files` contains only paths permitted to appear in the output ZIP.
-2. `updated_files` contains only files physically present in the ZIP.
+2. Finalize every non-manifest output file first, using its exact repository-relative archive path without normalization or rewriting; then set `updated_files` to that complete final path list.
 3. `allowed_files` must not contain input evidence, protected files or workflow contracts.
 4. `updated_files` must not contain `manifest.json`.
 5. `USER_PROMPT.md` is included only in `user-guided` mode.
 6. Every documentation path begins with `documentation/`.
 7. Every documentation path corresponds to an existing authorized source file.
-8. `content_hashes` contains one SHA-256 hash for every included file except `manifest.json`.
+8. `content_hashes` contains one SHA-256 hash for every included file except `manifest.json`, so its key set equals `updated_files` exactly.
 9. Hash keys match ZIP paths exactly.
 10. No path may be absolute, duplicated, empty, contain `..` or reference a symlink.
 11. Commit metadata must match `COMMIT_MESSAGE.md`.
 12. RAG metadata must reflect only supplied retrieval evidence.
 13. Evidence metadata must reference only files supplied in the input package.
-14. The manifest must describe the final ZIP exactly.
+14. The manifest must describe the final ZIP exactly: `set(updated_files) == set(all physical ZIP files except manifest.json)`.
+15. `COMMIT_MESSAGE.md` and `EXECUTIVE_README.md` are mandatory physical members and therefore mandatory `updated_files` entries; `USER_PROMPT.md` follows the same rule whenever included.
+16. Reject duplicate entries and any difference caused by path normalization, alternate separators, flattened paths or spelling/case changes.
 
 Any mismatch invalidates the entire ZIP.
 
@@ -937,7 +940,7 @@ Before generating the ZIP, verify:
 18. directory structure is not flattened;
 19. every output path is unique;
 20. `allowed_files` contains no protected or evidence-only path;
-21. `updated_files` matches the physical ZIP contents exactly;
+21. `set(manifest.updated_files)` equals `set(all physical ZIP files except manifest.json)` exactly, including `COMMIT_MESSAGE.md`, `EXECUTIVE_README.md`, optional `USER_PROMPT.md` and every generated Documentation page;
 22. every required hash matches the exact final file bytes;
 23. no source-manifest output list was copied;
 24. every documentation file is a complete replacement;

@@ -135,6 +135,7 @@ Read `lifecycle_phase` and `objectives` from the source manifest. Both are manda
 
 ```text
 planning-activation
+objective-activation
 implementation-progress
 implementation-closure
 ```
@@ -156,6 +157,7 @@ apply this suite-scoped lifecycle contract. It overrides every generic project-l
 - project-scoped patches are forbidden: `patches/project-context.json`, `patches/project-qa-context.json`, `patches/project-deploy-context.json`, `patches/project-readme.json`;
 - operational objectives live only in `SBM-SUITE/context/PROJECT_CONTEXT.md`; global objective rows use the literal project value `SBM-SUITE`;
 - `planning-activation` requires `patches/global-project-context.json` only for objective synchronization;
+- `objective-activation` requires `patches/global-project-context.json` only and moves the single existing objective from Pending objectives to Active objectives without creating another row;
 - `implementation-progress` preserves the objective in global `PROJECT_CONTEXT.md` and uses only applicable suite-scoped patches;
 - `implementation-closure` requires `patches/completed-objectives.json`, `patches/global-project-context.json` and `patches/global-qa-context.json`; project-scoped closure patches are forbidden;
 - completed history uses canonical project heading `### SBM-SUITE`;
@@ -204,6 +206,34 @@ Required behavior:
 - do not append to `COMPLETED_OBJECTIVES.md`;
 - prohibit `patches/completed-objectives.json`;
 - do not claim implementation or validation.
+
+### objective-activation
+
+Use only to activate exactly one objective that already exists with current status `pending`. This phase is a lifecycle transition, never objective creation.
+
+The single `objectives[0]` item must contain all six lifecycle fields and must express the desired state:
+
+```text
+objective_id=<existing pending ID>
+objective=<literal current objective>
+status=active
+priority=<literal current priority>
+target_date=<literal current target date>
+branch=<literal current branch>
+```
+
+Required validation and behavior:
+
+- prove from every applicable complete operational `PROJECT_CONTEXT.md` snapshot that `objective_id` exists exactly once in Pending objectives with `Status=pending`;
+- reject an absent ID, an ID already in Active objectives, an ID present in completed history, a duplicate ID or any other current state;
+- require desired `status=active` in the source manifest;
+- preserve `objective_id`, `objective`, `priority`, `target_date` and `branch` exactly from the pending row; reject any divergence;
+- remove exactly that row from Pending objectives and add exactly one corresponding row to Active objectives, changing only `Status` from `pending` to `active`;
+- for project-scoped targets, perform that transition in both project and global operational contexts in the same archive;
+- for `sbm-suite-context`, perform it only in global `PROJECT_CONTEXT.md` with `Project=SBM-SUITE`;
+- preserve every unrelated active and pending row in its original order;
+- never use insertion-only creation behavior, never duplicate the objective and never append completed history;
+- prohibit `patches/completed-objectives.json` and do not claim implementation, QA or closure.
 
 ### implementation-progress
 
@@ -437,7 +467,8 @@ Execute these steps in order. Do not skip, merge or reorder them.
 2. Read the supplied input `manifest.json` completely.
    - validate `contract_version`, `supported_patch_paths`, repository-relative `canonical_project_path`, `lifecycle_phase`, `execution_mode` and `objectives` before reading implementation evidence;
    - reject the workflow if `lifecycle_phase`, `execution_mode` or `objectives` is absent or invalid;
-   - for `planning-activation`, freeze the validated `objectives[]` array and use it as the only authority for all six objective lifecycle fields; no later evidence or prompt may mutate those fields;
+   - for `planning-activation`, freeze the validated creation `objectives[]` array and use it as the only authority for all six objective lifecycle fields;
+   - for `objective-activation`, require one existing pending objective, desired `status=active`, and freeze the five non-status lifecycle values exactly as evidenced in current operational context;
    - validate `canonical_project_path` against the selected project's backend Project Registry mapping, use that project's exact repository-relative mapping for every project `target_file`, and never concatenate `project_name`;
 3. Separate all package entries into exactly four groups:
    - protected workflow contracts;
@@ -750,6 +781,13 @@ Objective creation rules:
 - `Target date` is optional and uses `YYYY-MM-DD`;
 - `Documentation` lists only repository-relative documentation paths likely to require final update;
 - planned work must never be described as implemented, validated or deployed.
+
+Objective activation rules:
+
+- during `objective-activation`, transition exactly one existing row from `## 4. Pending objectives` to `## 3. Active objectives`;
+- require the source-manifest item to contain desired `status=active` and the literal existing ID, objective, priority, target date and branch;
+- use complete `replace_section` operations for both affected sections, preserving every unrelated row and continuous Markdown tables;
+- reject creation of a second row, an ID absent from Pending objectives, an already-active ID and any completed ID.
 
 Objective closure rules:
 
@@ -1326,8 +1364,8 @@ Mandatory ZIP manifest set contract:
 - every generated patch path must appear in `supported_patch_paths`;
 - `canonical_project_path` must exactly match the repository-relative root published for `project_name` by the source manifest/backend Project Registry;
 - project `target_file` values must use the exact repository-relative mappings for the selected project and must never be constructed from `project_name` or the runtime path;
-- `lifecycle_phase` must be present and equal `planning-activation`, `implementation-progress` or `implementation-closure`;
-- `objectives` must be a non-empty array with unique valid `objective_id` values; `planning-activation` requires the full objective fields and allows multiple items; other phases currently require exactly one item;
+- `lifecycle_phase` must be present and equal `planning-activation`, `objective-activation`, `implementation-progress` or `implementation-closure`;
+- `objectives` must be a non-empty array with unique valid `objective_id` values; `planning-activation` requires full objective fields and allows multiple new items; `objective-activation` requires exactly one full item with desired `status=active`; progress and closure currently require exactly one item;
 - `qa` must be an object when `lifecycle_phase` is `implementation-closure`;
 - `qa.status` must be exactly `passed` or `success` for `implementation-closure`, derived only from explicit successful evidence in `qa-results.md`;
 - omit `qa` or use a non-success status for other phases unless explicit evidence requires it;
@@ -1419,18 +1457,20 @@ Before returning `context-upgrade.zip`, verify:
 20. the applying workflow is contractually bound to `SBM-SUITE/context/backup/<timestamp>_<project>/` and the required `BACKUP_MANIFEST.json` contents;
 21. `FORMAT_CONTEXT.md` and every `SYS_PROMPT.md` remain protected and absent from patches;
 22. `planning-activation` synchronizes project + global operational objectives for project-scoped targets and global operational objectives only for `sbm-suite-context`, without creating completed history;
-23. `implementation-closure` removes the objective from operational contexts and appends it only to global `COMPLETED_OBJECTIVES.md`;
-24. no project-level `COMPLETED_OBJECTIVES.md` is generated;
-25. `planning-activation` preserves the source-manifest `execution_mode`, requires `USER_PROMPT.md` only for `user-guided`, forbids it for `evidence`, preserves every validated `manifest.objectives[]` field exactly, and forbids `patches/completed-objectives.json`;
-26. `implementation-progress` forbids `patches/completed-objectives.json` and objective closure;
-27. `implementation-closure` includes `patches/completed-objectives.json`, `patches/global-project-context.json` and `patches/global-qa-context.json` for every target; project-scoped targets additionally include `patches/project-context.json` and `patches/project-qa-context.json`, while `sbm-suite-context` forbids those project-scoped patches; successful current QA and explicit closure are required for the single `objectives[0].objective_id`; implementation evidence is additionally required only when implementation changes are claimed; lifecycle-only/no-op closure may use empty Git change evidence;
-28. `implementation-closure` manifest contains `qa.status` equal to `passed` or `success`, supported by explicit successful `qa-results.md` evidence;
-29. every `replace_section` preserves unrelated rows and no partial table is included;
-30. `append_to_section` appears only in an explicitly authorized historical target;
-31. `patches/completed-objectives.json` uses `append_to_section` only for a missing canonical project group and `replace_section` only for one existing canonical project group;
-32. every generated patch appears in `supported_patch_paths`.
-33. every Markdown table is continuous, all new rows form one contiguous block inside the intended table immediately after the last existing row, and no blank line or detached row block splits lifecycle `Pending objectives`, `Active objectives` or `Completed objectives` tables.
-34. the selected project and every project-scoped target remain those published by the backend Project Registry; global orchestration from `SBM-SUITE/context` does not convert a normal project into the suite-scoped `sbm-suite-context` target.
+23. `objective-activation` validates one existing pending objective, requires desired `status=active`, preserves its other lifecycle fields literally, removes it from Pending objectives and inserts it exactly once in Active objectives in every applicable operational context;
+24. `implementation-closure` removes the objective from operational contexts and appends it only to global `COMPLETED_OBJECTIVES.md`;
+25. no project-level `COMPLETED_OBJECTIVES.md` is generated;
+26. `planning-activation` preserves the source-manifest `execution_mode`, requires `USER_PROMPT.md` only for `user-guided`, forbids it for `evidence`, preserves every validated creation field exactly, and forbids `patches/completed-objectives.json`;
+27. `objective-activation` rejects missing, already-active and completed IDs, never creates a duplicate row and forbids `patches/completed-objectives.json`;
+28. `implementation-progress` forbids `patches/completed-objectives.json` and objective closure;
+29. `implementation-closure` includes `patches/completed-objectives.json`, `patches/global-project-context.json` and `patches/global-qa-context.json` for every target; project-scoped targets additionally include `patches/project-context.json` and `patches/project-qa-context.json`, while `sbm-suite-context` forbids those project-scoped patches; successful current QA and explicit closure are required for the single `objectives[0].objective_id`; implementation evidence is additionally required only when implementation changes are claimed; lifecycle-only/no-op closure may use empty Git change evidence;
+30. `implementation-closure` manifest contains `qa.status` equal to `passed` or `success`, supported by explicit successful `qa-results.md` evidence;
+31. every `replace_section` preserves unrelated rows and no partial table is included;
+32. `append_to_section` appears only in an explicitly authorized historical target;
+33. `patches/completed-objectives.json` uses `append_to_section` only for a missing canonical project group and `replace_section` only for one existing canonical project group;
+34. every generated patch appears in `supported_patch_paths`.
+35. every Markdown table is continuous, all new rows form one contiguous block inside the intended table immediately after the last existing row, and no blank line or detached row block splits lifecycle `Pending objectives`, `Active objectives` or `Completed objectives` tables.
+36. the selected project and every project-scoped target remain those published by the backend Project Registry; global orchestration from `SBM-SUITE/context` does not convert a normal project into the suite-scoped `sbm-suite-context` target.
 
 If any ZIP-level validation fails, do not generate the archive.
 

@@ -452,8 +452,9 @@ qa-check.sh
 → execute SonarScanner only after successful test and coverage execution
 → write bounded evidence to context/qa-results.md
 
-context-deploy.sh <lifecycle_phase> <objective_id> [user_prompt]
-→ validate planning-activation, implementation-progress or implementation-closure
+context-deploy.sh <project_name> <lifecycle_phase> <objectives-json-array> [user_prompt]
+→ validate planning-activation, objective-activation, implementation-progress or implementation-closure
+→ reserve planning-activation for new objectives and objective-activation for one existing pending → active transition
 → request GET /contexts/contract and validate the runtime contract
 → clean suite-global exchange directories only after contract preflight
 → generate and require project-tree.txt

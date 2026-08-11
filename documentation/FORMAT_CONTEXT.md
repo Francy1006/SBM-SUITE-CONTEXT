@@ -63,6 +63,10 @@
 46. Lifecycle values copied into Documentation must remain literal and must not be wrapped in Markdown formatting.
 47. Every Markdown table must remain one continuous block with no blank line between its header, separator or data rows. All new rows must form one contiguous block immediately after the last existing row and before any blank line, prose, heading or later section; detached or second row blocks are forbidden.
 48. Manual Context and Documentation orchestration remains synchronous under `SBM-SUITE/context`; do not introduce flags, queues or asynchronous processing.
+49. Build `manifest.updated_files` only after every final non-manifest output file has been selected and assigned its exact repository-relative ZIP path.
+50. For `documentation-upgrade.zip`, require `set(manifest.updated_files) == set(all physical ZIP files except manifest.json)`; subset or superset relationships are invalid.
+51. `COMMIT_MESSAGE.md`, `EXECUTIVE_README.md`, optional `USER_PROMPT.md` and every Documentation page are ordinary non-manifest ZIP files for this equality and must never be omitted from `updated_files` when included.
+52. Reject duplicate, normalized, flattened, case-altered or otherwise inconsistent ZIP and manifest paths.
 
 
 ---
@@ -831,7 +835,7 @@ Every documentation export and upgrade workflow must:
 28. Reject incomplete Markdown replacements, fragments, patches and summaries.
 29. Reject output manifests copied or partially copied from the input manifest.
 30. Reject `allowed_files` entries that are not permitted output paths.
-31. Reject `updated_files` entries that are not physically present in the ZIP.
+31. Require `updated_files` to contain all and only the physical ZIP files except `manifest.json`; reject both undeclared physical files and declared paths absent from the ZIP.
 32. Reject ZIP files containing input evidence, protected files, context files or workflow contracts.
 33. Reject mismatches among ZIP paths, `allowed_files`, `updated_files` and `content_hashes`.
 34. Reject missing, incorrect or duplicate SHA-256 hashes.
@@ -870,6 +874,10 @@ Every documentation export and upgrade workflow must:
 66. Reject formatted or altered lifecycle values copied from Context.
 67. Reject any Markdown table split by a blank line or any new table rows that do not form one contiguous block immediately after the last existing row.
 68. Preserve synchronous manual orchestration and forbid new flags, queues or asynchronous processing.
+69. Construct `updated_files` from the frozen final non-manifest ZIP member list, never from a candidate, partial, source-manifest or pre-validation list.
+70. Require `COMMIT_MESSAGE.md` and `EXECUTIVE_README.md` in `updated_files` for every valid Documentation upgrade and require `USER_PROMPT.md` there whenever it is physically included.
+71. Require every generated `documentation/...` replacement physically included in the ZIP to appear exactly once in `updated_files` with the identical archive path.
+72. Reject a Documentation upgrade locally and in the backend whenever the `updated_files` set differs from the physical non-manifest ZIP member set.
 
 
 ---
