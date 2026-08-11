@@ -1,6 +1,6 @@
 # ☸️ DevOps & Platform Engineering
 
-> **Last updated:** 2026-08-10
+> **Last updated:** 2026-08-11
 >
 > **Purpose:**
 >
@@ -43,6 +43,13 @@ The supplied Git evidence for the current closure identifies changes in:
 The evidence-based QA procedure and lifecycle-aware context workflow covered by `DP-QA-001` remain implemented and closed.
 
 For `DP-TEST-001`, the current evidence supports a lifecycle-only/no-op closure: the objective was removed from the project active-objective section and project QA context now records explicit closure evidence. No source-code, runtime, API, database or other implementation change is evidenced or claimed for this objective.
+
+Validated lifecycle state from current global Context:
+
+| Objective ID | Project | Status | Validation |
+|---|---|---|---|
+| DP-QA-001 | DP-API | completed | Historical closure evidence records the completed QA procedure and its validated scope. |
+| DP-TEST-001 | DP-API | completed | Lifecycle-only/no-op closure with current QA evidence; no implementation-state change claimed. |
 
 Current workflow behavior includes:
 
@@ -256,7 +263,7 @@ The documentation upgrade validator additionally requires exact metadata labels,
 
 ## 12. Roadmap
 
-- `OBJ-CTX-013` — Corregir y validar el workflow de documentación de `SBM-SUITE/context`, incluyendo `documentation-deploy.sh`, `documentation-upgrade.sh` y el flujo completo posterior a `context-upgrade`. Estado: `pending`; prioridad: `5`; target date: `N/A`; branch: `BUGFIX-fixes-context-documentation-workflow`.
+- OBJ-CTX-013 — Corregir y validar el workflow de documentación de `SBM-SUITE/context`, incluyendo `documentation-deploy.sh`, `documentation-upgrade.sh` y el flujo completo posterior a `context-upgrade`. Estado: active; prioridad: 5; target date: N/A; branch: BUGFIX-fixes-context-documentation-workflow.
 - Complete and validate `SBM-MANAGER` lifecycle integration across context and documentation workflows, QA/SonarQube evidence, and the canonical `sbm-ai-assistant` project contract before promoting it to current-state documentation.
 - Implement asynchronous workflow orchestration when approved.
 - Add downstream Notion synchronization without changing Git ownership.

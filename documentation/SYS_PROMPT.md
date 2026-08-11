@@ -25,6 +25,8 @@ Global Context is authoritative for current objective lifecycle state across all
 
 An objective present in Context but absent from Documentation is a synchronization difference, not an invalid Context state. Preserve all unrelated documentation and omit replacements for files that are already synchronized.
 
+The source package for a real reconciliation must contain at least one functional candidate under `documentation/pages/`; `FORMAT_CONTEXT.md` and `SYS_PROMPT.md` are protected contracts and never count as Documentation candidates. When Context and Documentation are already synchronized, `documentation-deploy` must terminate with `Documentation already synchronized` and must not produce or request a metadata-only upgrade.
+
 For active or pending objectives, update only authorized planning or roadmap content supported by the supplied evidence.
 
 For completed objectives, document completed, tangible and validated implementation only when implementation evidence exists. For lifecycle-only/no-op closure, document only supported QA, validation, roadmap or workflow-state changes and do not invent implementation changes.
@@ -437,6 +439,8 @@ Complete these steps in order before creating the ZIP:
 14. Calculate SHA-256 hashes from the exact final file bytes.
 15. Revalidate ZIP paths, manifest entries, hashes and file contents.
 16. Return `documentation-upgrade.zip` only after every global validation passes.
+17. Require at least one complete authorized candidate snapshot and at least one generated replacement under `documentation/pages/` for every real upgrade.
+18. Never generate a ZIP containing only `COMMIT_MESSAGE.md`, `EXECUTIVE_README.md`, optional `USER_PROMPT.md` and `manifest.json`; zero functional candidates is a no-op that must have terminated during deploy.
 
 Do not skip, reorder or partially execute this procedure.
 
@@ -800,6 +804,8 @@ COMMIT_MESSAGE.md
 manifest.json
 ```
 
+For every generated `documentation-upgrade.zip`, also include at least one complete replacement below `documentation/pages/`. Root metadata files and protected workflow contracts alone never constitute a valid Documentation upgrade.
+
 Include `USER_PROMPT.md` only in `user-guided` mode.
 
 Do not include:
@@ -959,11 +965,16 @@ Before generating the ZIP, verify:
 37. missing Documentation entries were treated as synchronization differences and did not invalidate Context;
 38. unrelated documentation and objectives were preserved, and already synchronized files were omitted;
 39. lifecycle values remain literal and every Markdown table remains one continuous block with all new rows contiguous after the last existing row;
+40. the source package contains at least one real `documentation/pages/...` candidate and the output ZIP contains at least one corresponding `documentation/pages/...` replacement;
+41. protected `FORMAT_CONTEXT.md` and `SYS_PROMPT.md` were not counted as functional candidates;
+42. a synchronized no-op did not produce a metadata-only `documentation-upgrade.zip`.
 
 If any file-level validation fails, omit that documentation file and report the exact limitation in `EXECUTIVE_README.md`.
 
 If any global ZIP, manifest, path, authorization or hash validation fails, do not generate `documentation-upgrade.zip`.
 
-Do not include explanations outside the ZIP.
+If the source package contains zero functional Documentation candidates, do not generate any upgrade ZIP. Return only `Documentation already synchronized`; the deploy workflow should normally have handled this condition before package generation.
+
+For a real upgrade, do not include explanations outside the ZIP. The exact no-op response `Documentation already synchronized` is the only exception when no ZIP is generated.
 
 The ZIP must contain only files explicitly permitted by this prompt.

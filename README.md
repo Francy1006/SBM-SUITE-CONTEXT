@@ -48,7 +48,7 @@ No standalone installation is required for the Markdown contracts. All manual Co
 
 ## Runtime
 
-`context-deploy` receives a registered project name, validates its canonical path through the backend Project Registry, refreshes the global `project-tree.txt`, gathers Git and QA evidence from that project, and requests the RAG package. `context-upgrade` obtains the project from the ZIP manifest and applies project-scoped or suite-scoped rules accordingly. Documentation deploy uses the origin project's Git/QA evidence while reconciling the complete global active, pending and completed objective state; Documentation may lag behind Context without invalidating Context.
+`context-deploy` receives a registered project name, validates its canonical path through the backend Project Registry, refreshes the global `project-tree.txt`, gathers Git and QA evidence from that project, and requests the RAG package. `context-upgrade` obtains the project from the ZIP manifest and applies project-scoped or suite-scoped rules accordingly. Documentation deploy is global: it compares the complete active, pending and completed Context lifecycle with all functional Documentation pages, selects real candidates across projects and uses `sbm-suite-context` only as an internal backend identity.
 
 Objective creation uses `planning-activation`. Activating an objective that already exists as pending uses `objective-activation` with the complete objective payload expressing desired `status=active`; that transition preserves ID, description, priority, target date and branch and never inserts a second objective.
 
@@ -56,15 +56,18 @@ Objective creation uses `planning-activation`. Activating an objective that alre
 
 Use `input/` and `output/` for the global context workflow. Active and pending objectives remain in project and global `PROJECT_CONTEXT.md` files. Completed objectives are stored only in global `COMPLETED_OBJECTIVES.md`. Documentation pages live only below `documentation/pages/<page>/`, with subpages below `documentation/pages/<page>/subpages/`.
 
+Execute from the local repository root `SBM-SUITE/context`:
+
 ```bash
-cd /Users/franciscomendoza/Documents/DEV/SBM-SUITE/context
 ./scripts/context-deploy.sh <project_name> <lifecycle_phase> '<objectives-json-array>' [user_prompt]
 ./scripts/context-upgrade.sh
-./scripts/documentation-deploy.sh <project_name>
+./scripts/documentation-deploy.sh
 ./scripts/documentation-upgrade.sh
 ```
 
 All Context and Documentation commands and artifact paths are relative to this working directory.
+
+When Documentation is already synchronized, deploy exits successfully with `Documentation already synchronized` and does not create a package that would lead to a metadata-only upgrade.
 
 Supported lifecycle phases are `planning-activation` (new objectives), `objective-activation` (one existing `pending → active` transition), `implementation-progress`, and `implementation-closure`.
 

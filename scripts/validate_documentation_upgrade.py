@@ -94,6 +94,17 @@ def validate_documentation_upgrade(zip_path: str) -> dict[str, object]:
             )
         raise DocumentationUpgradeValidationError("; ".join(details))
 
+    documentation_files = sorted(
+        path
+        for path in physical_files
+        if path.startswith("documentation/pages/") and path.endswith(".md")
+    )
+    if not documentation_files:
+        raise DocumentationUpgradeValidationError(
+            "documentation-upgrade.zip debe contener al menos un archivo "
+            "Markdown funcional bajo documentation/pages/"
+        )
+
     return manifest
 
 

@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-usage() {
-  echo "Uso: ./scripts/documentation-deploy.sh <project_name>"
-}
+CONTEXT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_FILE="${CONTEXT_ROOT}/.env.dev"
 
-[[ "$#" == "1" ]] || {
-  usage >&2
+[[ "$#" == "0" ]] || {
+  echo "Uso: ./scripts/documentation-deploy.sh" >&2
   exit 1
 }
 
-PROJECT_NAME="$1"
-CONTEXT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ENV_FILE="${CONTEXT_ROOT}/.env.dev"
-SBM_SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
+[[ -f "${ENV_FILE}" ]] || {
+  echo "ERROR: No existe ${ENV_FILE}"
+  exit 1
+}
 
 get_env() {
   local key="$1"
@@ -29,27 +28,44 @@ get_env() {
   ' "${ENV_FILE}"
 }
 
-AI_ASSISTANT_URL="${AI_ASSISTANT_URL:-}"
-if [[ -z "${AI_ASSISTANT_URL}" && -f "${ENV_FILE}" ]]; then
-  AI_ASSISTANT_URL="$(get_env AI_ASSISTANT_URL)"
-fi
-if [[ -z "${AI_ASSISTANT_URL}" ]]; then
-  for candidate in \
-    "${SBM_SUITE_ROOT}/SBM/sbm-ai-assistant/.env.dev" \
-    "${SBM_SUITE_ROOT}/sbm/sbm-ai-assistant/.env.dev"
-  do
-    if [[ -f "${candidate}" ]]; then
-      ENV_FILE="${candidate}"
-      AI_ASSISTANT_URL="$(get_env AI_ASSISTANT_URL)"
-      break
-    fi
-  done
-fi
+PROJECT_NAME="$(get_env DOPPLER_PROJECT)"
+AI_ASSISTANT_URL="$(get_env AI_ASSISTANT_URL)"
+SBM_SUITE_ROOT_RAW="$(get_env SBM_SUITE_ROOT)"
+
+[[ "${PROJECT_NAME}" == "sbm-suite-context" ]] || {
+  echo "ERROR: DOPPLER_PROJECT debe ser sbm-suite-context"
+  exit 1
+}
 
 [[ -n "${AI_ASSISTANT_URL}" ]] || {
   echo "ERROR: Falta AI_ASSISTANT_URL"
   exit 1
 }
+
+[[ -n "${SBM_SUITE_ROOT_RAW}" ]] || {
+  echo "ERROR: Falta SBM_SUITE_ROOT"
+  exit 1
+}
+
+resolve_suite_root() {
+  local configured_path="$1"
+  local candidate
+
+  if [[ "${configured_path}" = /* ]]; then
+    candidate="${configured_path}"
+  else
+    candidate="${CONTEXT_ROOT}/${configured_path}"
+  fi
+
+  [[ -d "${candidate}" ]] || {
+    echo "ERROR: No existe SBM_SUITE_ROOT resuelto en ${candidate}" >&2
+    return 1
+  }
+
+  (cd "${candidate}" && pwd)
+}
+
+SBM_SUITE_ROOT="$(resolve_suite_root "${SBM_SUITE_ROOT_RAW}")"
 
 [[ "${CONTEXT_ROOT}" == "${SBM_SUITE_ROOT}/context" ]] || {
   echo "ERROR: CONTEXT_ROOT no corresponde a ${SBM_SUITE_ROOT}/context"
@@ -62,73 +78,13 @@ OUTPUT_DIR="${DOCUMENTATION_ROOT}/output"
 FORMAT_CONTEXT_FILE="${DOCUMENTATION_ROOT}/FORMAT_CONTEXT.md"
 SYSTEM_PROMPT_FILE="${DOCUMENTATION_ROOT}/SYS_PROMPT.md"
 QA_RESULTS_FILE="${CONTEXT_ROOT}/QA_CONTEXT.md"
-RESPONSE_FILE="${OUTPUT_DIR}/documentation-export-response.json"
 PROJECT_TREE_SCRIPT="${CONTEXT_ROOT}/project-tree.sh"
 PROJECT_TREE_FILE="${CONTEXT_ROOT}/project-tree.txt"
-
-CONTRACT_FILE="$(mktemp)"
-GLOBAL_CONTEXT_FILE="$(mktemp)"
-trap 'rm -f "${CONTRACT_FILE}" "${GLOBAL_CONTEXT_FILE}"' EXIT
-
-HTTP_STATUS="$(
-  curl --silent --show-error \
-    --output "${CONTRACT_FILE}" \
-    --write-out "%{http_code}" \
-    --request GET \
-    "${AI_ASSISTANT_URL%/}/contexts/contract"
-)"
-
-[[ "${HTTP_STATUS}" == "200" ]] || {
-  echo "ERROR: /contexts/contract HTTP ${HTTP_STATUS}" >&2
-  exit 1
-}
-
-CANONICAL_PROJECT_PATH="$(
-  python3 - "${CONTRACT_FILE}" "${PROJECT_NAME}" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-contract = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-project_name = sys.argv[2]
-projects = contract.get("canonical_projects")
-if not isinstance(projects, dict) or project_name not in projects:
-    raise SystemExit(f"ERROR: {project_name} no está publicado por Project Registry")
-canonical = projects[project_name]
-if not isinstance(canonical, str) or not canonical:
-    raise SystemExit(f"ERROR: mapping canónico inválido para {project_name}")
-print(canonical)
-PY
-)"
-
-PROJECT_ROOT="$(
-  python3 - "${SBM_SUITE_ROOT}" "${CANONICAL_PROJECT_PATH}" <<'PY'
-import os
-import sys
-from pathlib import Path, PurePosixPath
-
-suite_root = Path(sys.argv[1]).resolve(strict=True)
-canonical = PurePosixPath(sys.argv[2])
-if canonical.is_absolute() or ".." in canonical.parts:
-    raise SystemExit("ERROR: canonical_project_path no es seguro")
-if not canonical.parts or canonical.parts[0] != suite_root.name:
-    raise SystemExit("ERROR: canonical_project_path no pertenece a SBM-SUITE")
-candidate = (suite_root.parent / Path(*canonical.parts)).resolve(strict=True)
-if os.path.commonpath((suite_root, candidate)) != str(suite_root):
-    raise SystemExit("ERROR: PROJECT_ROOT escapa de SBM-SUITE")
-if not candidate.is_dir():
-    raise SystemExit("ERROR: PROJECT_ROOT no es un directorio")
-print(candidate)
-PY
-)"
-
-if [[ "${PROJECT_NAME}" == "sbm-suite-context" ]]; then
-  PROJECT_QA_RESULTS_FILE="${PROJECT_ROOT}/qa-results.md"
-  PROJECT_QA_CONTEXT_FILE="${PROJECT_ROOT}/QA_CONTEXT.md"
-else
-  PROJECT_QA_RESULTS_FILE="${PROJECT_ROOT}/context/qa-results.md"
-  PROJECT_QA_CONTEXT_FILE="${PROJECT_ROOT}/context/QA_CONTEXT.md"
-fi
+RESPONSE_FILE="${OUTPUT_DIR}/documentation-export-response.json"
+PACKAGE_FILE="${OUTPUT_DIR}/documentation-package.zip"
+RECONCILIATION_HELPER="${CONTEXT_ROOT}/scripts/documentation_reconciliation.py"
+RECONCILIATION_FILE="$(mktemp)"
+trap 'rm -f "${RECONCILIATION_FILE}"' EXIT
 
 [[ -f "${FORMAT_CONTEXT_FILE}" ]] || {
   echo "ERROR: No existe ${FORMAT_CONTEXT_FILE}"
@@ -139,8 +95,9 @@ fi
   echo "ERROR: No existe ${SYSTEM_PROMPT_FILE}"
   exit 1
 }
-[[ -x "${PROJECT_TREE_SCRIPT}" ]] || {
-  echo "ERROR: ${PROJECT_TREE_SCRIPT} no está disponible/ejecutable"
+
+[[ -f "${RECONCILIATION_HELPER}" ]] || {
+  echo "ERROR: No existe ${RECONCILIATION_HELPER}"
   exit 1
 }
 
@@ -149,140 +106,65 @@ mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}"
 find "${INPUT_DIR}" -mindepth 1 ! -name ".gitkeep" -delete
 find "${OUTPUT_DIR}" -mindepth 1 ! -name ".gitkeep" -delete
 
-cd "${CONTEXT_ROOT}"
-"${PROJECT_TREE_SCRIPT}"
-[[ -f "${PROJECT_TREE_FILE}" ]] || {
-  echo "ERROR: No se generó ${PROJECT_TREE_FILE}"
+[[ -f "${PROJECT_TREE_SCRIPT}" ]] || {
+  echo "ERROR: No existe ${PROJECT_TREE_SCRIPT}"
   exit 1
 }
 
-python3 - \
-  "${CONTEXT_ROOT}/PROJECT_CONTEXT.md" \
-  "${CONTEXT_ROOT}/COMPLETED_OBJECTIVES.md" \
-  "${PROJECT_TREE_FILE}" \
-  "${DOCUMENTATION_ROOT}/pages" \
-  "${GLOBAL_CONTEXT_FILE}" <<'PY'
-import hashlib
+[[ -x "${PROJECT_TREE_SCRIPT}" ]] || {
+  echo "ERROR: ${PROJECT_TREE_SCRIPT} no es ejecutable"
+  exit 1
+}
+
+"${PROJECT_TREE_SCRIPT}"
+
+[[ -f "${PROJECT_TREE_FILE}" ]] || {
+  echo "ERROR: No existe ${PROJECT_TREE_FILE}"
+  exit 1
+}
+
+python3 "${RECONCILIATION_HELPER}" \
+  --project-context "${CONTEXT_ROOT}/PROJECT_CONTEXT.md" \
+  --completed-context "${CONTEXT_ROOT}/COMPLETED_OBJECTIVES.md" \
+  --documentation-root "${DOCUMENTATION_ROOT}" \
+  --project-tree "${PROJECT_TREE_FILE}" \
+  --output "${RECONCILIATION_FILE}"
+
+RECONCILIATION_PENDING="$(
+  python3 - "${RECONCILIATION_FILE}" <<'PY'
 import json
-import re
 import sys
 from pathlib import Path
 
-project_context_path, completed_path, tree_path, pages_path, output_path = map(
-    Path, sys.argv[1:]
-)
-
-def read_required(path: Path) -> str:
-    if path.is_symlink() or not path.is_file():
-        raise SystemExit(f"ERROR: Context evidence inválida: {path}")
-    return path.read_text(encoding="utf-8")
-
-def section(markdown: str, heading: str) -> str:
-    match = re.search(
-        rf"^{re.escape(heading)}\s*$.*?(?=^##\s+|\Z)",
-        markdown,
-        flags=re.MULTILINE | re.DOTALL,
-    )
-    if match is None:
-        raise SystemExit(f"ERROR: Falta sección global obligatoria: {heading}")
-    return match.group(0).strip()
-
-project_context = read_required(project_context_path)
-completed_context = read_required(completed_path)
-project_tree = read_required(tree_path).strip()
-
-evidence = [
-    (
-        "SBM-SUITE/context/PROJECT_CONTEXT.md",
-        "## 3. Active objectives",
-        section(project_context, "## 3. Active objectives"),
-    ),
-    (
-        "SBM-SUITE/context/PROJECT_CONTEXT.md",
-        "## 4. Pending objectives",
-        section(project_context, "## 4. Pending objectives"),
-    ),
-    (
-        "SBM-SUITE/context/COMPLETED_OBJECTIVES.md",
-        "## 1. Completed objectives by project",
-        section(completed_context, "## 1. Completed objectives by project"),
-    ),
-]
-if project_tree:
-    evidence.append(
-        (
-            "SBM-SUITE/context/project-tree.txt",
-            "Global project tree",
-            project_tree,
-        )
-    )
-
-chunks = []
-for index, (archive_path, heading, content) in enumerate(evidence, start=1):
-    point_id = hashlib.sha256(
-        f"{archive_path}\0{heading}\0{content}".encode("utf-8")
-    ).hexdigest()
-    chunks.append({
-        "point_id": point_id,
-        "source_path": archive_path,
-        "archive_path": archive_path,
-        "section": heading,
-        "score": 1.0 - (index - 1) * 0.001,
-        "content": content,
-    })
-
-targets = []
-for path in sorted(pages_path.rglob("*.md")):
-    markdown = read_required(path)
-    if re.search(r"^## (?:11\. Pending work|12\. Roadmap)\s*$", markdown, re.MULTILINE):
-        relative = path.relative_to(pages_path.parent).as_posix()
-        targets.append(f"documentation/{relative}")
-
-if not targets:
-    raise SystemExit("ERROR: No hay páginas autorizadas de roadmap/pending work")
-
-objective_rows = []
-for _, _, content in evidence[:3]:
-    for line in content.splitlines():
-        stripped = line.strip()
-        if (
-            stripped.startswith("|")
-            and not re.match(r"^\|\s*(?:ID|Objective ID|---)", stripped)
-        ):
-            objective_rows.append(stripped)
-
-summary = (
-    "Reconcile Documentation against the complete current global Context objective "
-    "state across every registered project. Context is authoritative; Documentation "
-    "may lag. Preserve unrelated documentation. Current objective rows:\n"
-    + ("\n".join(objective_rows) if objective_rows else "No objective data rows.")
-)
-
-Path(output_path).write_text(
-    json.dumps(
-        {"chunks": chunks, "documentation_targets": targets, "summary": summary},
-        ensure_ascii=False,
-    ),
-    encoding="utf-8",
-)
+payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+print("false" if payload["synchronized"] else "true")
 PY
+)"
+
+if [[ "${RECONCILIATION_PENDING}" != "true" ]]; then
+  echo "Documentation already synchronized"
+  echo "No se generó documentation/output/documentation-package.zip."
+  exit 0
+fi
+
+cd "${CONTEXT_ROOT}"
 
 GIT_DIFF="$(
   {
-    git -C "${PROJECT_ROOT}" diff --no-ext-diff -- . \
+    git diff --no-ext-diff -- . \
       ':(exclude).env' ':(exclude).env.*' ':(exclude)**/.env' ':(exclude)**/.env.*'
-    git -C "${PROJECT_ROOT}" diff --cached --no-ext-diff -- . \
+    git diff --cached --no-ext-diff -- . \
       ':(exclude).env' ':(exclude).env.*' ':(exclude)**/.env' ':(exclude)**/.env.*'
   } 2>/dev/null
 )"
 
 CHANGED_FILES="$(
   {
-    git -C "${PROJECT_ROOT}" diff --name-only -- . \
+    git diff --name-only -- . \
       ':(exclude).env' ':(exclude).env.*' ':(exclude)**/.env' ':(exclude)**/.env.*'
-    git -C "${PROJECT_ROOT}" diff --cached --name-only -- . \
+    git diff --cached --name-only -- . \
       ':(exclude).env' ':(exclude).env.*' ':(exclude)**/.env' ':(exclude)**/.env.*'
-    git -C "${PROJECT_ROOT}" ls-files --others --exclude-standard
+    git ls-files --others --exclude-standard
   } 2>/dev/null \
     | awk '!/(^|\/)\.env($|\.)/' \
     | sort -u
@@ -300,8 +182,8 @@ else
   CHANGE_SUMMARY="No uncommitted changes detected in ${PROJECT_NAME}."
 fi
 
-GLOBAL_RECONCILIATION_SUMMARY="$(
-  python3 - "${GLOBAL_CONTEXT_FILE}" <<'PY'
+RECONCILIATION_SUMMARY="$(
+  python3 - "${RECONCILIATION_FILE}" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -309,13 +191,9 @@ from pathlib import Path
 print(json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["summary"])
 PY
 )"
-CHANGE_SUMMARY="${CHANGE_SUMMARY} ${GLOBAL_RECONCILIATION_SUMMARY}"
+CHANGE_SUMMARY="${CHANGE_SUMMARY} ${RECONCILIATION_SUMMARY}"
 
-if [[ -f "${PROJECT_QA_RESULTS_FILE}" ]]; then
-  QA_RESULTS="$(cat "${PROJECT_QA_RESULTS_FILE}")"
-elif [[ -f "${PROJECT_QA_CONTEXT_FILE}" ]]; then
-  QA_RESULTS="$(cat "${PROJECT_QA_CONTEXT_FILE}")"
-elif [[ -f "${QA_RESULTS_FILE}" ]]; then
+if [[ -f "${QA_RESULTS_FILE}" ]]; then
   QA_RESULTS="$(cat "${QA_RESULTS_FILE}")"
 else
   QA_RESULTS="No QA results file was supplied for this documentation deployment."
@@ -327,7 +205,7 @@ PAYLOAD="$(
   CHANGED_FILES="${CHANGED_FILES}" \
   GIT_DIFF="${GIT_DIFF}" \
   QA_RESULTS="${QA_RESULTS}" \
-  GLOBAL_CONTEXT_FILE="${GLOBAL_CONTEXT_FILE}" \
+  RECONCILIATION_FILE="${RECONCILIATION_FILE}" \
   python3 <<'PY'
 import json
 import os
@@ -338,9 +216,8 @@ changed_files = [
     for line in os.environ["CHANGED_FILES"].splitlines()
     if line.strip()
 ]
-
-global_context = json.loads(
-    Path(os.environ["GLOBAL_CONTEXT_FILE"]).read_text(encoding="utf-8")
+reconciliation = json.loads(
+    Path(os.environ["RECONCILIATION_FILE"]).read_text(encoding="utf-8")
 )
 
 print(json.dumps({
@@ -350,8 +227,8 @@ print(json.dumps({
     "changed_files": changed_files,
     "git_diff": os.environ["GIT_DIFF"],
     "qa_results": os.environ["QA_RESULTS"],
-    "retrieved_context_chunks": global_context["chunks"],
-    "documentation_targets": global_context["documentation_targets"],
+    "retrieved_context_chunks": reconciliation["retrieved_context_chunks"],
+    "documentation_targets": reconciliation["documentation_targets"],
 }))
 PY
 )"
@@ -364,21 +241,20 @@ printf '%s' "${PAYLOAD}" \
       --data-binary @- \
       --output "${RESPONSE_FILE}"
 
-python3 - "${RESPONSE_FILE}" "${PROJECT_NAME}" <<'PY'
+python3 - "${RESPONSE_FILE}" <<'PY'
 import json
 import sys
 from pathlib import Path
 
 response_path = Path(sys.argv[1])
 payload = json.loads(response_path.read_text(encoding="utf-8"))
-project_name = sys.argv[2]
 
 if payload.get("status") != "completed":
     raise SystemExit("ERROR: La exportación no terminó con status=completed")
 if payload.get("workflow") != "documentation-deploy":
     raise SystemExit("ERROR: La respuesta no corresponde a documentation-deploy")
-if payload.get("project_name") != project_name:
-    raise SystemExit("ERROR: La respuesta no corresponde al proyecto solicitado")
+if payload.get("project_name") != "sbm-suite-context":
+    raise SystemExit("ERROR: La respuesta no corresponde al proyecto sbm-suite-context")
 if payload.get("collection_name") != "sbm_documentation":
     raise SystemExit("ERROR: La colección esperada es sbm_documentation")
 errors = payload.get("errors")
@@ -390,6 +266,56 @@ if not isinstance(zip_path, str) or not zip_path:
 
 print("Exportación de documentación completada.")
 print(f"Paquete: {zip_path}")
+PY
+
+python3 - "${PACKAGE_FILE}" <<'PY'
+import json
+import sys
+from pathlib import PurePosixPath
+from zipfile import BadZipFile, ZipFile
+
+try:
+    with ZipFile(sys.argv[1]) as archive:
+        names = [info.filename for info in archive.infolist() if not info.is_dir()]
+        manifest = json.loads(archive.read("manifest.json").decode("utf-8"))
+        listed = {
+            line.strip()
+            for line in archive.read("documentation-files.txt")
+            .decode("utf-8")
+            .splitlines()
+            if line.strip()
+        }
+except (BadZipFile, KeyError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+    raise SystemExit(f"ERROR: documentation-package.zip inválido: {exc}") from exc
+
+functional = {
+    path
+    for path in names
+    if PurePosixPath(path).parts[:2] == ("documentation", "pages")
+    and path.endswith(".md")
+}
+declarations = manifest.get("documentation_files")
+if not isinstance(declarations, list):
+    raise SystemExit("ERROR: manifest.documentation_files inválido")
+declared = {
+    item.get("archive_path")
+    for item in declarations
+    if isinstance(item, dict)
+    and item.get("complete") is True
+    and item.get("selected_by_rag") is True
+}
+if not functional:
+    raise SystemExit(
+        "ERROR: documentation-package.zip no contiene candidatos funcionales"
+    )
+if functional != listed or functional != declared:
+    raise SystemExit(
+        "ERROR: candidatos físicos, documentation-files.txt y "
+        "manifest.documentation_files no coinciden"
+    )
+print("Candidatos funcionales validados:")
+for path in sorted(functional):
+    print(f"- {path}")
 PY
 
 echo

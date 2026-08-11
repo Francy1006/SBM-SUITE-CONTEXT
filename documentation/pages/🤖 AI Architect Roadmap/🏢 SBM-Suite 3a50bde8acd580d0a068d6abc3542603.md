@@ -1,6 +1,6 @@
 # 🏢 SBM-Suite
 
-> **Last updated:** 2026-08-08
+> **Last updated:** 2026-08-11
 >
 > **Purpose:**
 >
@@ -842,6 +842,35 @@ Estos objetivos permanecen **active/pending**. Su presencia en el roadmap repres
 | SBM-DB-001 | habilitación de sbm-db | active | 5 | 2026-08-07 | `FEATURE-enables-sbm-db` |
 
 Este objetivo permanece **active**. Su presencia aquí no representa cierre ni implementación completada.
+
+### Objetivos actuales de `SBM-SUITE/context`
+
+| Objective ID | Objective | Status | Priority | Target date | Branch |
+|---|---|---|---:|---|---|
+| OBJ-CTX-001 | Validate and stabilize the expanded context governance model, synchronized section patches and project-tree evidence | active | 5 |  | FEATURE-expands-context-governance |
+| OBJ-CTX-013 | Corregir y validar el workflow de documentación de `SBM-SUITE/context`, incluyendo `documentation-deploy.sh`, `documentation-upgrade.sh` y el flujo completo posterior a `context-upgrade`. | active | 5 | N/A | BUGFIX-fixes-context-documentation-workflow |
+| OBJ-DOC-001 | Implement the manual documentation deploy and upgrade workflow with dedicated RAG and Qdrant collection | pending | 4 |  | FEATURE-adds-documentation-workflow |
+| OBJ-CTX-002 | Habilitar un sistema automatizado para ejecutar flujos transversales sobre uno o varios proyectos. | pending | 5 | N/A | FEATURE-automates-cross-project-flows |
+| OBJ-CTX-003 | Separar QA y Context mediante una estructura específica por proyecto. | pending | 5 | N/A | FEATURE-separates-qa-context |
+| OBJ-CTX-004 | Habilitar un nuevo proyecto para procesamiento asíncrono, incluyendo PostgreSQL, Celery, Redis, Kafka y los componentes de infraestructura relacionados. | pending | 5 | N/A | FEATURE-enables-async-platform |
+| OBJ-CTX-005 | Habilitar un proyecto UTIL para centralizar servicios y utilidades reutilizables y desacoplarlos de proyectos específicos, incluyendo generación de ZIP y procesamiento de contextos. | pending | 5 | N/A | FEATURE-enables-shared-utils |
+| OBJ-CTX-006 | Habilitar un agente de backlog que convierta objetivos en issues y épicas y gestione su sincronización con Jira vía API. El nombre definitivo del agente se revisará al activar el objetivo. | pending | 5 | N/A | FEATURE-enables-backlog-agent |
+| OBJ-CTX-007 | Habilitar un agente QA para gestionar y automatizar procesos de validación de calidad de los proyectos. | pending | 5 | N/A | FEATURE-enables-qa-agent |
+| OBJ-CTX-008 | Habilitar un entorno y flujo de seguridad ejecutado después de QA y antes del commit. | pending | 5 | N/A | FEATURE-enables-security-flow |
+| OBJ-CTX-009 | Habilitar un agente de seguridad para ejecutar y gestionar las validaciones del flujo de seguridad. | pending | 5 | N/A | FEATURE-enables-security-agent |
+| OBJ-CTX-010 | Habilitar una aplicación para visualizar y gestionar agentes, definiendo la tecnología y lenguaje apropiados al activar el objetivo. | pending | 5 | N/A | FEATURE-enables-agent-management |
+| OBJ-CTX-011 | Completar `INIT_CONTEXT.md` para soportar creación/onboarding de nuevos proyectos SBM. | pending | 5 | N/A | FEATURE-completes-project-onboarding |
+| OBJ-CTX-012 | Separar el flujo del agente en `SBM_AGENT_INIT.md`, dejando `INIT_CONTEXT.md` como punto de entrada y orquestación. | pending | 5 | N/A | FEATURE-separates-agent-init-flow |
+
+Los objetivos anteriores conservan literalmente su estado operativo actual de Context. Los objetivos `active` y `pending` son planificación y no acreditan implementación completada.
+
+### Objetivo pendiente de `SBM-DB`
+
+| Objective ID | Objective | Status | Priority | Target date | Branch |
+|---|---|---|---:|---|---|
+| SBM-DB-002 | Actualizar SBM-DB al contrato lifecycle actual de Context, incluyendo objectives[], execution_mode, preservación literal de objetivos y paths relativos. | pending | 5 | N/A | FEATURE-updates-context-lifecycle |
+
+Este objetivo permanece pending y se documenta únicamente como planificación.
 
 ### 8. Procesamiento asíncrono e integración
 

@@ -67,6 +67,10 @@
 50. For `documentation-upgrade.zip`, require `set(manifest.updated_files) == set(all physical ZIP files except manifest.json)`; subset or superset relationships are invalid.
 51. `COMMIT_MESSAGE.md`, `EXECUTIVE_README.md`, optional `USER_PROMPT.md` and every Documentation page are ordinary non-manifest ZIP files for this equality and must never be omitted from `updated_files` when included.
 52. Reject duplicate, normalized, flattened, case-altered or otherwise inconsistent ZIP and manifest paths.
+53. Functional Documentation candidates are complete existing files below `SBM-SUITE/context/documentation/pages/`; `FORMAT_CONTEXT.md` and `SYS_PROMPT.md` are protected contracts and never satisfy the candidate requirement.
+54. When Context-to-Documentation differences exist, `documentation-deploy` must select at least one real functional candidate and package its complete source snapshot.
+55. Every real `documentation-upgrade.zip` must contain at least one generated file below `documentation/pages/`; root metadata files and protected workflow contracts are invalid substitutes.
+56. When no Context-to-Documentation difference exists, report `Documentation already synchronized` and do not generate or instruct a metadata-only upgrade.
 
 
 ---
@@ -878,6 +882,12 @@ Every documentation export and upgrade workflow must:
 70. Require `COMMIT_MESSAGE.md` and `EXECUTIVE_README.md` in `updated_files` for every valid Documentation upgrade and require `USER_PROMPT.md` there whenever it is physically included.
 71. Require every generated `documentation/...` replacement physically included in the ZIP to appear exactly once in `updated_files` with the identical archive path.
 72. Reject a Documentation upgrade locally and in the backend whenever the `updated_files` set differs from the physical non-manifest ZIP member set.
+73. Detect objective lifecycle differences globally, including missing objectives, `pending → active`, `active → completed` and accumulated differences across multiple projects.
+74. Require global candidate selection to remain independent from the internal technical `project_name` used for backend compatibility.
+75. Require at least one functional `documentation/pages/...` candidate whenever reconciliation differences exist; protected workflow contracts do not count.
+76. Require at least one generated `documentation/pages/...` replacement in every real Documentation upgrade.
+77. Reject metadata-only upgrades even when their manifest, hashes and root metadata are otherwise structurally valid.
+78. Treat a fully synchronized state as a successful no-op: emit `Documentation already synchronized`, produce no deploy package and do not instruct an upgrade.
 
 
 ---
