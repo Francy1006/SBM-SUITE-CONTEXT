@@ -1,6 +1,6 @@
 # ☸️ DevOps & Platform Engineering
 
-> **Last updated:** 2026-08-11
+> **Last updated:** 2026-08-12
 >
 > **Purpose:**
 >
@@ -263,6 +263,14 @@ The documentation upgrade validator additionally requires exact metadata labels,
 - Related QA, SBM-Suite and development-roadmap pages retain legacy structures that do not satisfy the current complete-page contract and are not replaced automatically by this upgrade.
 
 ## 12. Roadmap
+
+### QA transversal de `SBM-SUITE/context`
+
+| Objective ID | Objective | Status | Priority | Target date | Branch |
+|---|---|---|---:|---|---|
+| OBJ-CTX-014 | Habilitar QA transversal en `SBM-SUITE/context` para ejecutar, centralizar y gestionar validaciones QA de los proyectos de la suite desde el contexto global, manteniendo los scripts QA específicos por proyecto y una orquestación común desde `context`. | pending | 5 | N/A | FEATURE-enables-transversal-qa |
+
+Este objetivo permanece pending y representa exclusivamente planificación. No acredita implementación, ejecución QA ni cambios de runtime.
 
 - Complete and validate `SBM-MANAGER` lifecycle integration across context and documentation workflows, QA/SonarQube evidence, and the canonical `sbm-ai-assistant` project contract before promoting it to current-state documentation.
 - Implement asynchronous workflow orchestration when approved.
