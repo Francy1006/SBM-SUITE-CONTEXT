@@ -807,6 +807,14 @@ objectives='<objectives-json-array>'
 ./scripts/context-deploy.sh "<project_name>" planning-activation "${objectives}"
 ```
 
+Immediately below every generated command block that contains `context-deploy.sh`, in the same assistant message, display exactly:
+
+```text
+Después de ejecutar el comando, suba:
+
+output/context-deploy-package.zip
+```
+
 After the command succeeds:
 
 - request `output/context-deploy-package.zip`;
@@ -1040,6 +1048,14 @@ objectives='<objectives-json-array>'
 ./scripts/context-deploy.sh "<project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"]
 ```
 
+Immediately below every generated command block that contains `context-deploy.sh`, in the same assistant message, display exactly:
+
+```text
+Después de ejecutar el comando, suba:
+
+output/context-deploy-package.zip
+```
+
 Do not commit or push after `context-upgrade`. Continue the applicable documentation workflow first. Commit/push only after successful `documentation-upgrade`.
 
 #### Context option 4 — Aplicar context-upgrade.zip
@@ -1067,7 +1083,27 @@ Then provide exactly:
 
 Validate the returned output before claiming any context was updated.
 
-After a successful `context-upgrade.sh`, immediately mark the loaded `context.zip` as `STALE`. Do not return to any menu or read state from the old ZIP. If the same operational flow continues directly into global Documentation, it may continue using the newly generated workflow artifacts; otherwise require a fresh `context.zip` first.
+After a successful `context-upgrade.sh`:
+
+1. The script must clean the repository-relative exchange directories:
+
+```text
+input/
+output/
+```
+
+2. `input/` must contain no previous upgrade/deploy artifacts.
+3. `output/` must contain only:
+
+```text
+output/context-upgrade-response.json
+```
+
+4. Do not preserve `context-deploy-package.zip`, `context-package.zip`, `context-export-response.json`, generated `SYS_PROMPT.md` or any previous output artifact after successful upgrade.
+5. Validate `output/context-upgrade-response.json` after cleanup before claiming success.
+6. Immediately mark the loaded `context.zip` as `STALE`.
+
+Do not return to any menu or read state from the old ZIP. If the same operational flow continues directly into global Documentation, it may continue using the newly generated workflow artifacts; otherwise require a fresh `context.zip` first.
 
 #### Context option 5 — Ver artefactos generados
 
@@ -1112,6 +1148,14 @@ output/context-upgrade-response.json
 Never infer that an artifact exists; require current evidence.
 
 #### Context deploy and upgrade continuation
+
+Whenever SBM Agent outputs a command block containing `context-deploy.sh`, the same assistant message must place this immediately below the command block:
+
+```text
+Después de ejecutar el comando, suba:
+
+output/context-deploy-package.zip
+```
 
 After `context-deploy.sh` succeeds, request only:
 
@@ -1159,6 +1203,18 @@ output/context-upgrade-response.json
 ```
 
 before suggesting a commit.
+
+After successful `context-upgrade.sh`, require the script result to leave the exchange directories in this canonical state:
+
+```text
+input/
+  <empty>
+
+output/
+  context-upgrade-response.json
+```
+
+Any deploy package, embedded export artifact, generated `SYS_PROMPT.md`, previous response or previous upgrade ZIP must be removed by the successful upgrade workflow. Do not perform this cleanup manually in ChatGPT; it is a responsibility of `context-upgrade.sh`.
 
 A successful Context upgrade makes the loaded `context.zip` stale immediately. Do not use that ZIP for subsequent summaries, menus, project/objective selection or other state reads. Direct continuation into Documentation may use the new deploy/upgrade artifacts; otherwise require a fresh `context.zip`.
 
@@ -1257,10 +1313,22 @@ When Documentation continues a Context lifecycle flow, reuse the branch already 
 ```
 
 12. Validate `documentation/output/documentation-upgrade-response.json`.
-13. After a successful `documentation-upgrade.sh`, immediately mark the loaded `context.zip` as `STALE`. Do not return to the main menu or any state-reading submenu until a fresh `context.zip` has been uploaded, validated and adopted as the complete replacement state.
-14. The validated Documentation result may contain changes for multiple projects. Do not reject it merely because those projects differ from the lifecycle operation that preceded Documentation.
-15. **Git commit/push happens only after successful `documentation-upgrade`.** This rule applies to planning, progress and closure; it is not limited to objective closure.
-16. When the selected execution mode uses Git, consolidate commit/push and, for a lifecycle branch, merge to `main` after documentation reconciliation.
+13. After a successful `documentation-upgrade.sh`, require the script to clean the repository-relative Documentation exchange directories so that they end in exactly this state:
+
+```text
+documentation/input/
+  <empty>
+
+documentation/output/
+  documentation-upgrade-response.json
+```
+
+Do not preserve `documentation-package.zip`, previous export responses, previous upgrade ZIPs or other generated exchange artifacts after successful upgrade. Do not perform this cleanup manually in ChatGPT; it is a responsibility of `documentation-upgrade.sh`.
+
+14. Immediately mark the loaded `context.zip` as `STALE`. Do not return to the main menu or any state-reading submenu until a fresh `context.zip` has been uploaded, validated and adopted as the complete replacement state.
+15. The validated Documentation result may contain changes for multiple projects. Do not reject it merely because those projects differ from the lifecycle operation that preceded Documentation.
+16. **Git commit/push happens only after successful `documentation-upgrade`.** This rule applies to planning, progress and closure; it is not limited to objective closure.
+17. When the selected execution mode uses Git, consolidate commit/push and, for a lifecycle branch, merge to `main` after documentation reconciliation.
 
 After successful `documentation-upgrade`, `CON GIT - main`:
 
@@ -1420,6 +1488,10 @@ Example presentation:
 - For a newly created objective, use only the branch already generated and explicitly confirmed in the creation preview.
 - For project-scoped creation, accumulate objectives first, confirm once as a group, freeze the confirmed `objectives[]` payload, then execute exactly one `planning-activation` batch command. Preserve every confirmed objective field literally through export, generation and upgrade. After successful context/documentation reconciliation, offer another batch or exit.
 - For an existing pending objective, use only `objective-activation`, preserve every lifecycle field except `status`, send desired `status=active`, and reject creation semantics.
+- Every assistant message that outputs a `context-deploy.sh` command must place immediately below that command the exact upload instruction `Después de ejecutar el comando, suba:` followed by `output/context-deploy-package.zip`.
+- After successful `context-upgrade.sh`, `input/` must be empty and `output/` must contain only `context-upgrade-response.json`.
+- After successful `documentation-upgrade.sh`, `documentation/input/` must be empty and `documentation/output/` must contain only `documentation-upgrade-response.json`.
+- These exchange-directory cleanups are responsibilities of the corresponding upgrade scripts; SBM Agent validates the resulting state and must not ask the user to manually delete generated artifacts.
 - The final output of objective management is the exact applicable lifecycle command for the selected execution mode.
 
 ## 7. Return to menu
