@@ -116,6 +116,12 @@ Se está ejecutando una migración para establecer responsabilidades definitivas
 5. Preparar comunicación síncrona y asíncrona.
 6. Documentar responsabilidades por servicio.
 
+### 7. Estado validado de Context y Documentation
+
+| Objective ID | Project | Objective | Status | Validation |
+|---|---|---|---|---|
+| OBJ-CTX-013 | SBM-SUITE | Corregir y validar el workflow de documentación de `SBM-SUITE/context`, incluyendo `documentation-deploy.sh`, `documentation-upgrade.sh` y el flujo completo posterior a `context-upgrade`. | completed | `implementation-closure` y `context-upgrade` completados; Context/Documentation quedaron centralizados bajo `SBM-SUITE/context`, Documentation opera globalmente y QA fue validado estructuralmente como `not-applicable` al no existir `scripts/qa-check.sh`. |
+
 ---
 
 ## 4. Core concepts
@@ -848,7 +854,6 @@ Este objetivo permanece **active**. Su presencia aquí no representa cierre ni i
 | Objective ID | Objective | Status | Priority | Target date | Branch |
 |---|---|---|---:|---|---|
 | OBJ-CTX-001 | Validate and stabilize the expanded context governance model, synchronized section patches and project-tree evidence | active | 5 |  | FEATURE-expands-context-governance |
-| OBJ-CTX-013 | Corregir y validar el workflow de documentación de `SBM-SUITE/context`, incluyendo `documentation-deploy.sh`, `documentation-upgrade.sh` y el flujo completo posterior a `context-upgrade`. | active | 5 | N/A | BUGFIX-fixes-context-documentation-workflow |
 | OBJ-DOC-001 | Implement the manual documentation deploy and upgrade workflow with dedicated RAG and Qdrant collection | pending | 4 |  | FEATURE-adds-documentation-workflow |
 | OBJ-CTX-002 | Habilitar un sistema automatizado para ejecutar flujos transversales sobre uno o varios proyectos. | pending | 5 | N/A | FEATURE-automates-cross-project-flows |
 | OBJ-CTX-003 | Separar QA y Context mediante una estructura específica por proyecto. | pending | 5 | N/A | FEATURE-separates-qa-context |

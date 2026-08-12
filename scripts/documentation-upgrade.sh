@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+[[ "$#" == "0" ]] || {
+  echo "Uso: ./scripts/documentation-upgrade.sh" >&2
+  exit 1
+}
+
 CONTEXT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${CONTEXT_ROOT}/.env.dev"
 SBM_SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"

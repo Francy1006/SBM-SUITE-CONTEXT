@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OUTPUT_FILE="${PROJECT_ROOT}/context/project-tree.txt"
+[[ "$#" == "0" ]] || {
+  echo "Uso: ./scripts/project-tree.sh" >&2
+  exit 1
+}
+
+CONTEXT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
+OUTPUT_FILE="${CONTEXT_ROOT}/project-tree.txt"
 
 EXCLUDED_NAMES=(
   ".git"

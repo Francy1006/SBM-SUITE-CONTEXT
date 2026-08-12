@@ -71,6 +71,10 @@
 54. When Context-to-Documentation differences exist, `documentation-deploy` must select at least one real functional candidate and package its complete source snapshot.
 55. Every real `documentation-upgrade.zip` must contain at least one generated file below `documentation/pages/`; root metadata files and protected workflow contracts are invalid substitutes.
 56. When no Context-to-Documentation difference exists, report `Documentation already synchronized` and do not generate or instruct a metadata-only upgrade.
+57. For reconciliation, a canonical Documentation objective record is exclusively a row in an unfenced Markdown table under the applicable exact `## 3. Current state`, `## 11. Pending work` or `## 12. Roadmap` section whose headers contain the exact columns `Objective ID` and `Status`. Its `Status` cell must contain exactly one literal lifecycle value: `active`, `pending`, `completed` or `cancelled`.
+58. Objective IDs and lifecycle words in prose, headings, lists, examples, code blocks, historical explanations or other non-canonical structures are narrative references only and must not contribute a Documentation objective status.
+59. Multiple canonical Documentation records for one `Objective ID` with the same literal status collapse to one effective state. Conflicting canonical statuses must stop reconciliation with an explicit duplicate-record error; never convert that inconsistency into an ordinary synchronization difference.
+60. A synchronized no-op must clear or replace stale deploy outputs, leave no `documentation-package.zip`, and write a current `documentation-export-response.json` declaring `synchronized=true`, zero differences, zero targets and `package_generated=false`.
 
 
 ---
@@ -887,7 +891,7 @@ Every documentation export and upgrade workflow must:
 75. Require at least one functional `documentation/pages/...` candidate whenever reconciliation differences exist; protected workflow contracts do not count.
 76. Require at least one generated `documentation/pages/...` replacement in every real Documentation upgrade.
 77. Reject metadata-only upgrades even when their manifest, hashes and root metadata are otherwise structurally valid.
-78. Treat a fully synchronized state as a successful no-op: emit `Documentation already synchronized`, produce no deploy package and do not instruct an upgrade.
+78. Treat a fully synchronized state as a successful no-op: emit `Documentation already synchronized`, produce no deploy package, invalidate any prior deploy package, write an explicit current no-op response and do not instruct an upgrade.
 
 
 ---

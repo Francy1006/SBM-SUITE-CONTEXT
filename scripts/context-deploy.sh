@@ -17,8 +17,13 @@ objective-activation:
   - requiere exactamente un objetivo pending existente;
   - el payload conserva todos sus campos y solicita status=active.
 
-implementation-progress / implementation-closure:
-  - actualmente requieren exactamente un objetivo.
+implementation-progress:
+  - requiere exactamente un objetivo existente;
+  - conserva su estado operativo y nunca ejecuta cierre.
+
+implementation-closure:
+  - requiere exactamente un objetivo active;
+  - es la única fase que ejecuta cierre.
 EOF
 }
 
@@ -39,13 +44,29 @@ else
 fi
 
 case "${LIFECYCLE_PHASE}" in
-  planning-activation|objective-activation|implementation-progress|implementation-closure) ;;
+  planning-activation)
+    LIFECYCLE_ROUTE="planning-activation"
+    ;;
+  objective-activation)
+    LIFECYCLE_ROUTE="objective-activation"
+    ;;
+  implementation-progress)
+    LIFECYCLE_ROUTE="implementation-progress"
+    ;;
+  implementation-closure)
+    LIFECYCLE_ROUTE="implementation-closure"
+    ;;
   *)
     echo "ERROR: Fase no válida: ${LIFECYCLE_PHASE}" >&2
     usage >&2
     exit 1
     ;;
 esac
+
+[[ "${LIFECYCLE_ROUTE}" == "${LIFECYCLE_PHASE}" ]] || {
+  echo "ERROR: Dispatch lifecycle no determinista" >&2
+  exit 1
+}
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTEXT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -56,10 +77,13 @@ INPUT_DIR="${CONTEXT_ROOT}/input"
 OUTPUT_DIR="${CONTEXT_ROOT}/output"
 PROMPT_TEMPLATE="${CONTEXT_ROOT}/SYS_PROMPT.md"
 FORMAT_CONTEXT_FILE="${CONTEXT_ROOT}/FORMAT_CONTEXT.md"
-PROJECT_TREE_SCRIPT="${CONTEXT_ROOT}/project-tree.sh"
+PROJECT_TREE_SCRIPT="${CONTEXT_ROOT}/scripts/project-tree.sh"
 PROJECT_TREE_FILE="${CONTEXT_ROOT}/project-tree.txt"
 SYSTEM_PROMPT_FILE="${OUTPUT_DIR}/SYS_PROMPT.md"
 RESPONSE_FILE="${OUTPUT_DIR}/context-export-response.json"
+CONTEXT_PACKAGE_FILE="${OUTPUT_DIR}/context-package.zip"
+UPLOAD_PACKAGE_FILE="${OUTPUT_DIR}/context-deploy-package.zip"
+QA_LIFECYCLE_HELPER="${SCRIPT_DIR}/qa_lifecycle.py"
 
 get_env() {
   local file="$1"
@@ -202,7 +226,8 @@ PY
 
 CONTRACT_FILE="$(mktemp)"
 META_FILE="$(mktemp)"
-trap 'rm -f "${CONTRACT_FILE}" "${META_FILE}"' EXIT
+QA_DECISION_FILE="$(mktemp)"
+trap 'rm -f "${CONTRACT_FILE}" "${META_FILE}" "${QA_DECISION_FILE}"' EXIT
 
 HTTP_STATUS="$(
   curl --silent --show-error \
@@ -308,24 +333,59 @@ else
   QA_RESULTS_FILE="${PROJECT_ROOT}/context/qa-results.md"
 fi
 
-if [[ "${LIFECYCLE_PHASE}" == "objective-activation" ]]; then
-  ACTIVATION_VALIDATOR="${SCRIPT_DIR}/objective_lifecycle.py"
-  [[ -f "${ACTIVATION_VALIDATOR}" ]] || {
-    echo "ERROR: No existe ${ACTIVATION_VALIDATOR}" >&2
+if [[ "${LIFECYCLE_ROUTE}" != "planning-activation" ]]; then
+  LIFECYCLE_VALIDATOR="${SCRIPT_DIR}/objective_lifecycle.py"
+  [[ -f "${LIFECYCLE_VALIDATOR}" ]] || {
+    echo "ERROR: No existe ${LIFECYCLE_VALIDATOR}" >&2
     exit 1
   }
-  ACTIVATION_CONTEXT_ARGS=(
+  LIFECYCLE_CONTEXT_ARGS=(
     --operational-context "${CONTEXT_ROOT}/PROJECT_CONTEXT.md"
   )
   if [[ "${PROJECT_NAME}" != "sbm-suite-context" ]]; then
-    ACTIVATION_CONTEXT_ARGS+=(
+    LIFECYCLE_CONTEXT_ARGS+=(
       --operational-context "${PROJECT_ROOT}/context/PROJECT_CONTEXT.md"
     )
   fi
-  python3 "${ACTIVATION_VALIDATOR}" \
+  python3 "${LIFECYCLE_VALIDATOR}" \
+    --lifecycle-phase "${LIFECYCLE_ROUTE}" \
     --objectives-json "${NORMALIZED_OBJECTIVES}" \
     --completed-context "${CONTEXT_ROOT}/COMPLETED_OBJECTIVES.md" \
-    "${ACTIVATION_CONTEXT_ARGS[@]}"
+    "${LIFECYCLE_CONTEXT_ARGS[@]}"
+fi
+
+QA_RESULTS=""
+QA_MANIFEST_JSON=""
+if [[ "${LIFECYCLE_ROUTE}" == "implementation-closure" ]]; then
+  [[ -f "${QA_LIFECYCLE_HELPER}" ]] || {
+    echo "ERROR: No existe ${QA_LIFECYCLE_HELPER}" >&2
+    exit 1
+  }
+  python3 "${QA_LIFECYCLE_HELPER}" evaluate-closure \
+    --project-name "${PROJECT_NAME}" \
+    --project-root "${PROJECT_ROOT}" \
+    --output "${QA_DECISION_FILE}"
+  QA_RESULTS="$(
+    python3 - "${QA_DECISION_FILE}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+print(json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["qa_results"], end="")
+PY
+  )"
+  QA_MANIFEST_JSON="$(
+    python3 - "${QA_DECISION_FILE}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+print(json.dumps(payload["qa"], ensure_ascii=False, separators=(",", ":")))
+PY
+  )"
+elif [[ -f "${QA_RESULTS_FILE}" ]]; then
+  QA_RESULTS="$(cat "${QA_RESULTS_FILE}")"
 fi
 
 mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}"
@@ -399,14 +459,6 @@ else
   CHANGE_SUMMARY="No uncommitted changes detected in ${PROJECT_NAME}."
 fi
 
-QA_RESULTS=""
-[[ -f "${QA_RESULTS_FILE}" ]] && QA_RESULTS="$(cat "${QA_RESULTS_FILE}")"
-
-if [[ "${LIFECYCLE_PHASE}" == "implementation-closure" && -z "${QA_RESULTS//[[:space:]]/}" ]]; then
-  echo "ERROR: implementation-closure requiere ${QA_RESULTS_FILE}" >&2
-  exit 1
-fi
-
 PAYLOAD="$(
   PROJECT_NAME="${PROJECT_NAME}" \
   LIFECYCLE_PHASE="${LIFECYCLE_PHASE}" \
@@ -417,11 +469,12 @@ PAYLOAD="$(
   CHANGED_FILES="${CHANGED_FILES}" \
   GIT_DIFF="${GIT_DIFF}" \
   QA_RESULTS="${QA_RESULTS}" \
+  QA_MANIFEST_JSON="${QA_MANIFEST_JSON}" \
   python3 <<'PY'
 import json
 import os
 
-print(json.dumps({
+payload = {
     "project_name": os.environ["PROJECT_NAME"],
     "workflow": "context-deploy",
     "lifecycle_phase": os.environ["LIFECYCLE_PHASE"],
@@ -436,7 +489,10 @@ print(json.dumps({
     ],
     "git_diff": os.environ["GIT_DIFF"],
     "qa_results": os.environ["QA_RESULTS"],
-}, ensure_ascii=False))
+}
+if os.environ["QA_MANIFEST_JSON"]:
+    payload["qa"] = json.loads(os.environ["QA_MANIFEST_JSON"])
+print(json.dumps(payload, ensure_ascii=False))
 PY
 )"
 
@@ -481,3 +537,10 @@ print("Objetivos: " + ", ".join(
 ))
 print("Paquete: output/context-deploy-package.zip")
 PY
+
+if [[ "${LIFECYCLE_ROUTE}" == "implementation-closure" ]]; then
+  python3 "${QA_LIFECYCLE_HELPER}" normalize-export \
+    --decision "${QA_DECISION_FILE}" \
+    --context-package "${CONTEXT_PACKAGE_FILE}" \
+    --upload-package "${UPLOAD_PACKAGE_FILE}"
+fi

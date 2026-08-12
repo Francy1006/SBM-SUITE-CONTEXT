@@ -142,6 +142,22 @@ implementation-closure
 
 Never infer `lifecycle_phase` from QA, Git, RAG or other implementation evidence.
 
+Dispatch by exact equality against the four literal values above. Never compare
+by substring, prefix, suffix or semantic similarity, and never fall through from
+one phase to another. The deterministic routing matrix is:
+
+```text
+planning-activation      → planning-activation only
+objective-activation     → objective-activation only
+implementation-progress  → implementation-progress only
+implementation-closure   → implementation-closure only
+```
+
+For `implementation-progress`, preserve the objective's operational status and
+reject any output that removes it, marks it completed, appends completed history
+or otherwise applies closure semantics. Only the exact literal
+`implementation-closure` may perform `active → completed`.
+
 ### Suite-scoped target: `sbm-suite-context`
 
 When the source manifest declares:
@@ -160,6 +176,7 @@ apply this suite-scoped lifecycle contract. It overrides every generic project-l
 - `objective-activation` requires `patches/global-project-context.json` only and moves the single existing objective from Pending objectives to Active objectives without creating another row;
 - `implementation-progress` preserves the objective in global `PROJECT_CONTEXT.md` and uses only applicable suite-scoped patches;
 - `implementation-closure` requires `patches/completed-objectives.json`, `patches/global-project-context.json` and `patches/global-qa-context.json`; project-scoped closure patches are forbidden;
+- while `SBM-SUITE/context/scripts/qa-check.sh` does not exist, QA is not an applicable gate for the suite-scoped target; never block progress or closure solely because suite-scoped QA evidence is absent, and never invent QA results;
 - completed history uses canonical project heading `### SBM-SUITE`;
 - reusable or structural changes to the suite context use `patches/global-project-context.json` and, when README synchronization is justified, `patches/global-readme.json`;
 - use only patch paths present in the source manifest `supported_patch_paths`; never reintroduce project-scoped patch paths omitted by the backend.
@@ -243,12 +260,17 @@ For now `objectives` must contain exactly one item. Only `objective_id` is manda
 
 Required behavior:
 
+- require the requested objective to exist in the complete operational context;
+- normally require current `status=active`; a current `pending` objective may
+  record progress only without changing that status;
 - update only evidence-supported current project, QA, suite and README state;
 - preserve the objective in the appropriate `active` or `pending` section;
 - prohibit `patches/completed-objectives.json`;
 - prohibit removing the objective from operational contexts;
 - prohibit recording the objective in `COMPLETED_OBJECTIVES.md`;
 - do not claim closure or completion.
+- do not emit closure-preview or closure-confirmation language in any generated
+  artifact.
 
 ### implementation-closure
 
@@ -274,8 +296,11 @@ Required behavior:
 - for project-scoped targets, also require `patches/project-context.json` and `patches/project-qa-context.json`;
 - for `sbm-suite-context`, forbid all project-scoped patches;
 - use the current objective context, Git evidence when present and `qa-results.md` as primary evidence;
-- allow lifecycle-only/no-op closure with empty Git changes only when the objective exists, closure is explicit, current QA passes and no implementation claim is introduced;
-- require successful current QA evidence;
+- allow lifecycle-only/no-op closure with empty Git changes only when the objective exists, closure is explicit, canonical QA is `passed` or structurally verified as `not-applicable`, and no implementation claim is introduced;
+- require the complete source-manifest `qa` object and copy it literally into the output manifest;
+- accept canonical QA status `passed` or `not-applicable`; `success` is input-evidence compatibility normalized by tooling to `passed`, and `failed` blocks closure;
+- when the selected repository root has no repository-relative `scripts/qa-check.sh`, accept the tooling-generated `not-applicable` decision and its deterministic `qa-results.md` evidence;
+- when `scripts/qa-check.sh` exists, require executed canonical evidence; missing, empty, invalid or failed evidence must never become `not-applicable`;
 - remove only the requested objective from operational objective sections;
 - preserve every other objective row;
 - append exactly that objective to global `COMPLETED_OBJECTIVES.md`;
@@ -336,7 +361,7 @@ These patches represent objective lifecycle and QA synchronization, not implemen
 8. git-log.txt
 ```
 
-Do not infer completed implementation changes from RAG context, project structure or the additional user prompt alone. For lifecycle-only/no-op closure, the current operational objective record plus explicit `implementation-closure` and successful current QA may support lifecycle state transition patches without implying any implementation change.
+Do not infer completed implementation changes from RAG context, project structure or the additional user prompt alone. For lifecycle-only/no-op closure, the current operational objective record plus explicit `implementation-closure` and source-manifest QA status `passed` or `not-applicable` may support lifecycle state transition patches without implying any implementation change.
 
 Identify:
 
@@ -791,9 +816,9 @@ Objective activation rules:
 
 Objective closure rules:
 
-- closure always requires explicit closure plus successful current QA evidence;
+- closure always requires explicit closure plus a source-manifest QA decision of `passed` or structurally verified `not-applicable`;
 - implementation evidence is required only when the objective claims implementation changes;
-- lifecycle-only/no-op closure is valid with an empty Git diff when the objective exists in current operational context, `implementation-closure` is explicit and current QA passes;
+- lifecycle-only/no-op closure is valid with an empty Git diff when the objective exists in current operational context, `implementation-closure` is explicit and canonical QA is `passed` or `not-applicable`;
 - lifecycle-only/no-op closure must not add or modify implemented behavior, API, runtime, database, architecture or README claims unless separately evidenced;
 - move the objective out of every applicable operational objective section: project + global for project-scoped targets, global only for `sbm-suite-context`;
 - append the completed record only to `SBM-SUITE/context/COMPLETED_OBJECTIVES.md`;
@@ -1341,7 +1366,12 @@ The manifest must contain:
     "qa_results_file": "qa-results.md"
   },
   "qa": {
-    "status": "passed"
+    "status": "passed",
+    "applicable": true,
+    "workflow_path": "scripts/qa-check.sh",
+    "evidence_file": "qa-results.md",
+    "evidence_sha256": "<SHA-256 of the exact qa-results.md bytes>",
+    "reason": "<literal value from the source manifest>"
   }
 }
 ```
@@ -1367,8 +1397,10 @@ Mandatory ZIP manifest set contract:
 - `lifecycle_phase` must be present and equal `planning-activation`, `objective-activation`, `implementation-progress` or `implementation-closure`;
 - `objectives` must be a non-empty array with unique valid `objective_id` values; `planning-activation` requires full objective fields and allows multiple new items; `objective-activation` requires exactly one full item with desired `status=active`; progress and closure currently require exactly one item;
 - `qa` must be an object when `lifecycle_phase` is `implementation-closure`;
-- `qa.status` must be exactly `passed` or `success` for `implementation-closure`, derived only from explicit successful evidence in `qa-results.md`;
-- omit `qa` or use a non-success status for other phases unless explicit evidence requires it;
+- for `implementation-closure`, `qa` must equal the complete source-manifest `qa` object literally, including `evidence_sha256`; never infer, rewrite or choose its status;
+- canonical `qa.status` must be `passed` or `not-applicable`; `passed` requires explicit successful execution evidence, while `not-applicable` requires deterministic structural evidence that repository-relative `scripts/qa-check.sh` does not exist;
+- `failed`, missing, empty or invalid applicable QA evidence is not closure-authorizing evidence;
+- omit `qa` for every lifecycle phase other than `implementation-closure`;
 - `user_prompt_file` must be `null` in `evidence` mode;
 - `user_prompt_file` must be `USER_PROMPT.md` in `user-guided` mode;
 - `output_filename` must be exactly `context-upgrade.zip`;
@@ -1395,7 +1427,7 @@ Strict manifest set rules:
 - `contract_version` equals the source manifest value;
 - `supported_patch_paths` contains every generated patch path and no unsupported patch path;
 - `canonical_project_path` exactly matches the selected project's repository-relative root from the source manifest/backend Project Registry; project `target_file` values match exact repository-relative mappings; `lifecycle_phase` and `objectives` satisfy the lifecycle contract;
-- for `implementation-closure`, `qa.status` is exactly `passed` or `success` and is supported by explicit successful `qa-results.md` evidence;
+- for `implementation-closure`, copy the complete source-manifest `qa` object literally; allow canonical status `passed` with explicit successful execution evidence or `not-applicable` with deterministic structural evidence, and never manufacture either decision;
 - `updated_files` contains exactly the files physically present in the ZIP except `manifest.json`;
 - every physical ZIP file, including `manifest.json`, must appear in `allowed_files`;
 - `content_hashes` keys must equal `updated_files`;
@@ -1463,8 +1495,8 @@ Before returning `context-upgrade.zip`, verify:
 26. `planning-activation` preserves the source-manifest `execution_mode`, requires `USER_PROMPT.md` only for `user-guided`, forbids it for `evidence`, preserves every validated creation field exactly, and forbids `patches/completed-objectives.json`;
 27. `objective-activation` rejects missing, already-active and completed IDs, never creates a duplicate row and forbids `patches/completed-objectives.json`;
 28. `implementation-progress` forbids `patches/completed-objectives.json` and objective closure;
-29. `implementation-closure` includes `patches/completed-objectives.json`, `patches/global-project-context.json` and `patches/global-qa-context.json` for every target; project-scoped targets additionally include `patches/project-context.json` and `patches/project-qa-context.json`, while `sbm-suite-context` forbids those project-scoped patches; successful current QA and explicit closure are required for the single `objectives[0].objective_id`; implementation evidence is additionally required only when implementation changes are claimed; lifecycle-only/no-op closure may use empty Git change evidence;
-30. `implementation-closure` manifest contains `qa.status` equal to `passed` or `success`, supported by explicit successful `qa-results.md` evidence;
+29. `implementation-closure` includes `patches/completed-objectives.json`, `patches/global-project-context.json` and `patches/global-qa-context.json` for every target; project-scoped targets additionally include `patches/project-context.json` and `patches/project-qa-context.json`, while `sbm-suite-context` forbids those project-scoped patches; canonical QA status `passed` or structurally verified `not-applicable` and explicit closure are required for the single `objectives[0].objective_id`; implementation evidence is additionally required only when implementation changes are claimed; lifecycle-only/no-op closure may use empty Git change evidence;
+30. `implementation-closure` manifest copies the complete source-manifest `qa` object literally, with canonical `qa.status` equal to `passed` or `not-applicable`; `failed`, missing, unexecuted or invalid applicable QA blocks closure;
 31. every `replace_section` preserves unrelated rows and no partial table is included;
 32. `append_to_section` appears only in an explicitly authorized historical target;
 33. `patches/completed-objectives.json` uses `append_to_section` only for a missing canonical project group and `replace_section` only for one existing canonical project group;

@@ -52,7 +52,6 @@ SBM-SUITE/context
 | OBJ-CTX-001 | SBM-SUITE | Validate and stabilize the expanded context governance model, synchronized section patches and project-tree evidence | active | 5 |  | FEATURE-expands-context-governance | `context/documentation/pages/AI Architect Roadmap/`, `context/documentation/pages/SBM-Suite/` |
 | SBM-MANAGER-001 | SBM-MANAGER | Integrar SBM-MANAGER completamente a SBM Suite, incluyendo contextos, lifecycle scripts, QA/SonarQube, registro en sbm-ai-assistant, sincronización global y actualización del diagrama canónico de arquitectura en SUITE_CONTEXT.md. | active | 5 | 2026-08-07 | FEATURE-integrates-sbm-manager | `context/documentation/pages/🤖 AI Architect Roadmap/🏢 SBM-Suite 3a50bde8acd580d0a068d6abc3542603.md` |
 | SBM-DB-001 | SBM-DB | habilitación de sbm-db | active | 5 | 2026-08-07 | FEATURE-enables-sbm-db | `context/documentation/pages/🤖 AI Architect Roadmap/🏢 SBM-Suite 3a50bde8acd580d0a068d6abc3542603.md` |
-| OBJ-CTX-013 | SBM-SUITE | Corregir y validar el workflow de documentación de `SBM-SUITE/context`, incluyendo `documentation-deploy.sh`, `documentation-upgrade.sh` y el flujo completo posterior a `context-upgrade`. | active | 5 | N/A | BUGFIX-fixes-context-documentation-workflow | N/A |
 
 Rules:
 
@@ -224,19 +223,22 @@ Every project `QA_CONTEXT.md` update must update the global `QA_CONTEXT.md` summ
 ### Deployment
 
 ```text
-qa-check.sh
-→ execute the configured pytest and coverage workflow
-→ run SonarScanner only after successful test and coverage execution
-→ persist bounded evidence in context/qa-results.md
+qa-check.sh (when the selected project provides it)
+→ execute the configured test and coverage workflow
+→ run SonarScanner only when configured and applicable
+→ persist bounded evidence in the project QA result file
 
-context-deploy.sh <lifecycle_phase> <objective_id> [user_prompt]
+./scripts/context-deploy.sh <project_name> <lifecycle_phase> '<objectives-json-array>' [user_prompt]
+→ execute only from the root of SBM-SUITE/context
+→ validate project_name through the backend Project Registry
 → validate the explicit lifecycle phase and objective
+→ dispatch lifecycle phases by exact literal equality only
 → request GET /contexts/contract before cleaning exchange directories
 → validate contract version, lifecycle phases, canonical project path and supported patches
 → use SBM-SUITE/context/SYS_PROMPT.md and SBM-SUITE/context/FORMAT_CONTEXT.md
-→ execute SBM-SUITE/context/project-tree.sh and require project-tree.txt
-→ collect Git and QA evidence without packaging environment values
-→ call POST /contexts/export with project_root=/suite/<brand>/<project>
+→ execute SBM-SUITE/context/scripts/project-tree.sh and require project-tree.txt
+→ collect Git and applicable QA evidence without packaging environment values
+→ call POST /contexts/export using the registry-resolved canonical project root
 → index authorized contexts in sbm_contexts
 → retrieve relevant chunks
 → package evidence plus complete authorized source snapshots as input-only files
@@ -253,22 +255,39 @@ planning-activation
 → forbids completed-objective history
 ```
 
+### Objective activation
+
+```text
+objective-activation
+→ activates exactly one existing pending objective
+→ preserves objective_id, objective, priority, target_date and branch literally
+→ changes only pending → active
+→ forbids completed-objective history
+```
+
 ### Implementation progress
 
 ```text
 implementation-progress
+→ dispatches only by exact lifecycle equality and never falls through to closure
+→ requires the selected objective to exist in operational context
 → records only evidence-supported current state
 → preserves the objective as active or pending
-→ forbids completed-objective history and closure claims
+→ forbids completed-objective history, active → completed and closure confirmation
+→ does not require suite-scoped QA while SBM-SUITE/context/scripts/qa-check.sh does not exist
 ```
 
 ### Implementation closure
 
 ```text
 implementation-closure
-→ requires implementation evidence and successful QA evidence
-→ requires project and global objective patches
-→ requires project and global QA patches
+→ dispatches only when the literal lifecycle is exactly implementation-closure
+→ requires explicit closure confirmation
+→ requires implementation evidence when implementation changes are claimed
+→ requires canonical QA status passed when repository-relative scripts/qa-check.sh exists
+→ derives not-applicable only when that structural workflow path does not exist and emits deterministic evidence
+→ automatically stops using not-applicable if a QA workflow is later added
+→ requires the applicable objective and QA synchronization patches
 → removes only the requested objective from operational contexts
 → appends exactly one record to context/COMPLETED_OBJECTIVES.md
 ```
@@ -278,10 +297,12 @@ implementation-closure
 ```text
 context-upgrade.zip
 → context/input
-→ context-upgrade.sh
+→ ./scripts/context-upgrade.sh from SBM-SUITE/context
 → inspect manifest.json without extracting the archive
+→ validate project_name from the trusted manifest through the backend Project Registry
 → reject unsafe, unsupported or phase-incompatible members
-→ require all five closing patches during implementation closure
+→ forbid patches/completed-objectives.json outside implementation-closure
+→ require all applicable closure patches only during implementation-closure
 → call POST /contexts/upgrade only after client preflight succeeds
 → create context/backup/<timestamp>_<project>/
 → preserve original files plus EXECUTIVE_README.md and COMMIT_MESSAGE.md
@@ -311,31 +332,34 @@ Manual workflow:
 
 ```text
 completed implementation
-→ qa-check.sh and SonarQube validation
-→ final context upgrade and objective closure
-→ user confirms git status
-→ documentation-deploy.sh
+→ applicable QA validation for the changed project state
+→ final Context upgrade and objective closure
+→ refresh context.zip after the Context mutation
+→ ./scripts/documentation-deploy.sh from SBM-SUITE/context
+→ run global Context → Documentation reconciliation across projects
 → RAG from current documentation and updated contexts
 → documentation-package.zip + documentation SYS_PROMPT.md
-→ user uploads both to ChatGPT
+→ user uploads the generated package to ChatGPT
 → ChatGPT returns documentation-upgrade.zip
-→ documentation-upgrade.sh
-→ validate authorized existing pages and format
+→ ./scripts/documentation-upgrade.sh from SBM-SUITE/context
+→ validate authorized existing pages, manifest equality and format
 → create the timestamped documentation backup under context/backup
 → replace only authorized Markdown
+→ mark the previously loaded context.zip stale and require a fresh export before further state reads
 → print proposed commit message
 ```
 
 Rules:
 
+- Documentation is global and does not accept project selection or `project_name` in its CLI;
 - Git is the primary source of truth during the first stage;
 - documentation pages and subpages are modified only when authorized by the documentation format;
 - main pages are first-class documents and maintain subpage links;
 - automated creation, deletion, rename and structural changes are not allowed initially;
 - structural changes require manual updates to the page, documentation format and documentation system prompt;
-- context and documentation upgrades remain separate;
-- documentation is executed only after implementation closure and never for planning activation;
-- later synchronization with Notion may become bidirectional.
+- Context and Documentation upgrades remain separate;
+- Documentation is executed only after implementation closure and never for planning activation or implementation progress;
+- later synchronization with Notion may become bidirectional;
 - `SBM-SUITE/context/backup/` is the only backup root for both workflows;
 - pluralized and workflow-local backup directories must never be used or recreated.
 
@@ -343,30 +367,30 @@ Rules:
 
 Verified current capabilities include:
 
-- global and DP-API context files exist;
-- `GET /contexts/contract`, `POST /contexts/export` and `POST /contexts/upgrade` exist in `sbm-ai-assistant`;
+- `SBM-SUITE/context/scripts/` is the canonical orchestration location for Context deploy, Context upgrade, Documentation deploy, Documentation upgrade and Project Tree generation;
+- Context remains project-scoped: `context-deploy.sh` receives `project_name`, validates it through Project Registry and resolves the canonical project path from the registry contract;
+- Documentation remains global: `documentation-deploy.sh` and `documentation-upgrade.sh` accept no project argument and reconcile global Context → Documentation;
+- Documentation reconciliation derives lifecycle status only from canonical objective-table rows, ignores narrative lifecycle words, rejects conflicting canonical duplicates and leaves no stale deploy package after a synchronized no-op;
+- Project Tree generation is canonical at `SBM-SUITE/context/scripts/project-tree.sh`;
+- lifecycle dispatch is explicit for `planning-activation`, `objective-activation`, `implementation-progress` and `implementation-closure`, using exact literal equality with no fall-through;
+- `implementation-progress` validates an existing objective, preserves its active or pending state and forbids completion history and closure semantics;
+- `implementation-closure` is the only route authorized to perform `active → completed` and use `patches/completed-objectives.json`;
+- closure QA has canonical states `passed`, `failed` and `not-applicable`; the last is tooling-derived only from absence of repository-relative `scripts/qa-check.sh`, never from missing evidence or user/LLM choice;
+- suite-scoped `SBM-SUITE/context` currently resolves to `not-applicable` because no transversal `scripts/qa-check.sh` exists; missing suite QA does not block implementation progress, and adding the script will automatically make QA applicable;
 - contract version, lifecycle phases, canonical project paths and supported patches are validated before export and upgrade;
 - deterministic and idempotent context indexing exists in `sbm_contexts`;
 - RAG-based context retrieval exists;
 - context packages contain bounded evidence and complete authorized source snapshots for safe section replacement;
 - manifest, path, UTF-8, ZIP-member and SHA-256 validation exist;
 - timestamped backup, atomic replacement and rollback support exist;
-- DP-API deploy and upgrade scripts use explicit lifecycle phases and objective identifiers;
-- activation, progress and closure behaviors are separated;
-- implementation closure requires project/global objective and QA synchronization;
 - completed objectives use a single global historical register outside the operational development context;
-- project-tree generation and package evidence exist;
-- `qa-check.sh` writes test, coverage and SonarScanner evidence to `context/qa-results.md`;
-- DP-API closure evidence records 65 passing tests, 88% configured pytest coverage and successful SonarScanner execution.
+- current Project Tree evidence shows the lifecycle shell scripts centralized under `context/scripts/` while project-specific QA, coverage, SonarQube and database scripts remain in their owning projects.
 
-Planned or incomplete capabilities:
+Current evidence limitations and pending validation:
 
-- fresh SBM-MANAGER QA execution and end-to-end context lifecycle validation;
-- complete cross-project synchronization coverage beyond the validated DP-API flow;
-- expanded context types and remaining project contexts;
-- dedicated documentation workflow and `sbm_documentation` validation;
-- Git-to-Notion synchronization;
-- asynchronous database-flag orchestration.
+- transversal QA for `SBM-SUITE/context` remains a separate pending capability; while `scripts/qa-check.sh` is absent, closure QA is canonically and structurally `not-applicable`;
+- project-specific QA validation for other suite projects remains independent of this suite-scoped closure;
+- Git-to-Notion synchronization and asynchronous database-flag orchestration remain future work.
 
 ## 13. Validated decisions
 
@@ -405,8 +429,8 @@ Planned or incomplete capabilities:
 - global `QA_CONTEXT.md` created;
 - `SYS_PROMPT.md` created;
 - DP-API contexts created;
-- DP-API `context-deploy.sh` created;
-- DP-API `context-upgrade.sh` created;
+- canonical global `context-deploy.sh` created under `SBM-SUITE/context/scripts/`;
+- canonical global `context-upgrade.sh` created under `SBM-SUITE/context/scripts/`;
 - `POST /contexts/export` implemented;
 - `POST /contexts/upgrade` implemented;
 - `sbm_contexts` implemented;
@@ -417,7 +441,7 @@ Planned or incomplete capabilities:
 - evidence and user-guided execution modes defined;
 - documentation exported to Git under `context/documentation/`;
 - expanded `FORMAT_CONTEXT.md` contract defined.
-- SBM-MANAGER canonical project context, QA context, deploy context and lifecycle scripts prepared;
+- SBM-MANAGER canonical project context, QA context and deploy context prepared;
 - SBM-DB canonical project context, QA context, deploy context and lifecycle scripts prepared;
 - section-level patch validation and application implemented;
 - project-tree generation integrated into context deployment;
@@ -433,7 +457,6 @@ Planned or incomplete capabilities:
 4. Create and populate `SECURITY_CONTEXT.md` with validated evidence.
 4. Create and populate `DATA_CONTEXT.md` with validated evidence.
 5. Create and populate `DECISIONS_CONTEXT.md` with validated evidence.
-6. Complete and validate the documentation deploy and upgrade workflow.
 7. Create and validate `sbm_documentation`.
 8. Map all documentation pages to relevant contexts.
 9. Add later Git-to-Notion synchronization.

@@ -50,6 +50,7 @@ Validated lifecycle state from current global Context:
 |---|---|---|---|
 | DP-QA-001 | DP-API | completed | Historical closure evidence records the completed QA procedure and its validated scope. |
 | DP-TEST-001 | DP-API | completed | Lifecycle-only/no-op closure with current QA evidence; no implementation-state change claimed. |
+| OBJ-CTX-013 | SBM-SUITE | completed | Context closure evidence confirms the centralized Context/Documentation workflow, exact lifecycle dispatch, global reconciliation, stale-output handling and structured QA `not-applicable` support. |
 
 Current workflow behavior includes:
 
@@ -263,7 +264,6 @@ The documentation upgrade validator additionally requires exact metadata labels,
 
 ## 12. Roadmap
 
-- OBJ-CTX-013 — Corregir y validar el workflow de documentación de `SBM-SUITE/context`, incluyendo `documentation-deploy.sh`, `documentation-upgrade.sh` y el flujo completo posterior a `context-upgrade`. Estado: active; prioridad: 5; target date: N/A; branch: BUGFIX-fixes-context-documentation-workflow.
 - Complete and validate `SBM-MANAGER` lifecycle integration across context and documentation workflows, QA/SonarQube evidence, and the canonical `sbm-ai-assistant` project contract before promoting it to current-state documentation.
 - Implement asynchronous workflow orchestration when approved.
 - Add downstream Notion synchronization without changing Git ownership.

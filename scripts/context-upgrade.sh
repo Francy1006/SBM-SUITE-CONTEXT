@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+[[ "$#" == "0" ]] || {
+  echo "Uso: ./scripts/context-upgrade.sh" >&2
+  exit 1
+}
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTEXT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SBM_SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
@@ -101,7 +106,8 @@ python3 - \
   "${PROJECT_NAME}" \
   "${CONTEXT_ROOT}" \
   "${SBM_SUITE_ROOT}" \
-  "${SCRIPT_DIR}/objective_lifecycle.py" <<'PY'
+  "${SCRIPT_DIR}/objective_lifecycle.py" \
+  "${SCRIPT_DIR}/qa_lifecycle.py" <<'PY'
 import json
 import re
 import sys
@@ -116,13 +122,20 @@ from zipfile import BadZipFile, ZipFile
     context_root,
     suite_root,
     lifecycle_helper,
+    qa_helper,
 ) = sys.argv[1:]
 sys.path.insert(0, str(Path(lifecycle_helper).parent))
+if Path(qa_helper).parent != Path(lifecycle_helper).parent:
+    sys.path.insert(0, str(Path(qa_helper).parent))
 from objective_lifecycle import (  # noqa: E402
     ObjectiveLifecycleError,
+    lifecycle_patch_policy,
+    lifecycle_route,
     resolve_project_root,
     validate_activation,
+    validate_existing_objective,
 )
+from qa_lifecycle import QAContractError, validate_closure_manifest_qa  # noqa: E402
 
 try:
     contract = json.loads(open(contract_path, encoding="utf-8").read())
@@ -165,6 +178,12 @@ phase = manifest.get("lifecycle_phase")
 phases = contract.get("lifecycle_phases")
 if not isinstance(phases, list) or phase not in phases:
     raise SystemExit("ERROR: lifecycle_phase no soportada")
+try:
+    route = lifecycle_route(phase)
+except ObjectiveLifecycleError as exc:
+    raise SystemExit(f"ERROR: {exc}") from exc
+if route != phase:
+    raise SystemExit("ERROR: dispatch lifecycle no determinista")
 
 projects = contract.get("canonical_projects")
 if not isinstance(projects, dict) or project_name not in projects:
@@ -257,7 +276,11 @@ if len(ids) != len(set(ids)):
 if phase != "planning-activation" and len(objectives) != 1:
     raise SystemExit(f"ERROR: {phase} actualmente requiere exactamente un objetivo")
 
-if phase == "objective-activation":
+if route in {
+    "objective-activation",
+    "implementation-progress",
+    "implementation-closure",
+}:
     try:
         project_root = resolve_project_root(Path(suite_root), expected_canonical)
         operational_contexts = [Path(context_root) / "PROJECT_CONTEXT.md"]
@@ -265,12 +288,23 @@ if phase == "objective-activation":
             operational_contexts.append(
                 project_root / "context" / "PROJECT_CONTEXT.md"
             )
-        validate_activation(
-            objectives,
-            operational_contexts,
-            Path(context_root) / "COMPLETED_OBJECTIVES.md",
-        )
-    except ObjectiveLifecycleError as exc:
+        completed_context = Path(context_root) / "COMPLETED_OBJECTIVES.md"
+        if route == "objective-activation":
+            validate_activation(objectives, operational_contexts, completed_context)
+        else:
+            validate_existing_objective(
+                objectives,
+                route,
+                operational_contexts,
+                completed_context,
+            )
+            if route == "implementation-closure":
+                validate_closure_manifest_qa(
+                    manifest.get("qa"),
+                    project_name,
+                    project_root,
+                )
+    except (ObjectiveLifecycleError, QAContractError) as exc:
         raise SystemExit(f"ERROR: {exc}") from exc
 
 if manifest.get("output_filename") != "context-upgrade.zip":
@@ -279,16 +313,13 @@ if manifest.get("output_filename") != "context-upgrade.zip":
 generated_patches = {
     name for name in names if name.startswith("patches/") and name.endswith(".json")
 }
-required_patches = {"patches/global-project-context.json"}
-if project_name != "sbm-suite-context":
-    required_patches.add("patches/project-context.json")
-if phase == "implementation-closure":
-    required_patches |= {
-        "patches/completed-objectives.json",
-        "patches/global-qa-context.json",
-    }
-    if project_name != "sbm-suite-context":
-        required_patches.add("patches/project-qa-context.json")
+required_patches, forbidden_patches = lifecycle_patch_policy(route, project_name)
+for forbidden_patch in sorted(forbidden_patches):
+    if forbidden_patch in generated_patches:
+        raise SystemExit(
+            f"ERROR: {forbidden_patch} solo aplica a "
+            "implementation-closure"
+        )
 
 missing_patches = sorted(required_patches - generated_patches)
 if missing_patches:

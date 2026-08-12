@@ -46,6 +46,9 @@ Project-specific test plans, fixtures, commands and detailed evidence remain in 
 15. Planned QA may be added during objective activation only with `Last execution = N/A`, `Result = pending` and explicit planned evidence.
 16. Closing QA updates must replace or reaffirm planned entries using actual execution evidence.
 17. Work one validated step at a time.
+18. Closure QA uses the canonical semantic states `passed`, `failed` and `not-applicable`; legacy `success` evidence is normalized to `passed`.
+19. Derive `not-applicable` only when the selected repository root has no repository-relative `scripts/qa-check.sh`. It is not equivalent to missing, unknown, not-run or failed evidence.
+20. If `scripts/qa-check.sh` exists, missing, empty, invalid or failed `qa-results.md` blocks closure and can never be overridden by user or generated manifest text.
 
 ## 3. Quality gates
 
@@ -319,9 +322,9 @@ FAIL
 
 Objective closure requires:
 
-- implementation evidence;
+- implementation evidence when implementation changes are claimed;
 - applicable planned QA updated with actual results;
-- successful `qa-check.sh` execution;
+- canonical QA status `passed` when `scripts/qa-check.sh` exists, or tooling-verified `not-applicable` when it does not;
 - successful SonarQube validation when applicable;
 - synchronized project and global QA contexts;
 - removal of the objective from active and pending contexts;
@@ -357,6 +360,15 @@ Status: PARTIALLY VALIDATED
 Reason: DP-API supplied successful current test, coverage, SonarScanner execution and server-side Quality Gate evidence; SBM-MANAGER QA is configured but has no fresh execution evidence yet; other projects and transversal gates remain incomplete.
 ```
 
+Closure applicability for the Context orchestration repository:
+
+```text
+Project: sbm-suite-context
+QA status: not-applicable
+Structural reason: scripts/qa-check.sh does not currently exist at the selected repository root
+Effect: closure tooling emits explicit deterministic evidence; adding that path automatically makes QA applicable
+```
+
 Verified DP-API closure evidence:
 
 ```text
@@ -372,6 +384,19 @@ Quality Gate: OK
 ```
 
 Tenant isolation, object permissions, cross-project integration, deployment and database compatibility remain outside the validated scope.
+
+Closure evidence for `OBJ-CTX-013`:
+
+```text
+Project: sbm-suite-context
+Objective: OBJ-CTX-013
+QA status: not-applicable
+QA applicable: false
+QA workflow: scripts/qa-check.sh
+Evidence file: qa-results.md
+Evidence SHA-256: ce4d484d05fe0748e278c64df4d97671aee4f603f0bfd4f9d0d49ca83dbe3469
+Reason: no applicable QA workflow is currently defined for sbm-suite-context: scripts/qa-check.sh does not exist
+```
 
 ## 17. Pending QA work
 

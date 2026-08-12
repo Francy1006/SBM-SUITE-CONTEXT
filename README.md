@@ -20,7 +20,12 @@ SBM-SUITE/
 │   ├── input/
 │   ├── output/
 │   ├── backup/
-│   ├── project-tree.sh
+│   ├── scripts/
+│   │   ├── context-deploy.sh
+│   │   ├── context-upgrade.sh
+│   │   ├── documentation-deploy.sh
+│   │   ├── documentation-upgrade.sh
+│   │   └── project-tree.sh
 │   └── project-tree.txt
 ├── dp/DP-API/
 └── sbm/
@@ -52,6 +57,8 @@ No standalone installation is required for the Markdown contracts. All manual Co
 
 Objective creation uses `planning-activation`. Activating an objective that already exists as pending uses `objective-activation` with the complete objective payload expressing desired `status=active`; that transition preserves ID, description, priority, target date and branch and never inserts a second objective.
 
+During `implementation-closure`, QA applicability is derived structurally from the selected repository's `scripts/qa-check.sh`: absence produces canonical `not-applicable` evidence, while presence requires validated successful execution evidence.
+
 ## Usage
 
 Use `input/` and `output/` for the global context workflow. Active and pending objectives remain in project and global `PROJECT_CONTEXT.md` files. Completed objectives are stored only in global `COMPLETED_OBJECTIVES.md`. Documentation pages live only below `documentation/pages/<page>/`, with subpages below `documentation/pages/<page>/subpages/`.
@@ -63,6 +70,7 @@ Execute from the local repository root `SBM-SUITE/context`:
 ./scripts/context-upgrade.sh
 ./scripts/documentation-deploy.sh
 ./scripts/documentation-upgrade.sh
+./scripts/project-tree.sh
 ```
 
 All Context and Documentation commands and artifact paths are relative to this working directory.

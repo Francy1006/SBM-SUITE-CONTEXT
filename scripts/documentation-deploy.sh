@@ -78,7 +78,7 @@ OUTPUT_DIR="${DOCUMENTATION_ROOT}/output"
 FORMAT_CONTEXT_FILE="${DOCUMENTATION_ROOT}/FORMAT_CONTEXT.md"
 SYSTEM_PROMPT_FILE="${DOCUMENTATION_ROOT}/SYS_PROMPT.md"
 QA_RESULTS_FILE="${CONTEXT_ROOT}/QA_CONTEXT.md"
-PROJECT_TREE_SCRIPT="${CONTEXT_ROOT}/project-tree.sh"
+PROJECT_TREE_SCRIPT="${CONTEXT_ROOT}/scripts/project-tree.sh"
 PROJECT_TREE_FILE="${CONTEXT_ROOT}/project-tree.txt"
 RESPONSE_FILE="${OUTPUT_DIR}/documentation-export-response.json"
 PACKAGE_FILE="${OUTPUT_DIR}/documentation-package.zip"
@@ -142,8 +142,34 @@ PY
 )"
 
 if [[ "${RECONCILIATION_PENDING}" != "true" ]]; then
+  python3 - "${RECONCILIATION_FILE}" "${RESPONSE_FILE}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+reconciliation_path, response_path = sys.argv[1:]
+reconciliation = json.loads(
+    Path(reconciliation_path).read_text(encoding="utf-8")
+)
+response = {
+    "status": "completed",
+    "workflow": "documentation-deploy",
+    "project_name": "sbm-suite-context",
+    "synchronized": True,
+    "summary": reconciliation["summary"],
+    "differences": [],
+    "documentation_targets": [],
+    "package_generated": False,
+    "package_file": None,
+}
+Path(response_path).write_text(
+    json.dumps(response, ensure_ascii=False, indent=2) + "\n",
+    encoding="utf-8",
+)
+PY
   echo "Documentation already synchronized"
   echo "No se generó documentation/output/documentation-package.zip."
+  echo "Respuesta: documentation/output/documentation-export-response.json"
   exit 0
 fi
 

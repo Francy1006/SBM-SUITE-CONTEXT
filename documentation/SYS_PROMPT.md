@@ -25,6 +25,16 @@ Global Context is authoritative for current objective lifecycle state across all
 
 An objective present in Context but absent from Documentation is a synchronization difference, not an invalid Context state. Preserve all unrelated documentation and omit replacements for files that are already synchronized.
 
+For lifecycle reconciliation, treat only rows in unfenced Markdown tables under
+the applicable exact `## 3. Current state`, `## 11. Pending work` or
+`## 12. Roadmap` section with the exact columns `Objective ID` and `Status` as
+canonical Documentation objective records. The status cell must be one literal lifecycle value. Ignore
+objective IDs and words such as `active` or `completed` in narrative prose,
+headings, lists, examples, instructions, code blocks and historical text.
+Compatible repeated canonical records produce one effective status; conflicting
+canonical statuses are an explicit source inconsistency and must not be silently
+selected or reported as an ordinary lifecycle difference.
+
 The source package for a real reconciliation must contain at least one functional candidate under `documentation/pages/`; `FORMAT_CONTEXT.md` and `SYS_PROMPT.md` are protected contracts and never count as Documentation candidates. When Context and Documentation are already synchronized, `documentation-deploy` must terminate with `Documentation already synchronized` and must not produce or request a metadata-only upgrade.
 
 For active or pending objectives, update only authorized planning or roadmap content supported by the supplied evidence.

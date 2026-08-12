@@ -859,7 +859,26 @@ GESTIONAR OBJETIVO
 4.- Volver
 ```
 
-5. For closure, determine whether QA applies from the selected project's current QA contract and whether `scripts/qa-check.sh` exists.
+Dispatch the selected action by exact equality only. Never use substring,
+prefix, suffix, fuzzy or inferred matching:
+
+```text
+planning-activation      → creation flow only
+objective-activation     → pending activation flow only
+implementation-progress  → progress flow only
+implementation-closure   → closure flow only
+```
+
+When the user supplies an explicit lifecycle command, treat its literal second
+argument as authoritative. In particular, `implementation-progress` must never
+enter any closure step, even when the selected objective is active, QA evidence
+exists or implementation appears complete.
+
+5. For closure, determine QA applicability structurally from the selected repository root: `<project-repository>/scripts/qa-check.sh`.
+   - If that repository-relative file does not exist, the canonical QA state is `not-applicable`; the generated manifest and `qa-results.md` must record that decision and its reason explicitly.
+   - If that file exists, QA is applicable. Missing, empty, invalid or failed execution evidence must block closure and must never be converted to `not-applicable`.
+   - This rule currently yields `not-applicable` for `SBM-SUITE/context`, but it will automatically require executed QA once the transversal script exists.
+   - QA classification is made by the lifecycle tooling, never by the user or the LLM. It applies only to the exact `implementation-closure` route; `implementation-progress` has no closure QA requirement.
 6. When QA applies, closure requires a QA execution that validates the current project state. This requirement applies even when the selected objective introduced no source-code changes.
 7. Historical QA evidence generated before the current objective creation/activation must be treated as baseline only and must not satisfy objective closure.
 8. If valid QA evidence for the current closure flow is not already supplied, do not terminate or return to the menu. Continue the same closure workflow by asking exactly:
@@ -893,21 +912,46 @@ Ejecute el comando y suba el archivo generado:
     - server-side Quality Gate when required by the current project QA contract;
     - evidence timestamp.
 12. If any required QA gate fails or remains unavailable, keep closure blocked and report the exact failed or missing gate. Do not generate `implementation-closure`.
-13. If all required QA gates pass, automatically resume the same selected objective closure flow. Do not ask the user to select the objective or closure action again.
+13. If all required QA gates pass, or tooling verifies `not-applicable`, automatically resume the same selected objective closure flow. Do not ask the user to select the objective or closure action again.
 14. Do not block closure only because `git-diff.patch`, `changed-files.txt` or Git implementation evidence is empty. A lifecycle-only/no-op objective may close without code changes when:
     - the selected objective exists in the current operational context;
-    - current QA passed;
+    - current QA is canonically `passed` or structurally verified as `not-applicable`;
     - the user explicitly selected closure;
     - no unsupported implementation change is claimed.
-15. For lifecycle-only/no-op closure, `context-upgrade.zip` must still synchronize the lifecycle using the five required patches:
+15. For lifecycle-only/no-op closure, `context-upgrade.zip` must still synchronize the lifecycle. Project-scoped targets use the five listed patches; `sbm-suite-context` uses only the three global patches and forbids project-scoped patches:
     - global `PROJECT_CONTEXT.md`;
     - project `PROJECT_CONTEXT.md`;
     - global `COMPLETED_OBJECTIVES.md`;
     - global `QA_CONTEXT.md`;
     - project `QA_CONTEXT.md`.
-16. Before the closure command, show a concise action preview and require explicit confirmation.
-17. The branch must come from the selected objective record in the loaded context. Never ask for it, invent it or replace it with another branch.
-18. For `Activate pending`, `Progress` and `Closure`, after confirmation ask exactly:
+16. For `implementation-progress`, require the objective to exist in an operational active or pending section, preserve its current status, show exactly this progress preview and do not request closure confirmation:
+
+```text
+PREVISUALIZACIÓN DE PROGRESO
+
+Objective ID: <objective_id>
+Status: <current-status> → <same-current-status>
+Branch: <objective-branch-from-context>
+```
+
+The progress route must never display a closure preview, propose a completion
+transition, request closure confirmation or generate an
+`implementation-closure` command.
+17. Exclusively for `implementation-closure`, require the objective to be active, show exactly this closure preview and require an explicit `sí` before continuing:
+
+```text
+PREVISUALIZACIÓN DE CIERRE
+
+Objective ID: <objective_id>
+Status: active → completed
+Branch: <objective-branch-from-context>
+
+¿Confirma el cierre? Responda "sí" para continuar.
+```
+
+No lifecycle other than the exact literal `implementation-closure` may show or request this confirmation.
+18. The branch must come from the selected objective record in the loaded context. Never ask for it, invent it or replace it with another branch.
+19. After the applicable activation/closure confirmation, or immediately after the progress preview, ask exactly:
 
 ```text
 EJECUCIÓN
@@ -917,7 +961,7 @@ EJECUCIÓN
 3.- SIN GIT
 ```
 
-19. Every lifecycle call uses the `objectives` JSON array contract.
+20. Every lifecycle call uses the `objectives` JSON array contract.
 
 Action mapping:
 
@@ -927,11 +971,11 @@ Progress         → implementation-progress '[{"objective_id":"<objective_id>"}
 Closure          → implementation-closure '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
 ```
 
-20. `Activate pending` is an existing-objective transition, never objective creation. It must verify that the selected ID exists exactly once with current status `pending`, reject missing, `active`, completed or otherwise invalid IDs, and send exactly one complete objective item with desired `status=active`.
-21. For `Activate pending`, preserve `objective_id`, `objective`, `priority`, `target_date` and `branch` literally from source-of-truth context. Change only `status` from `pending` to `active`; never send the existing `status=pending` value and never insert a second row.
-22. Before confirmation, show a transition preview containing the selected ID, `pending → active`, and the preserved branch without asking again for known objective data.
-23. `Progress` and `Closure` currently operate on exactly one objective per execution.
-24. Begin every generated lifecycle command block with the literal canonical `cd` and use only paths relative to that directory afterward.
+21. `Activate pending` is an existing-objective transition, never objective creation. It must verify that the selected ID exists exactly once with current status `pending`, reject missing, `active`, completed or otherwise invalid IDs, and send exactly one complete objective item with desired `status=active`.
+22. For `Activate pending`, preserve `objective_id`, `objective`, `priority`, `target_date` and `branch` literally from source-of-truth context. Change only `status` from `pending` to `active`; never send the existing `status=pending` value and never insert a second row.
+23. Before confirmation, show a transition preview containing the selected ID, `pending → active`, and the preserved branch without asking again for known objective data.
+24. `Progress` and `Closure` currently operate on exactly one objective per execution.
+25. Begin every generated lifecycle command block with the literal canonical `cd` and use only paths relative to that directory afterward.
 
 For `Activate pending`, the command rendered in any selected execution mode must resolve to this lifecycle call with the complete preserved payload:
 
@@ -1148,6 +1192,8 @@ Workflow:
 1. Do **not** list projects and do **not** ask for project selection.
 2. Treat the current global Context as the source of truth for objective lifecycle state across all registered projects.
 3. Reconcile accumulated `Context → Documentation` differences globally, including changes originating from projects different from the project whose lifecycle operation was most recently executed.
+   - Read Documentation lifecycle status only from canonical unfenced Markdown table rows under the applicable exact `Current state`, `Pending work` or `Roadmap` section and with exact `Objective ID` and `Status` columns. Never infer status from prose, headings, lists, examples, code blocks or historical mentions of lifecycle words.
+   - If canonical Documentation records for one ID conflict, stop and report the duplicate inconsistency explicitly. Do not choose one status or treat it as a normal difference.
 4. Planning documentation may describe only planned/roadmap/pending work and must preserve each objective's current Context status.
 5. Final documentation requires implementation/closure/QA evidence before representing a change as current state.
 6. A Documentation run may update zero, one or multiple projects in the same reconciliation. Never filter reconciliation by an originator `project_name`.
@@ -1202,7 +1248,7 @@ When Documentation continues a Context lifecycle flow, reuse the branch already 
 ```
 
 10. Request the generated package at `documentation/output/documentation-package.zip`.
-    - If deploy reports `Documentation already synchronized`, stop successfully: do not request a package, do not generate `documentation-upgrade.zip` and do not run `documentation-upgrade.sh`.
+    - If deploy reports `Documentation already synchronized`, verify the current response declares zero differences, zero targets and no generated package; stop successfully, do not reuse any previous package, do not generate `documentation-upgrade.zip` and do not run `documentation-upgrade.sh`.
     - If deploy reports reconciliation differences, require the generated package to contain at least one complete functional candidate under `documentation/pages/`; workflow contracts alone are insufficient.
 11. Generate the required `documentation-upgrade.zip`, place it at `documentation/input/documentation-upgrade.zip` and execute:
 
@@ -1362,7 +1408,7 @@ Example presentation:
 - Before any SonarQube-backed QA execution, require explicit confirmation that SonarQube is enabled and available.
 - When objective closure requires missing or stale QA evidence, run the QA flow inside the same closure interaction and resume closure automatically after successful validation.
 - QA closure validates the current project state even when the objective introduced no source-code changes.
-- A lifecycle-only/no-op objective may close with empty Git change evidence after successful current QA; closure must still synchronize both project contexts, `COMPLETED_OBJECTIVES.md` and both QA contexts.
+- A lifecycle-only/no-op objective may close with empty Git change evidence when canonical QA is `passed` or structurally verified as `not-applicable`; closure must still synchronize every context and QA patch applicable to the selected target.
 - Never advance after an error.
 - Never ask again for information already supplied in the current conversation.
 - Distinguish current evidence from plans and examples.

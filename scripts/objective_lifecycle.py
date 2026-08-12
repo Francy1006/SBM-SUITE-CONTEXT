@@ -19,10 +19,46 @@ REQUIRED_ACTIVATION_FIELDS = {
     "target_date",
     "branch",
 }
+LIFECYCLE_ROUTES = {
+    "planning-activation": "planning-activation",
+    "objective-activation": "objective-activation",
+    "implementation-progress": "implementation-progress",
+    "implementation-closure": "implementation-closure",
+}
 
 
 class ObjectiveLifecycleError(ValueError):
     pass
+
+
+def lifecycle_route(lifecycle_phase: str) -> str:
+    """Return the exact lifecycle route; never infer one phase from another."""
+    try:
+        return LIFECYCLE_ROUTES[lifecycle_phase]
+    except KeyError as exc:
+        raise ObjectiveLifecycleError(
+            f"unsupported lifecycle phase: {lifecycle_phase}"
+        ) from exc
+
+
+def lifecycle_patch_policy(
+    lifecycle_phase: str, project_name: str
+) -> tuple[set[str], set[str]]:
+    route = lifecycle_route(lifecycle_phase)
+    required = {"patches/global-project-context.json"}
+    if project_name != "sbm-suite-context":
+        required.add("patches/project-context.json")
+    forbidden: set[str] = set()
+    if route == "implementation-closure":
+        required |= {
+            "patches/completed-objectives.json",
+            "patches/global-qa-context.json",
+        }
+        if project_name != "sbm-suite-context":
+            required.add("patches/project-qa-context.json")
+    else:
+        forbidden.add("patches/completed-objectives.json")
+    return required, forbidden
 
 
 def _read_markdown(source: Path) -> str:
@@ -213,6 +249,77 @@ def validate_activation(
                 )
 
 
+def validate_existing_objective(
+    raw_objectives: Any,
+    lifecycle_phase: str,
+    operational_contexts: list[Path],
+    completed_context: Path,
+) -> None:
+    route = lifecycle_route(lifecycle_phase)
+    if route not in {"implementation-progress", "implementation-closure"}:
+        raise ObjectiveLifecycleError(
+            "existing-objective validation requires implementation-progress "
+            "or implementation-closure"
+        )
+    if not isinstance(raw_objectives, list) or len(raw_objectives) != 1:
+        raise ObjectiveLifecycleError(
+            f"{route} requires exactly one objectives[] item"
+        )
+    objective = raw_objectives[0]
+    if not isinstance(objective, dict):
+        raise ObjectiveLifecycleError(f"{route} item must be an object")
+    objective_id = objective.get("objective_id")
+    if not isinstance(objective_id, str) or not objective_id:
+        raise ObjectiveLifecycleError(f"{route} requires objective_id")
+
+    completed = _completed_ids(_read_markdown(completed_context))
+    if objective_id in completed:
+        raise ObjectiveLifecycleError(
+            f"cannot route completed objective through {route}: {objective_id}"
+        )
+
+    seen_contexts: set[Path] = set()
+    for source in operational_contexts:
+        resolved = source.resolve(strict=True)
+        if resolved in seen_contexts:
+            continue
+        seen_contexts.add(resolved)
+        markdown = _read_markdown(resolved)
+        active = _rows_by_id(markdown, ACTIVE_HEADING)
+        pending = _rows_by_id(markdown, PENDING_HEADING)
+        if objective_id in active and objective_id in pending:
+            raise ObjectiveLifecycleError(
+                f"objective exists in active and pending sections in {source}: "
+                f"{objective_id}"
+            )
+        if route == "implementation-closure":
+            if (
+                objective_id not in active
+                or active[objective_id].get("Status") != "active"
+            ):
+                raise ObjectiveLifecycleError(
+                    f"implementation-closure requires an active objective in "
+                    f"{source}: {objective_id}"
+                )
+        elif objective_id in active:
+            if active[objective_id].get("Status") != "active":
+                raise ObjectiveLifecycleError(
+                    f"implementation-progress found invalid active status in "
+                    f"{source}: {objective_id}"
+                )
+        elif objective_id in pending:
+            if pending[objective_id].get("Status") != "pending":
+                raise ObjectiveLifecycleError(
+                    f"implementation-progress found invalid pending status in "
+                    f"{source}: {objective_id}"
+                )
+        else:
+            raise ObjectiveLifecycleError(
+                f"objective does not exist in operational context {source}: "
+                f"{objective_id}"
+            )
+
+
 def resolve_project_root(suite_root: Path, canonical_path: str) -> Path:
     resolved_suite = suite_root.resolve(strict=True)
     canonical = PurePosixPath(canonical_path)
@@ -232,20 +339,27 @@ def resolve_project_root(suite_root: Path, canonical_path: str) -> Path:
 
 def _main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--lifecycle-phase", required=True, choices=LIFECYCLE_ROUTES)
     parser.add_argument("--objectives-json", required=True)
     parser.add_argument("--operational-context", action="append", required=True)
     parser.add_argument("--completed-context", required=True)
     arguments = parser.parse_args()
     try:
         objectives = json.loads(arguments.objectives_json)
-        validate_activation(
-            objectives,
-            [Path(value) for value in arguments.operational_context],
-            Path(arguments.completed_context),
-        )
+        route = lifecycle_route(arguments.lifecycle_phase)
+        contexts = [Path(value) for value in arguments.operational_context]
+        completed = Path(arguments.completed_context)
+        if route == "objective-activation":
+            validate_activation(objectives, contexts, completed)
+        elif route in {"implementation-progress", "implementation-closure"}:
+            validate_existing_objective(objectives, route, contexts, completed)
+        else:
+            raise ObjectiveLifecycleError(
+                "planning-activation does not use existing-objective preflight"
+            )
     except (json.JSONDecodeError, ObjectiveLifecycleError, OSError) as exc:
         raise SystemExit(f"ERROR: {exc}") from exc
-    print("objective-activation preflight validated")
+    print(f"{route} preflight validated")
     return 0
 
 

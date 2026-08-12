@@ -446,40 +446,46 @@ Validated workflow state:
 
 ## 20. Context deployment lifecycle
 
-```text
-qa-check.sh
-→ execute the configured pytest and coverage workflow
-→ execute SonarScanner only after successful test and coverage execution
-→ write bounded evidence to context/qa-results.md
+Run all lifecycle orchestration from the root of `SBM-SUITE/context`.
 
-context-deploy.sh <project_name> <lifecycle_phase> <objectives-json-array> [user_prompt]
-→ validate planning-activation, objective-activation, implementation-progress or implementation-closure
-→ reserve planning-activation for new objectives and objective-activation for one existing pending → active transition
-→ request GET /contexts/contract and validate the runtime contract
-→ clean suite-global exchange directories only after contract preflight
-→ generate and require project-tree.txt
-→ collect Git and QA evidence without exporting environment values
-→ call POST /contexts/export with /suite/<brand>/<project>
+```text
+<selected-project>/scripts/qa-check.sh
+→ when present, QA is applicable and closure requires canonical successful execution evidence
+→ when absent, closure QA is structurally `not-applicable`
+→ missing or failed evidence for an applicable QA workflow blocks closure
+
+./scripts/context-deploy.sh <project_name> <lifecycle_phase> <objectives-json-array> [user_prompt]
+→ validate the selected project through the backend Project Registry
+→ dispatch planning-activation, objective-activation, implementation-progress and implementation-closure by exact literal equality
+→ reserve planning-activation for new objectives
+→ reserve objective-activation for exactly one existing pending → active transition
+→ preserve active/pending state during implementation-progress
+→ reserve active → completed exclusively for implementation-closure
+→ request GET /contexts/contract before exchange-directory cleanup
+→ generate project-tree.txt through ./scripts/project-tree.sh
+→ collect Git evidence and canonical QA evidence from the registry-resolved project root
+→ call POST /contexts/export
 → package bounded evidence and complete authorized source snapshots
 → generate context-package.zip, context-export-response.json and parameterized SYS_PROMPT.md
 
 review process
-→ read FORMAT_CONTEXT.md, the source manifest, evidence and applicable snapshots
+→ read FORMAT_CONTEXT.md, the source manifest, evidence and applicable complete snapshots
 → generate only authorized section-level JSON patches
-→ use append_to_section for the first completed project group
-→ use replace_section for an existing completed project group
-→ generate manifest.json from final ZIP contents
+→ preserve the source-manifest QA decision literally during implementation-closure
+→ use append_to_section only when the canonical completed-objective project group is absent
+→ use replace_section when that completed-objective project group already exists
+→ generate manifest.json from the final ZIP contents only
 
-context-upgrade.sh
+./scripts/context-upgrade.sh
 → require exactly one context-upgrade.zip
 → request GET /contexts/contract
-→ inspect manifest.json without extracting the archive
+→ inspect manifest.json before extraction
 → reject unsafe, unsupported or phase-incompatible files
-→ require all five closing patches for implementation-closure
-→ call POST /contexts/upgrade only after preflight succeeds
+→ for sbm-suite-context closure require global-project-context, completed-objectives and global-qa-context patches and forbid project-scoped patches
+→ for project-scoped closure additionally require project-context and project-qa-context patches
+→ recalculate QA applicability from repository-relative scripts/qa-check.sh and require exact agreement with manifest.qa
+→ call POST /contexts/upgrade only after local preflight succeeds
 → create SBM-SUITE/context/backup/<timestamp>_<project>/
-→ preserve original files, EXECUTIVE_README.md and COMMIT_MESSAGE.md
-→ write BACKUP_MANIFEST.json with paths and SHA-256 hashes
 → apply authorized patches atomically and roll back on failure
 → remove the input ZIP only after complete success
 ```
@@ -488,31 +494,36 @@ The backend remains the authoritative validation, backup, replacement and rollba
 
 ## 21. Documentation lifecycle
 
+Run Documentation globally from the root of `SBM-SUITE/context`; do not select or pass a project.
+
 ```text
-1. complete context upgrade
-2. review context changes
-3. documentation-deploy.sh
-4. index documentation in sbm_documentation
-5. retrieve relevant documentation and updated context chunks
-6. generate documentation-package.zip and documentation SYS_PROMPT.md
-7. user uploads files to ChatGPT with or without additional prompt
-8. ChatGPT returns documentation-upgrade.zip
-9. user places ZIP in documentation/input
-10. documentation-upgrade.sh validates authorized Markdown files
-11. create a timestamped documentation backup under `SBM-SUITE/context/backup/`
+1. complete the applicable Context upgrade
+2. refresh the loaded context state before any state-reading menu is reused
+3. ./scripts/documentation-deploy.sh
+4. reconcile global Context objective lifecycle against canonical objective rows in all functional Documentation pages
+5. ignore narrative lifecycle words and reject conflicting canonical duplicate objective states
+6. if Documentation is already synchronized, remove stale deploy artifacts, write a no-op response, generate no package and stop successfully
+7. if real differences exist, index/retrieve the required global documentation candidates and generate documentation-package.zip
+8. review the generated package and create documentation-upgrade.zip only from real functional document targets
+9. place the ZIP in documentation/input
+10. ./scripts/documentation-upgrade.sh validates manifest/file equality and authorized Markdown targets
+11. create a timestamped documentation backup under SBM-SUITE/context/backup/
 12. replace validated documentation files
-13. return commit message in terminal
-14. user reviews git status
+13. return the proposed commit message
+14. refresh context.zip again before returning to any state-reading menu
 ```
 
 Current rules:
 
 - Git is the primary source of truth.
-- Only existing pages and subpages authorized by documentation format may be modified.
-- Creation, deletion, rename or structural change requires manual format and prompt updates.
+- Documentation reconciliation is global and never filters by an originator `project_name`.
+- Lifecycle status is read only from canonical unfenced Markdown objective tables under the applicable exact `Current state`, `Pending work` or `Roadmap` section.
+- Only existing pages and subpages authorized by the documentation format may be modified.
+- Creation, deletion, rename or structural change requires explicit manual contract updates.
 - Main pages are documents and must maintain subpage links.
+- A synchronized no-op must not leave a previous `documentation-package.zip` reusable as a current result.
 - Notion synchronization is downstream and planned for a later stage.
-- `SBM-SUITE/context/backup/` is the single backup root for context and documentation workflows; workflow-local or alternate backup roots are forbidden.
+- `SBM-SUITE/context/backup/` is the single backup root for Context and Documentation workflows.
 
 ## 22. Related documentation
 

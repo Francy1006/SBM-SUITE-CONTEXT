@@ -15,6 +15,11 @@ PENDING_HEADING = "## 4. Pending objectives"
 COMPLETED_HEADING = "## 1. Completed objectives by project"
 LIFECYCLE_STATUSES = {"active", "pending", "completed", "cancelled"}
 PLANNING_HEADINGS = {"## 11. Pending work", "## 12. Roadmap"}
+CANONICAL_DOCUMENTATION_HEADINGS = {
+    "## 3. Current state",
+    "## 11. Pending work",
+    "## 12. Roadmap",
+}
 
 
 class DocumentationReconciliationError(ValueError):
@@ -175,15 +180,109 @@ def _objective_pattern(objective_id: str) -> re.Pattern[str]:
     )
 
 
-def _line_statuses(line: str) -> set[str]:
-    return {
-        token.casefold()
-        for token in re.findall(
-            r"(?<![A-Za-z])(active|pending|completed|cancelled)(?![A-Za-z])",
-            line,
-            flags=re.IGNORECASE,
+def _table_cells(line: str) -> list[str]:
+    return [cell.strip() for cell in line.strip()[1:-1].split("|")]
+
+
+def _unfenced_lines(markdown: str) -> list[str]:
+    result: list[str] = []
+    fence: str | None = None
+    for line in markdown.splitlines():
+        match = re.match(r"^\s*(`{3,}|~{3,})", line)
+        if match:
+            marker = match.group(1)[0]
+            if fence is None:
+                fence = marker
+            elif fence == marker:
+                fence = None
+            result.append("")
+            continue
+        result.append(
+            ""
+            if fence is not None or line.startswith(("    ", "\t"))
+            else line
         )
-    }
+    return result
+
+
+def _canonical_documentation_records(
+    pages: dict[str, str],
+) -> dict[str, ObjectiveRecord]:
+    records: dict[str, list[ObjectiveRecord]] = {}
+    for archive_path, markdown in pages.items():
+        lines = _unfenced_lines(markdown)
+        index = 0
+        current_heading = ""
+        while index < len(lines):
+            line = lines[index].strip()
+            if re.match(r"^##(?!#)\s+", line):
+                current_heading = line
+            if not (line.startswith("|") and line.endswith("|")):
+                index += 1
+                continue
+
+            table: list[str] = []
+            while index < len(lines):
+                candidate = lines[index].strip()
+                if not (candidate.startswith("|") and candidate.endswith("|")):
+                    break
+                table.append(candidate)
+                index += 1
+            if len(table) < 2:
+                continue
+
+            headers = _table_cells(table[0])
+            if (
+                current_heading not in CANONICAL_DOCUMENTATION_HEADINGS
+                or "Objective ID" not in headers
+                or "Status" not in headers
+            ):
+                continue
+            separator = _table_cells(table[1])
+            if len(separator) != len(headers) or not all(
+                re.fullmatch(r":?-+:?", cell) for cell in separator
+            ):
+                raise DocumentationReconciliationError(
+                    f"canonical objective table separator is invalid: {archive_path}"
+                )
+
+            for raw_row in table[2:]:
+                values = _table_cells(raw_row)
+                if len(values) != len(headers):
+                    raise DocumentationReconciliationError(
+                        f"canonical objective table row is malformed: {archive_path}"
+                    )
+                row = dict(zip(headers, values, strict=True))
+                objective_id = row.get("Objective ID", "")
+                status = row.get("Status", "").casefold()
+                if not objective_id:
+                    raise DocumentationReconciliationError(
+                        f"canonical objective record has empty Objective ID: {archive_path}"
+                    )
+                if status not in LIFECYCLE_STATUSES:
+                    raise DocumentationReconciliationError(
+                        "canonical objective record has invalid status: "
+                        f"{objective_id} ({row.get('Status', '')}) in {archive_path}"
+                    )
+                records.setdefault(objective_id, []).append(
+                    ObjectiveRecord(
+                        objective_id=objective_id,
+                        project=row.get("Project", ""),
+                        status=status,
+                        documentation=archive_path,
+                    )
+                )
+
+    effective: dict[str, ObjectiveRecord] = {}
+    for objective_id, objective_records in records.items():
+        statuses = {record.status for record in objective_records}
+        if len(statuses) != 1:
+            raise DocumentationReconciliationError(
+                "Duplicate canonical objective records with conflicting status: "
+                f"{objective_id} ({', '.join(sorted(statuses))})"
+            )
+        effective[objective_id] = objective_records[0]
+    return effective
 
 
 def _explicit_targets(documentation: str, available: set[str]) -> set[str]:
@@ -229,10 +328,20 @@ def build_reconciliation(
     completed_context = _read_required(completed_context_path)
     objectives = _operational_objectives(project_context)
     objectives.extend(_completed_objectives(completed_context))
-    ids = [record.objective_id for record in objectives]
-    if len(ids) != len(set(ids)):
+    context_records: dict[str, list[ObjectiveRecord]] = {}
+    for record in objectives:
+        context_records.setdefault(record.objective_id, []).append(record)
+    for objective_id, records in context_records.items():
+        if len(records) <= 1:
+            continue
+        statuses = {record.status for record in records}
+        if len(statuses) > 1:
+            raise DocumentationReconciliationError(
+                "Duplicate canonical objective records with conflicting status "
+                f"in Context: {objective_id} ({', '.join(sorted(statuses))})"
+            )
         raise DocumentationReconciliationError(
-            "Context contains duplicate objective IDs across lifecycle states"
+            f"Duplicate canonical objective records in Context: {objective_id}"
         )
 
     page_paths = sorted(
@@ -261,24 +370,28 @@ def build_reconciliation(
             "no authorized planning or roadmap Documentation page was discovered"
         )
 
+    documentation_records = _canonical_documentation_records(pages)
+
     differences: list[dict[str, Any]] = []
     targets: set[str] = set()
     for record in objectives:
         pattern = _objective_pattern(record.objective_id)
         occurrence_paths: set[str] = set()
-        documented_states: set[str] = set()
         for archive_path, markdown in pages.items():
-            for line in markdown.splitlines():
-                if pattern.search(line):
-                    occurrence_paths.add(archive_path)
-                    documented_states.update(_line_statuses(line))
+            if pattern.search(markdown):
+                occurrence_paths.add(archive_path)
 
-        if occurrence_paths and documented_states == {record.status}:
+        documented_record = documentation_records.get(record.objective_id)
+        documented_states = (
+            {documented_record.status} if documented_record is not None else set()
+        )
+
+        if documented_record is not None and documented_record.status == record.status:
             continue
 
-        if not occurrence_paths:
+        if documented_record is None and not occurrence_paths:
             difference_type = "missing-objective"
-        elif not documented_states:
+        elif documented_record is None:
             difference_type = "status-unresolved"
         else:
             difference_type = "status-mismatch"
