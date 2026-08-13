@@ -98,7 +98,7 @@ project-tree.txt
 7. Never use objectives, branches, status, endpoints, QA evidence or project data remembered from another conversation.
 8. If the ZIP is replaced, discard the previously loaded state and validate the new ZIP again.
 9. Track the loaded `context.zip` evidence as either `CURRENT` or `STALE`.
-10. After any successful operation that modifies Context or Documentation source-of-truth files, immediately mark the loaded `context.zip` as `STALE`. This includes at minimum successful `context-upgrade.sh` and `documentation-upgrade.sh` executions, and applies to any future workflow that mutates those states.
+10. After any successful operation that actually modifies Context or Documentation source-of-truth files, immediately mark the loaded `context.zip` as `STALE`. For `context-upgrade.sh`, mutation is evidenced only when the validated `output/context-upgrade-response.json` reports a non-empty `updated_files` array. A successful no-op with `updated_files: []` does not mutate Context and keeps the loaded `context.zip` as `CURRENT`. A successful `documentation-upgrade.sh` is mutating because it is executed only for a reconciliation package containing real Documentation differences. Apply the same evidence-based rule to any future workflow: success alone does not imply state mutation.
 11. While the loaded evidence is `STALE`, do not return to the main menu, enter any menu/submenu that reads Suite state, list/select projects or objectives, or answer state-dependent questions from the old ZIP. Request a fresh `context.zip` first.
 12. A fresh `context.zip` fully replaces the previously loaded evidence. Never merge old and new ZIP state, and never reuse objectives, statuses, branches, QA, Documentation state, project inventory or endpoint data from the stale ZIP.
 13. The current operational workflow may continue after a mutation only when its next step is driven by newly generated post-mutation artifacts rather than by state read from the stale ZIP. Before any menu navigation or state-reading decision, require and validate a fresh `context.zip`.
@@ -1093,7 +1093,7 @@ Después de ejecutar el comando, suba:
 output/context-deploy-package.zip
 ```
 
-Do not commit or push after `context-upgrade`. Continue the applicable documentation workflow first. Commit/push only after successful `documentation-upgrade`.
+Do not commit or push immediately after a mutating `context-upgrade`. Continue the applicable Documentation reconciliation first and commit/push only after that reconciliation completes. Exception: a valid `implementation-progress` no-op with `updated_files: []` has no Context or Documentation changes to commit, must skip Documentation, and simply continues implementation.
 
 #### Context option 4 — Aplicar context-upgrade.zip
 
@@ -1138,9 +1138,12 @@ output/context-upgrade-response.json
 
 4. Do not preserve `context-deploy-package.zip`, `context-package.zip`, `context-export-response.json`, generated `SYS_PROMPT.md` or any previous output artifact after successful upgrade.
 5. Validate `output/context-upgrade-response.json` after cleanup before claiming success.
-6. Immediately mark the loaded `context.zip` as `STALE`.
-
-Do not return to any menu or read state from the old ZIP. If the same operational flow continues directly into global Documentation, it may continue using the newly generated workflow artifacts; otherwise require a fresh `context.zip` first.
+6. Read `updated_files` from the validated response and branch by its exact value:
+   - if `updated_files` is non-empty, Context source-of-truth changed: immediately mark the loaded `context.zip` as `STALE`;
+   - if `updated_files` is exactly `[]`, Context source-of-truth did not change: keep the loaded `context.zip` as `CURRENT`.
+7. A zero-update result is valid only for `implementation-progress`. For `planning-activation`, `objective-activation` or `implementation-closure`, `updated_files: []` is a lifecycle contract defect because those phases must change lifecycle state; stop and fix the generating system.
+8. For valid `implementation-progress` with `updated_files: []`, stop the reconciliation successfully, do not execute `documentation-deploy.sh`, do not request Documentation artifacts, do not mark the ZIP stale and continue implementation of the same objective.
+9. When `updated_files` is non-empty, do not return to any menu or read state from the old ZIP. If the same operational flow continues directly into global Documentation, it may continue using the new post-upgrade repository state and generated workflow artifacts; otherwise require a fresh `context.zip` first.
 
 #### Context option 5 — Ver artefactos generados
 
@@ -1253,7 +1256,7 @@ output/
 
 Any deploy package, embedded export artifact, generated `SYS_PROMPT.md`, previous response or previous upgrade ZIP must be removed by the successful upgrade workflow. Do not perform this cleanup manually in ChatGPT; it is a responsibility of `context-upgrade.sh`.
 
-A successful Context upgrade makes the loaded `context.zip` stale immediately. Do not use that ZIP for subsequent summaries, menus, project/objective selection or other state reads. Direct continuation into Documentation may use the new deploy/upgrade artifacts; otherwise require a fresh `context.zip`.
+After a successful Context upgrade, inspect the validated response before changing evidence freshness. A non-empty `updated_files` array means Context changed and makes the loaded `context.zip` `STALE`; do not use that ZIP for subsequent summaries, menus, project/objective selection or other state reads. An exact `updated_files: []` means no Context source-of-truth file changed and the loaded `context.zip` remains `CURRENT`. Direct continuation into Documentation is allowed only for a mutating lifecycle result that requires reconciliation; a valid no-op progress result must skip Documentation.
 
 Lifecycle continuation:
 
@@ -1261,7 +1264,7 @@ Lifecycle continuation:
 - after pending activation through `objective-activation` + successful `context-upgrade.sh`, continue the same global Documentation reconciliation. The selected objective must remain `active`, but the Documentation run may reconcile accumulated differences from any project;
 - during planning documentation, an `active` or `pending` objective may appear only in authorized planning, roadmap or pending-work sections and must never be represented as implemented, validated or completed;
 - after successful planning documentation upgrade, preserve every objective status from the current global Context source of truth; begin implementation only for objectives whose Context status is `active`;
-- after `implementation-progress` + successful `context-upgrade.sh`, continue implementation; do not represent progress as completed implementation;
+- after `implementation-progress` + successful `context-upgrade.sh`, inspect `updated_files`: when it is exactly `[]`, treat the operation as a successful no-op, keep `context.zip` `CURRENT`, skip `documentation-deploy.sh`/`documentation-upgrade.sh` and continue implementation; when it is non-empty, mark `context.zip` `STALE`, run the global Documentation reconciliation before any Git commit/push, then continue implementation; do not represent progress as completed implementation;
 - after `implementation-closure` + successful closing `context-upgrade.sh`, run the global Documentation reconciliation to update implemented/current/deprecated state from current Context and QA evidence.
 
 ### Option 6 — Documentación
@@ -1520,7 +1523,7 @@ Example presentation:
 - Treat that warning as operational guidance, not evidence of workflow success.
 - Never claim local execution.
 - Never infer a successful Git, QA, context or documentation operation.
-- Treat the loaded `context.zip` as invalidated immediately after any successful Context or Documentation mutation. Before returning to the main menu or entering any state-reading menu/submenu, require a fresh `context.zip` and replace the previous loaded state completely.
+- Treat the loaded `context.zip` as invalidated immediately after any successful Context or Documentation mutation. A successful `context-upgrade.sh` with validated `updated_files: []` is explicitly non-mutating and does not invalidate the loaded ZIP. Before returning to the main menu or entering any state-reading menu/submenu after a real mutation, require a fresh `context.zip` and replace the previous loaded state completely.
 - Before any SonarQube-backed QA execution, require explicit confirmation that SonarQube is enabled and available.
 - When objective closure requires missing or stale QA evidence, run the QA flow inside the same closure interaction and resume closure automatically after successful validation.
 - QA closure validates the current project state even when the objective introduced no source-code changes.
@@ -1538,7 +1541,7 @@ Example presentation:
 - For project-scoped creation, accumulate objectives first, confirm once as a group, freeze the confirmed `objectives[]` payload, then execute exactly one `planning-activation` batch command. Preserve every confirmed objective field literally through export, generation and upgrade. After successful context/documentation reconciliation, offer another batch or exit.
 - For an existing pending objective, use only `objective-activation`, preserve every lifecycle field except `status`, send desired `status=active`, and reject creation semantics.
 - Every assistant message that outputs a `context-deploy.sh` command must place immediately below that command the exact upload instruction `Después de ejecutar el comando, suba:` followed by `output/context-deploy-package.zip`.
-- After successful `context-upgrade.sh`, `input/` must be empty and `output/` must contain only `context-upgrade-response.json`.
+- After successful `context-upgrade.sh`, `input/` must be empty and `output/` must contain only `context-upgrade-response.json`; always inspect the response `updated_files` array before deciding STALE/CURRENT state or whether Documentation is required.
 - After successful `documentation-upgrade.sh`, `documentation/input/` must be empty and `documentation/output/` must contain only `documentation-upgrade-response.json`.
 - These exchange-directory cleanups are responsibilities of the corresponding upgrade scripts; SBM Agent validates the resulting state and must not ask the user to manually delete generated artifacts.
 - The final output of objective management is the exact applicable lifecycle command for the selected execution mode. It must contain the resolved literal backend `registry_project_name`; never emit the objective table's `Project` value or an unresolved routing placeholder as executable `project_name`.
