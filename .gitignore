@@ -23,3 +23,7 @@ project-tree.txt
 
 .env.dev
 .env.prod
+
+.venv
+
+scripts/tests/__pycache__
