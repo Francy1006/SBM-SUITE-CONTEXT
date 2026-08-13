@@ -238,6 +238,38 @@ class ObjectiveBranchesTests(unittest.TestCase):
             progress.split("```bash", maxsplit=2)[-1],
         )
 
+    def test_activation_reconciliation_auto_handoffs_to_progress_without_menu(self) -> None:
+        contract = (CONTEXT_ROOT / "INIT_CONTEXT.md").read_text(encoding="utf-8")
+
+        self.assertIn("#### Automatic activation-to-implementation handoff", contract)
+        handoff = contract.split(
+            "#### Automatic activation-to-implementation handoff", maxsplit=1
+        )[1].split(
+            "#### Optional transversal Git finalization for progress and closure",
+            maxsplit=1,
+        )[0]
+
+        bash_blocks = re.findall(r"```bash\n(.*?)```", handoff, flags=re.DOTALL)
+        self.assertEqual(len(bash_blocks), 2)
+        self.assertIn("objective-branches.sh prepare", bash_blocks[0])
+        self.assertNotIn("context-deploy.sh", bash_blocks[0])
+        self.assertIn("objective-branches.sh verify", bash_blocks[1])
+        self.assertIn("implementation-progress", bash_blocks[1])
+        self.assertIn("<activated-objective-id>", bash_blocks[1])
+        self.assertIn("<frozen-registry_project_name>", bash_blocks[1])
+        for forbidden in ("checkout", "pull", "fetch", "checkout -b", "switch"):
+            self.assertNotIn(forbidden, bash_blocks[1])
+
+        self.assertIn(
+            "never ask the user to select `Registrar progreso` after a successful activation",
+            handoff,
+        )
+        self.assertIn(
+            "If this Documentation run continues `objective-activation`, immediately render",
+            contract,
+        )
+
+
 
 if __name__ == "__main__":
     unittest.main()

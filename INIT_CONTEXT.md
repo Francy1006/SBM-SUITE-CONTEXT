@@ -1333,10 +1333,67 @@ Lifecycle continuation:
 
 - after objective creation through `planning-activation` + successful `context-upgrade.sh`, continue the global Documentation reconciliation with `documentation-deploy.sh` and `documentation-upgrade.sh`;
 - after pending activation through `objective-activation` + successful `context-upgrade.sh`, continue the same global Documentation reconciliation. The selected objective must remain `active`, but the Documentation run may reconcile accumulated differences from any project;
+- after that activation Documentation reconciliation completes successfully, do **not** return to the menu and do **not** require a fresh `context.zip` before the implementation handoff. Reuse only the objective ID, objective branch and `registry_project_name` already frozen by the activation workflow, and automatically render the exact two-stage activation-to-implementation handoff defined below;
 - during planning documentation, an `active` or `pending` objective may appear only in authorized planning, roadmap or pending-work sections and must never be represented as implemented, validated or completed;
-- after successful planning documentation upgrade, preserve every objective status from the current global Context source of truth; begin implementation only for objectives whose Context status is `active`;
+- after successful planning documentation upgrade, preserve every objective status from the current global Context source of truth. For a just-completed `objective-activation`, begin implementation through the automatic handoff below; for other planning flows, begin implementation only for objectives whose Context status is `active`;
 - after `implementation-progress` + successful `context-upgrade.sh`, inspect `updated_files`: when it is exactly `[]`, treat the operation as a successful no-op, keep `context.zip` `CURRENT`, skip `documentation-deploy.sh`/`documentation-upgrade.sh`, offer the optional transversal Git finalization Bash defined below and continue implementation; when it is non-empty, mark `context.zip` `STALE`, run the global Documentation reconciliation before offering Git finalization, then continue implementation; do not represent progress as completed implementation;
 - after `implementation-closure` + successful closing `context-upgrade.sh`, run the global Documentation reconciliation to update implemented/current/deprecated state from current Context and QA evidence, then offer the optional transversal Git finalization Bash defined below.
+
+#### Automatic activation-to-implementation handoff
+
+After `objective-activation` has completed both required Context and global Documentation reconciliation successfully, continue the **same operational workflow** without returning to any menu. The old `context.zip` may already be `STALE`; this continuation is still allowed because it reads no new Suite state and uses only the activation values frozen before mutation.
+
+Render exactly these two sections in the same assistant message:
+
+```text
+BASH 1 — PREPARAR BRANCHES TRANSVERSALES
+```
+
+```bash
+cd "$(git rev-parse --show-toplevel)" || exit 1
+(
+set -euo pipefail
+
+branch="<activated-objective-branch>"
+./scripts/objective-branches.sh prepare "${branch}"
+)
+```
+
+Immediately after Bash 1, state briefly that the user must make the real implementation changes and execute Bash 2 only when those changes are finished.
+
+```text
+BASH 2 — REGISTRAR PROGRESO
+```
+
+```bash
+cd "$(git rev-parse --show-toplevel)" || exit 1
+(
+set -euo pipefail
+
+branch="<activated-objective-branch>"
+./scripts/objective-branches.sh verify "${branch}"
+
+objectives='[{"objective_id":"<activated-objective-id>"}]'
+./scripts/context-deploy.sh "<frozen-registry_project_name>" implementation-progress "${objectives}"
+)
+```
+
+Immediately below Bash 2 display exactly:
+
+```text
+Después de ejecutar el comando, suba:
+
+output/context-deploy-package.zip
+```
+
+Rules:
+
+- never ask the user to select `Registrar progreso` after a successful activation;
+- never ask the user to select the project/objective again;
+- never regenerate, infer or reread the objective branch or backend project name from stale evidence; reuse only the values frozen by the activation workflow;
+- Bash 1 performs transversal branch preparation only and must not execute `context-deploy.sh`;
+- Bash 2 performs only transversal branch verification plus `implementation-progress`; it must not checkout, pull, fetch, create or switch branches;
+- if the user does not execute the handoff immediately and later returns through a state-reading menu, require a fresh `context.zip` first because the prior evidence remains `STALE`.
 
 #### Optional transversal Git finalization for progress and closure
 
@@ -1444,7 +1501,7 @@ When Documentation continues a Context lifecycle flow, reuse the branch already 
 ```
 
 10. Request the generated package at `documentation/output/documentation-package.zip`.
-    - If deploy reports `Documentation already synchronized`, verify the current response declares zero differences, zero targets and no generated package; stop Documentation successfully, do not reuse any previous package, do not generate `documentation-upgrade.zip` and do not run `documentation-upgrade.sh`. If this Documentation run continues `implementation-progress` or `implementation-closure`, now offer the optional transversal Git finalization Bash.
+    - If deploy reports `Documentation already synchronized`, verify the current response declares zero differences, zero targets and no generated package; stop Documentation successfully, do not reuse any previous package, do not generate `documentation-upgrade.zip` and do not run `documentation-upgrade.sh`. If this Documentation run continues `objective-activation`, immediately render the automatic activation-to-implementation handoff. If it continues `implementation-progress` or `implementation-closure`, now offer the optional transversal Git finalization Bash.
     - If deploy reports reconciliation differences, require the generated package to contain at least one complete functional candidate under `documentation/pages/`; workflow contracts alone are insufficient.
 11. Generate the required `documentation-upgrade.zip`, place it at `documentation/input/documentation-upgrade.zip` and execute:
 
@@ -1465,7 +1522,7 @@ documentation/output/
 
 Do not preserve `documentation-package.zip`, previous export responses, previous upgrade ZIPs, `.gitkeep` or other generated exchange artifacts after successful upgrade. `documentation-upgrade.sh` must invoke `scripts/cleanup-exchange.sh documentation` only after the response has been validated successfully. Do not perform this cleanup manually in ChatGPT.
 
-14. Immediately mark the loaded `context.zip` as `STALE`. Do not return to the main menu or any state-reading submenu until a fresh `context.zip` has been uploaded, validated and adopted as the complete replacement state.
+14. Immediately mark the loaded `context.zip` as `STALE`. Do not return to the main menu or any state-reading submenu until a fresh `context.zip` has been uploaded, validated and adopted as the complete replacement state. The sole continuation exception is a just-completed `objective-activation`: before any menu/state read, automatically render the activation-to-implementation handoff using only the objective ID, branch and `registry_project_name` already frozen by that activation.
 15. The validated Documentation result may contain changes for multiple projects. Do not reject it merely because those projects differ from the lifecycle operation that preceded Documentation.
 16. For lifecycle `implementation-progress` or `implementation-closure`, Git finalization may be offered only after Documentation reconciliation is complete: either deploy validated `Documentation already synchronized` with zero differences, or `documentation-upgrade.sh` completed successfully.
 17. Do not use `commit_message_file` artifacts after Documentation cleanup. The canonical finalization command is the transversal helper defined under **Optional transversal Git finalization for progress and closure**:
@@ -1479,7 +1536,7 @@ Offer the command; never execute it automatically. `SIN GIT` means do not offer 
 
 For `SIN GIT`, do not add implicit Git operations.
 
-After any successful Documentation upgrade (and after any required Git continuation), request a fresh `context.zip` before returning to the main menu or entering another state-reading workflow.
+After any successful Documentation upgrade (and after any required Git continuation), request a fresh `context.zip` before returning to the main menu or entering another state-reading workflow. For a just-completed `objective-activation`, first render the automatic activation-to-implementation handoff; require the fresh ZIP only when the user later requests menu navigation or another state read.
 
 Never substitute `context-upgrade.sh` for `documentation-upgrade.sh`.
 
@@ -1584,7 +1641,7 @@ Example presentation:
 - For `implementation-progress`, branch preparation and progress registration are separate Bash stages in the same assistant message: first run the transversal `objective-branches.sh prepare` without `context-deploy.sh`; after real implementation changes exist, run `objective-branches.sh verify` followed by `context-deploy.sh ... implementation-progress` without checkout, pull, fetch or branch creation in Bash 2.
 - For a newly created objective, use only the branch already generated and explicitly confirmed in the creation preview.
 - For project-scoped creation, accumulate objectives first, confirm once as a group, freeze the confirmed `objectives[]` payload, then execute exactly one `planning-activation` batch command. Preserve every confirmed objective field literally through export, generation and upgrade. After successful context/documentation reconciliation, offer another batch or exit.
-- For an existing pending objective, use only `objective-activation`, preserve every lifecycle field except `status`, send desired `status=active`, and reject creation semantics.
+- For an existing pending objective, use only `objective-activation`, preserve every lifecycle field except `status`, send desired `status=active`, and reject creation semantics. After successful Context + Documentation reconciliation, automatically continue to the same objective's two-stage implementation handoff without returning to the menu or asking for `Registrar progreso`; reuse the objective ID, branch and `registry_project_name` frozen during activation.
 - Every assistant message that outputs a `context-deploy.sh` command must place immediately below that command the exact upload instruction `Después de ejecutar el comando, suba:` followed by `output/context-deploy-package.zip`.
 - For `implementation-progress`, the same assistant message must contain `BASH 1 — PREPARAR BRANCHES TRANSVERSALES` and `BASH 2 — REGISTRAR PROGRESO`. The user executes Bash 1, performs the real implementation changes, then executes Bash 2; never require a second `Registrar progreso` interaction merely to obtain the deploy command.
 - After successful `context-upgrade.sh`, `input/` must be empty and `output/` must contain only `context-upgrade-response.json`; always inspect the response `updated_files` array before deciding STALE/CURRENT state or whether Documentation is required.
