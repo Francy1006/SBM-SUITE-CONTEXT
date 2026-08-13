@@ -54,6 +54,7 @@ Rules:
 | Objective ID | Project | Objective | Final status | Priority | Branch | Started | Completed | Summary | Validation | Documentation | Proposed commit |
 |---|---|---|---|---:|---|---|---|---|---|---|---|
 | OBJ-CTX-013 | SBM-SUITE | Corregir y validar el workflow de documentación de `SBM-SUITE/context`, incluyendo `documentation-deploy.sh`, `documentation-upgrade.sh` y el flujo completo posterior a `context-upgrade`. | completed | 5 | BUGFIX-fixes-context-documentation-workflow | N/A | 2026-08-11 | Centralized and stabilized Context, Documentation and Project Tree lifecycle orchestration, including exact lifecycle dispatch, global Documentation reconciliation and suite-scoped QA applicability. | `context-deploy` completed in `implementation-closure` evidence mode; QA was structurally `not-applicable` because `scripts/qa-check.sh` is absent, with the evidence SHA-256 preserved in the export manifest. | N/A | `fix(context): stabilize context documentation workflow` |
+| OBJ-CTX-001 | SBM-SUITE | Validate and stabilize the expanded context governance model, synchronized section patches and project-tree evidence | completed | 5 | FEATURE-expands-context-governance | N/A | 2026-08-13 | Lifecycle-only/no-op closure; no uncommitted Git changes or implementation changes were detected. | QA not-applicable: scripts/qa-check.sh does not exist for sbm-suite-context. | `context/documentation/pages/AI Architect Roadmap/`, `context/documentation/pages/SBM-Suite/` | chore(context): close OBJ-CTX-001 lifecycle |
 
 ## 2. Document boundary
 

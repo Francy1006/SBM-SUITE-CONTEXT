@@ -76,6 +76,7 @@ A gate may be bypassed only through a documented accepted exception.
 | SBM-MANAGER | `SBM-SUITE/sbm/SBM-MANAGER/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | not validated | N/A | 3 | Project QA context and `qa-check.sh` configured; fresh `qa-results.md` pending |
 | SBM-DB | `SBM-SUITE/sbm/SBM-DB/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | Quality Gate PASSED | 2026-08-08 | 4 | `qa-results.md`: Flyway validated 33 sbm_business, 55 ditaly_pasta, 5 cross and 2 analytics migrations; SonarScanner exit code 0; Quality Gate PASSED |
 | SBM-AI-ASSISTANT | `SBM-SUITE/sbm/sbm-ai-assistant/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | N/A | N/A | 3 | Project QA context pending |
+| SBM-SUITE | `SBM-SUITE/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | not-applicable | 2026-08-13 | 0 | `qa-results.md`: QA structurally not applicable because `scripts/qa-check.sh` does not exist for `sbm-suite-context` |
 
 Risk scale:
 
