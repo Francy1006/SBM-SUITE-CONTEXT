@@ -6,7 +6,8 @@ set -euo pipefail
   exit 1
 }
 
-CONTEXT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONTEXT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ENV_FILE="${CONTEXT_ROOT}/.env.dev"
 SBM_SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
 
@@ -202,5 +203,7 @@ PY
   echo "ERROR: El ZIP de entrada no fue eliminado"
   exit 1
 }
+
+"${SCRIPT_DIR}/cleanup-exchange.sh" documentation "${CONTEXT_ROOT}"
 
 echo "Documentación actualizada correctamente."

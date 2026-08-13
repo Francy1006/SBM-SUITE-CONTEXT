@@ -974,22 +974,10 @@ Status: <current-status> → <same-current-status>
 Branch: <objective-branch-from-context>
 ```
 
-Then ask exactly:
+For `implementation-progress`, do not ask for a Git execution mode. The objective branch is mandatory and comes literally from the selected objective context. Render exactly these two sections in order and in the **same assistant message**. Never require the user to return to `Registrar progreso` after making changes.
 
 ```text
-EJECUCIÓN
-
-1.- CON GIT - main
-2.- CON GIT - branch del objetivo
-3.- SIN GIT
-```
-
-For `implementation-progress`, the selected execution response must contain both stages in the **same assistant message**. Never require the user to return to `Registrar progreso` after making changes.
-
-For `CON GIT - branch del objetivo`, render exactly these two sections in order:
-
-```text
-1. PREPARAR BRANCH
+BASH 1 — PREPARAR BRANCHES TRANSVERSALES
 ```
 
 ```bash
@@ -997,27 +985,17 @@ cd "$(git rev-parse --show-toplevel)" || exit 1
 (
 set -euo pipefail
 
-[[ -z "$(git status --short)" ]] || {
-  echo "ERROR: El repositorio contiene cambios locales."
-  exit 1
-}
-
-git checkout main
-git pull --ff-only origin main
-
 branch="<objective-branch-from-context>"
-if git show-ref --verify --quiet "refs/heads/${branch}"; then
-  git checkout "${branch}"
-else
-  git checkout -b "${branch}"
-fi
+./scripts/objective-branches.sh prepare "${branch}"
 )
 ```
 
-Immediately after the first command, state briefly that the user must now make the real implementation changes on that branch and execute the second command only when those changes are finished.
+`objective-branches.sh prepare` must discover every repository registered in the canonical global project summary, perform a complete preflight over all of them before any checkout, prepare the objective branch in every repository and verify the final branch globally. If one repository fails preflight, no repository may change branch.
+
+Immediately after Bash 1, state briefly that the user must now make the real implementation changes with Codex and execute Bash 2 only when those changes are finished.
 
 ```text
-2. REGISTRAR PROGRESO
+BASH 2 — REGISTRAR PROGRESO
 ```
 
 ```bash
@@ -1026,10 +1004,7 @@ cd "$(git rev-parse --show-toplevel)" || exit 1
 set -euo pipefail
 
 branch="<objective-branch-from-context>"
-[[ "$(git branch --show-current)" == "${branch}" ]] || {
-  echo "ERROR: El progreso debe registrarse sobre ${branch}."
-  exit 1
-}
+./scripts/objective-branches.sh verify "${branch}"
 
 objectives='[{"objective_id":"<objective_id>"}]'
 ./scripts/context-deploy.sh "<registry_project_name>" implementation-progress "${objectives}" ["<user_prompt>"]
@@ -1044,11 +1019,7 @@ Después de ejecutar el comando, suba:
 output/context-deploy-package.zip
 ```
 
-The second command must only validate the current objective branch and execute `context-deploy.sh`. It must never checkout, pull, create or switch branches.
-
-For `CON GIT - main`, use the same two-stage, same-message structure, but the first section prepares `main` and the second section validates that the current branch is still `main` before executing `implementation-progress`.
-
-For `SIN GIT`, do not modify Git state. In the same assistant message, first instruct the user to perform the implementation on the current branch, then provide the second `context-deploy.sh` command without Git checkout/create operations and request `output/context-deploy-package.zip`.
+The second command must only invoke `objective-branches.sh verify` and execute `context-deploy.sh`. It must never checkout, pull, fetch, create or switch branches. `implementation-progress` has no `CON GIT - main` or `SIN GIT` alternative because every registered SBM repository must remain on the objective branch before Codex changes any project.
 
 The progress route must never display a closure preview, propose a completion transition, request closure confirmation or generate an `implementation-closure` command.
 18. Exclusively for `implementation-closure`, require the objective to be active, show exactly this closure preview and require an explicit `sí` before continuing:
@@ -1075,7 +1046,7 @@ EJECUCIÓN
 3.- SIN GIT
 ```
 
-For `implementation-progress`, use the dedicated two-stage same-message contract from step 17. The first command prepares the working branch; the user then makes real changes; the second command registers progress with `context-deploy.sh`.
+For `implementation-progress`, use the dedicated two-stage same-message contract from step 17. Bash 1 prepares the objective branch transversally in every registered SBM repository; the user then makes real changes; Bash 2 verifies the branch globally and registers progress with `context-deploy.sh`.
 
 21. Every lifecycle call uses the `objectives` JSON array contract.
 
@@ -1175,7 +1146,7 @@ Después de ejecutar el comando, suba:
 output/context-deploy-package.zip
 ```
 
-Do not commit or push immediately after a mutating `context-upgrade`. Continue the applicable Documentation reconciliation first and commit/push only after that reconciliation completes. Exception: a valid `implementation-progress` no-op with `updated_files: []` has no Context or Documentation changes to commit, must skip Documentation, and simply continues implementation.
+Do not offer Git finalization immediately after a mutating `context-upgrade`; complete the applicable Documentation reconciliation first. Exception: a valid `implementation-progress` no-op with `updated_files: []` skips Documentation and may immediately offer the optional transversal Git finalization Bash because implementation changes may exist in other repositories even when Context itself did not mutate.
 
 #### Context option 4 — Aplicar context-upgrade.zip
 
@@ -1218,7 +1189,7 @@ output/
 output/context-upgrade-response.json
 ```
 
-4. Do not preserve `context-deploy-package.zip`, `context-package.zip`, `context-export-response.json`, generated `SYS_PROMPT.md` or any previous output artifact after successful upgrade.
+4. Do not preserve `context-deploy-package.zip`, `context-package.zip`, `context-export-response.json`, generated `SYS_PROMPT.md`, `.gitkeep` or any previous output artifact after successful upgrade. `context-upgrade.sh` must invoke `scripts/cleanup-exchange.sh context` only after the backend response has been validated successfully.
 5. Validate `output/context-upgrade-response.json` after cleanup before claiming success.
 6. Read `updated_files` from the validated response and branch by its exact value:
    - if `updated_files` is non-empty, Context source-of-truth changed: immediately mark the loaded `context.zip` as `STALE`;
@@ -1346,8 +1317,33 @@ Lifecycle continuation:
 - after pending activation through `objective-activation` + successful `context-upgrade.sh`, continue the same global Documentation reconciliation. The selected objective must remain `active`, but the Documentation run may reconcile accumulated differences from any project;
 - during planning documentation, an `active` or `pending` objective may appear only in authorized planning, roadmap or pending-work sections and must never be represented as implemented, validated or completed;
 - after successful planning documentation upgrade, preserve every objective status from the current global Context source of truth; begin implementation only for objectives whose Context status is `active`;
-- after `implementation-progress` + successful `context-upgrade.sh`, inspect `updated_files`: when it is exactly `[]`, treat the operation as a successful no-op, keep `context.zip` `CURRENT`, skip `documentation-deploy.sh`/`documentation-upgrade.sh` and continue implementation; when it is non-empty, mark `context.zip` `STALE`, run the global Documentation reconciliation before any Git commit/push, then continue implementation; do not represent progress as completed implementation;
-- after `implementation-closure` + successful closing `context-upgrade.sh`, run the global Documentation reconciliation to update implemented/current/deprecated state from current Context and QA evidence.
+- after `implementation-progress` + successful `context-upgrade.sh`, inspect `updated_files`: when it is exactly `[]`, treat the operation as a successful no-op, keep `context.zip` `CURRENT`, skip `documentation-deploy.sh`/`documentation-upgrade.sh`, offer the optional transversal Git finalization Bash defined below and continue implementation; when it is non-empty, mark `context.zip` `STALE`, run the global Documentation reconciliation before offering Git finalization, then continue implementation; do not represent progress as completed implementation;
+- after `implementation-closure` + successful closing `context-upgrade.sh`, run the global Documentation reconciliation to update implemented/current/deprecated state from current Context and QA evidence, then offer the optional transversal Git finalization Bash defined below.
+
+#### Optional transversal Git finalization for progress and closure
+
+For `implementation-progress` and `implementation-closure` only, offer Git finalization after the required reconciliation has completed successfully. Never execute it automatically. If Documentation is required, wait until Documentation reports either `Documentation already synchronized` with validated zero differences or a successful `documentation-upgrade.sh`.
+
+Render exactly one command using the objective branch from Context and a concise proposed commit message derived from the current objective/change evidence:
+
+```bash
+cd "$(git rev-parse --show-toplevel)" || exit 1
+./scripts/objective-git-finalize.sh "<objective-branch-from-context>" "<proposed-commit-message>"
+```
+
+`objective-git-finalize.sh` must:
+
+- verify all registered SBM repositories are still on the objective branch before any Git mutation;
+- discover repositories from canonical SBM-SUITE evidence plus Git repositories under the suite root;
+- select only repositories with real working-tree changes;
+- run a complete preflight over all changed repositories before any `git add`, commit, push or merge;
+- abort before mutation if any changed repository fails preflight;
+- for each changed repository execute `git add .`, commit, push the objective branch, checkout/pull `main`, merge the objective branch with `--no-ff`, then push `main`;
+- omit repositories with no changes and never create empty commits;
+- never force-push, delete branches or invent a branch;
+- use only dynamically resolved/repository-relative paths.
+
+The command is an offered continuation, not an automatic lifecycle action. For progress, the user may decline it and continue implementation on the objective branch.
 
 ### Option 6 — Documentación
 
@@ -1430,7 +1426,7 @@ When Documentation continues a Context lifecycle flow, reuse the branch already 
 ```
 
 10. Request the generated package at `documentation/output/documentation-package.zip`.
-    - If deploy reports `Documentation already synchronized`, verify the current response declares zero differences, zero targets and no generated package; stop successfully, do not reuse any previous package, do not generate `documentation-upgrade.zip` and do not run `documentation-upgrade.sh`.
+    - If deploy reports `Documentation already synchronized`, verify the current response declares zero differences, zero targets and no generated package; stop Documentation successfully, do not reuse any previous package, do not generate `documentation-upgrade.zip` and do not run `documentation-upgrade.sh`. If this Documentation run continues `implementation-progress` or `implementation-closure`, now offer the optional transversal Git finalization Bash.
     - If deploy reports reconciliation differences, require the generated package to contain at least one complete functional candidate under `documentation/pages/`; workflow contracts alone are insufficient.
 11. Generate the required `documentation-upgrade.zip`, place it at `documentation/input/documentation-upgrade.zip` and execute:
 
@@ -1449,72 +1445,19 @@ documentation/output/
   documentation-upgrade-response.json
 ```
 
-Do not preserve `documentation-package.zip`, previous export responses, previous upgrade ZIPs or other generated exchange artifacts after successful upgrade. Do not perform this cleanup manually in ChatGPT; it is a responsibility of `documentation-upgrade.sh`.
+Do not preserve `documentation-package.zip`, previous export responses, previous upgrade ZIPs, `.gitkeep` or other generated exchange artifacts after successful upgrade. `documentation-upgrade.sh` must invoke `scripts/cleanup-exchange.sh documentation` only after the response has been validated successfully. Do not perform this cleanup manually in ChatGPT.
 
 14. Immediately mark the loaded `context.zip` as `STALE`. Do not return to the main menu or any state-reading submenu until a fresh `context.zip` has been uploaded, validated and adopted as the complete replacement state.
 15. The validated Documentation result may contain changes for multiple projects. Do not reject it merely because those projects differ from the lifecycle operation that preceded Documentation.
-16. **Git commit/push happens only after successful `documentation-upgrade`.** This rule applies to planning, progress and closure; it is not limited to objective closure.
-17. When the selected execution mode uses Git, consolidate commit/push and, for a lifecycle branch, merge to `main` after documentation reconciliation.
-
-After successful `documentation-upgrade`, `CON GIT - main`:
+16. For lifecycle `implementation-progress` or `implementation-closure`, Git finalization may be offered only after Documentation reconciliation is complete: either deploy validated `Documentation already synchronized` with zero differences, or `documentation-upgrade.sh` completed successfully.
+17. Do not use `commit_message_file` artifacts after Documentation cleanup. The canonical finalization command is the transversal helper defined under **Optional transversal Git finalization for progress and closure**:
 
 ```bash
-(
-set -euo pipefail
-
-commit_message_file="$(
-  python3 - documentation/output/documentation-upgrade-response.json <<'PY'
-import json
-import sys
-from pathlib import Path
-payload = json.loads(
-    Path(sys.argv[1])
-    .read_text(encoding="utf-8")
-)
-print(payload["commit_message_file"])
-PY
-)"
-commit_message_file="${commit_message_file#context/}"
-
-git add -A
-git commit -F "${commit_message_file}"
-git push origin main
-)
+cd "$(git rev-parse --show-toplevel)" || exit 1
+./scripts/objective-git-finalize.sh "<objective-branch-from-context>" "<proposed-commit-message>"
 ```
 
-After successful `documentation-upgrade`, `CON GIT - branch nueva`:
-
-```bash
-(
-set -euo pipefail
-
-branch="$(git branch --show-current)"
-commit_message_file="$(
-  python3 - documentation/output/documentation-upgrade-response.json <<'PY'
-import json
-import sys
-from pathlib import Path
-payload = json.loads(
-    Path(sys.argv[1])
-    .read_text(encoding="utf-8")
-)
-print(payload["commit_message_file"])
-PY
-)"
-commit_message_file="${commit_message_file#context/}"
-
-git add -A
-git commit -F "${commit_message_file}"
-git push -u origin "${branch}"
-
-git checkout main
-git pull --ff-only origin main
-git merge --no-ff "${branch}"
-git push origin main
-)
-```
-
-If the documentation response exposes a different repository-relative commit-message path, use that exact relative path instead of constructing an absolute path.
+Offer the command; never execute it automatically. `SIN GIT` means do not offer implicit Git operations for standalone Documentation. Planning/activation flows keep their existing lifecycle behavior and do not inherit progress/closure finalization implicitly.
 
 For `SIN GIT`, do not add implicit Git operations.
 
@@ -1617,16 +1560,17 @@ Example presentation:
 - When presenting objective details or previews, always include `Objective ID`. The persistent six-column table inside the project-scoped objective-creation session is the explicit exception; its `N°` column is display-only and the generated ID remains visible in the preview and command.
 - When generating an objective ID, validate it against active, pending, completed and cancelled records.
 - Documentation is always global: never ask for a project selection, never scope reconciliation to an originator project and never pass `project_name` to `documentation-deploy.sh` or `documentation-upgrade.sh`.
-- For every operational Context/Documentation command flow, offer `CON GIT - main`, `CON GIT - branch nueva`, and `SIN GIT`. Use only repository-relative paths.
+- For every operational Context/Documentation command flow except `implementation-progress`, offer `CON GIT - main`, `CON GIT - branch nueva`, and `SIN GIT`. `implementation-progress` always uses the mandatory transversal objective branch flow from step 17. Use only repository-relative paths.
 - For existing objectives, obtain the branch from the selected objective context; never ask for or invent it.
-- For `implementation-progress`, branch preparation and progress registration are separate interactions: first prepare/select the objective branch without running `context-deploy.sh`; after real implementation changes exist, run `context-deploy.sh ... implementation-progress` without performing Git checkout/pull/branch creation in that same command.
+- For `implementation-progress`, branch preparation and progress registration are separate Bash stages in the same assistant message: first run the transversal `objective-branches.sh prepare` without `context-deploy.sh`; after real implementation changes exist, run `objective-branches.sh verify` followed by `context-deploy.sh ... implementation-progress` without checkout, pull, fetch or branch creation in Bash 2.
 - For a newly created objective, use only the branch already generated and explicitly confirmed in the creation preview.
 - For project-scoped creation, accumulate objectives first, confirm once as a group, freeze the confirmed `objectives[]` payload, then execute exactly one `planning-activation` batch command. Preserve every confirmed objective field literally through export, generation and upgrade. After successful context/documentation reconciliation, offer another batch or exit.
 - For an existing pending objective, use only `objective-activation`, preserve every lifecycle field except `status`, send desired `status=active`, and reject creation semantics.
 - Every assistant message that outputs a `context-deploy.sh` command must place immediately below that command the exact upload instruction `Después de ejecutar el comando, suba:` followed by `output/context-deploy-package.zip`.
-- For `implementation-progress` with Git branch execution, the same assistant message must contain two separated command sections: branch preparation first and progress registration second. The user executes the first command, performs the real implementation changes, then executes the second command; never require a second `Registrar progreso` interaction merely to obtain the deploy command.
+- For `implementation-progress`, the same assistant message must contain `BASH 1 — PREPARAR BRANCHES TRANSVERSALES` and `BASH 2 — REGISTRAR PROGRESO`. The user executes Bash 1, performs the real implementation changes, then executes Bash 2; never require a second `Registrar progreso` interaction merely to obtain the deploy command.
 - After successful `context-upgrade.sh`, `input/` must be empty and `output/` must contain only `context-upgrade-response.json`; always inspect the response `updated_files` array before deciding STALE/CURRENT state or whether Documentation is required.
 - After successful `documentation-upgrade.sh`, `documentation/input/` must be empty and `documentation/output/` must contain only `documentation-upgrade-response.json`.
+- After a successful `implementation-progress` or `implementation-closure` reconciliation, offer (never auto-run) `./scripts/objective-git-finalize.sh "<objective-branch-from-context>" "<proposed-commit-message>"`. It must preflight all changed SBM repositories before mutation, omit clean repositories, commit/push the objective branch, then merge/push `main`.
 - These exchange-directory cleanups are responsibilities of the corresponding upgrade scripts; SBM Agent validates the resulting state and must not ask the user to manually delete generated artifacts.
 - The final output of objective management is the exact applicable lifecycle command for the selected execution mode. It must contain the resolved literal backend `registry_project_name`; never emit the objective table's `Project` value or an unresolved routing placeholder as executable `project_name`.
 

@@ -402,3 +402,5 @@ PY
   echo "ERROR: context-upgrade.zip no fue eliminado" >&2
   exit 1
 }
+
+"${SCRIPT_DIR}/cleanup-exchange.sh" context "${CONTEXT_ROOT}"
