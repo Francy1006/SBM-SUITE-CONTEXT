@@ -59,6 +59,8 @@ cd "$(git rev-parse --show-toplevel)" || exit 1
 
 This is the canonical lifecycle `cd`. Do not replace it with an absolute path, a placeholder, prose, or another inferred command.
 
+Whenever a user-visible command block needs `set -euo pipefail`, scope those shell options inside a subshell `( ... )`. Never leave strict shell options enabled in the user's interactive zsh/bash session; the command must return without altering prompt-shell option state.
+
 1. Request `context.zip` containing the complete current local folder:
 
 ```text
@@ -278,6 +280,7 @@ Ruta canónica de repositorio propuesta: SBM-SUITE/sbm/<project>
 13. After confirmation, return only one guarded command block based on the confirmed values:
 
 ```bash
+(
 set -euo pipefail
 
 repo_url='<git_url>'
@@ -314,6 +317,7 @@ git clone "${repo_url}" "${target}"
 cd "${target}"
 git remote -v
 git status --short
+)
 ```
 
 14. `git clone` is the operation that creates the final project directory. Do not add a prior `mkdir` for `${target}`.
@@ -781,6 +785,7 @@ EJECUCIÓN
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" || exit 1
+(
 set -euo pipefail
 
 [[ -z "$(git status --short)" ]] || {
@@ -793,12 +798,14 @@ git pull --ff-only origin main
 
 objectives='<objectives-json-array>'
 ./scripts/context-deploy.sh "<registry_project_name>" planning-activation "${objectives}"
+)
 ```
 
 `CON GIT - branch nueva`:
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" || exit 1
+(
 set -euo pipefail
 
 [[ -z "$(git status --short)" ]] || {
@@ -814,16 +821,19 @@ git checkout -b "${execution_branch}"
 
 objectives='<objectives-json-array>'
 ./scripts/context-deploy.sh "<registry_project_name>" planning-activation "${objectives}"
+)
 ```
 
 `SIN GIT`:
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" || exit 1
+(
 set -euo pipefail
 
 objectives='<objectives-json-array>'
 ./scripts/context-deploy.sh "<registry_project_name>" planning-activation "${objectives}"
+)
 ```
 
 Immediately below every generated command block that contains `context-deploy.sh`, in the same assistant message, display exactly:
@@ -1016,6 +1026,7 @@ objectives='[{"objective_id":"<existing-pending-id>","objective":"<literal-curre
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" || exit 1
+(
 set -euo pipefail
 
 [[ -z "$(git status --short)" ]] || {
@@ -1028,6 +1039,7 @@ git pull --ff-only origin main
 
 objectives='<objectives-json-array>'
 ./scripts/context-deploy.sh "<registry_project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"]
+)
 ```
 
 Use this only when the lifecycle operation is intentionally being performed from `main`.
@@ -1036,6 +1048,7 @@ Use this only when the lifecycle operation is intentionally being performed from
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" || exit 1
+(
 set -euo pipefail
 
 [[ -z "$(git status --short)" ]] || {
@@ -1055,6 +1068,7 @@ fi
 
 objectives='<objectives-json-array>'
 ./scripts/context-deploy.sh "<registry_project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"]
+)
 ```
 
 For an existing objective, the branch always comes from loaded context. Never ask for or invent it.
@@ -1063,10 +1077,12 @@ For an existing objective, the branch always comes from loaded context. Never as
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" || exit 1
+(
 set -euo pipefail
 
 objectives='<objectives-json-array>'
 ./scripts/context-deploy.sh "<registry_project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"]
+)
 ```
 
 Immediately below every generated command block that contains `context-deploy.sh`, in the same assistant message, display exactly:
@@ -1290,6 +1306,7 @@ EJECUCIÓN
 `CON GIT - main`:
 
 ```bash
+(
 set -euo pipefail
 
 
@@ -1299,11 +1316,13 @@ set -euo pipefail
 }
 
 ./scripts/documentation-deploy.sh
+)
 ```
 
 `CON GIT - branch nueva`:
 
 ```bash
+(
 set -euo pipefail
 
 
@@ -1314,6 +1333,7 @@ branch="<execution-branch>"
 }
 
 ./scripts/documentation-deploy.sh
+)
 ```
 
 When Documentation continues a Context lifecycle flow, reuse the branch already selected before implementation/context processing. Do not require a clean working tree here because implementation/context/documentation changes are committed together only after successful `documentation-upgrade`. For a standalone Documentation operation, prepare `main` or the new branch before making documentation changes, then use the same continuation-safe command.
@@ -1354,6 +1374,7 @@ Do not preserve `documentation-package.zip`, previous export responses, previous
 After successful `documentation-upgrade`, `CON GIT - main`:
 
 ```bash
+(
 set -euo pipefail
 
 commit_message_file="$(
@@ -1373,11 +1394,13 @@ commit_message_file="${commit_message_file#context/}"
 git add -A
 git commit -F "${commit_message_file}"
 git push origin main
+)
 ```
 
 After successful `documentation-upgrade`, `CON GIT - branch nueva`:
 
 ```bash
+(
 set -euo pipefail
 
 branch="$(git branch --show-current)"
@@ -1403,6 +1426,7 @@ git checkout main
 git pull --ff-only origin main
 git merge --no-ff "${branch}"
 git push origin main
+)
 ```
 
 If the documentation response exposes a different repository-relative commit-message path, use that exact relative path instead of constructing an absolute path.

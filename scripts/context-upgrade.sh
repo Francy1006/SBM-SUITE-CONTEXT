@@ -134,6 +134,7 @@ from objective_lifecycle import (  # noqa: E402
     resolve_project_root,
     validate_activation,
     validate_existing_objective,
+    validate_planning_creation,
 )
 from qa_lifecycle import QAContractError, validate_closure_manifest_qa  # noqa: E402
 
@@ -276,36 +277,33 @@ if len(ids) != len(set(ids)):
 if phase != "planning-activation" and len(objectives) != 1:
     raise SystemExit(f"ERROR: {phase} actualmente requiere exactamente un objetivo")
 
-if route in {
-    "objective-activation",
-    "implementation-progress",
-    "implementation-closure",
-}:
-    try:
-        project_root = resolve_project_root(Path(suite_root), expected_canonical)
-        operational_contexts = [Path(context_root) / "PROJECT_CONTEXT.md"]
-        if project_name != "sbm-suite-context":
-            operational_contexts.append(
-                project_root / "context" / "PROJECT_CONTEXT.md"
+try:
+    project_root = resolve_project_root(Path(suite_root), expected_canonical)
+    operational_contexts = [Path(context_root) / "PROJECT_CONTEXT.md"]
+    if project_name != "sbm-suite-context":
+        operational_contexts.append(
+            project_root / "context" / "PROJECT_CONTEXT.md"
+        )
+    completed_context = Path(context_root) / "COMPLETED_OBJECTIVES.md"
+    if route == "planning-activation":
+        validate_planning_creation(objectives, operational_contexts, completed_context)
+    elif route == "objective-activation":
+        validate_activation(objectives, operational_contexts, completed_context)
+    else:
+        validate_existing_objective(
+            objectives,
+            route,
+            operational_contexts,
+            completed_context,
+        )
+        if route == "implementation-closure":
+            validate_closure_manifest_qa(
+                manifest.get("qa"),
+                project_name,
+                project_root,
             )
-        completed_context = Path(context_root) / "COMPLETED_OBJECTIVES.md"
-        if route == "objective-activation":
-            validate_activation(objectives, operational_contexts, completed_context)
-        else:
-            validate_existing_objective(
-                objectives,
-                route,
-                operational_contexts,
-                completed_context,
-            )
-            if route == "implementation-closure":
-                validate_closure_manifest_qa(
-                    manifest.get("qa"),
-                    project_name,
-                    project_root,
-                )
-    except (ObjectiveLifecycleError, QAContractError) as exc:
-        raise SystemExit(f"ERROR: {exc}") from exc
+except (ObjectiveLifecycleError, QAContractError) as exc:
+    raise SystemExit(f"ERROR: {exc}") from exc
 
 if manifest.get("output_filename") != "context-upgrade.zip":
     raise SystemExit("ERROR: manifest.output_filename debe ser context-upgrade.zip")

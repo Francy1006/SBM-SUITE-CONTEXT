@@ -213,25 +213,18 @@ class DocumentationReconciliationTests(unittest.TestCase):
         self.assertEqual(result["documentation_targets"], [])
         self.assertEqual(result["differences"], [])
 
-    def test_current_obj_ctx_013_is_synchronized_and_remains_active(self) -> None:
-        result = build_reconciliation(
-            CONTEXT_ROOT / "PROJECT_CONTEXT.md",
-            CONTEXT_ROOT / "COMPLETED_OBJECTIVES.md",
-            CONTEXT_ROOT / "documentation",
+    def test_synchronized_active_objective_remains_active(self) -> None:
+        result = self._build(
+            _project_context(active=[("OBJ-CURRENT", "SBM-SUITE", "active")]),
+            _completed_context(),
+            {
+                "roadmap.md": _documentation_table(
+                    [("OBJ-CURRENT", "SBM-SUITE", "active")]
+                )
+            },
         )
-        differences = {
-            difference["objective_id"]: difference
-            for difference in result["differences"]
-        }
-        self.assertNotIn("OBJ-CTX-013", differences)
-        active_row = next(
-            line
-            for line in (CONTEXT_ROOT / "PROJECT_CONTEXT.md")
-            .read_text(encoding="utf-8")
-            .splitlines()
-            if line.startswith("| OBJ-CTX-013 |")
-        )
-        self.assertIn("| active |", active_row)
+        self.assertTrue(result["synchronized"])
+        self.assertEqual(result["differences"], [])
 
 
 if __name__ == "__main__":

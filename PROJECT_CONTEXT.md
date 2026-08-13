@@ -49,7 +49,7 @@ SBM-SUITE/context
 
 | ID | Project | Objective | Status | Priority | Target date | Branch | Documentation |
 |---|---|---|---|---:|---|---|---|
-| OBJ-CTX-001 | SBM-SUITE | Validate and stabilize the expanded context governance model, synchronized section patches and project-tree evidence | active | 5 |  | FEATURE-expands-context-governance | `context/documentation/pages/AI Architect Roadmap/`, `context/documentation/pages/SBM-Suite/` |
+| OBJ-CTX-001 | SBM-SUITE | Validate and stabilize the expanded context governance model, synchronized section patches and project-tree evidence | active | 5 | N/A | FEATURE-expands-context-governance | `context/documentation/pages/AI Architect Roadmap/`, `context/documentation/pages/SBM-Suite/` |
 | SBM-MANAGER-001 | SBM-MANAGER | Integrar SBM-MANAGER completamente a SBM Suite, incluyendo contextos, lifecycle scripts, QA/SonarQube, registro en sbm-ai-assistant, sincronización global y actualización del diagrama canónico de arquitectura en SUITE_CONTEXT.md. | active | 5 | 2026-08-07 | FEATURE-integrates-sbm-manager | `context/documentation/pages/🤖 AI Architect Roadmap/🏢 SBM-Suite 3a50bde8acd580d0a068d6abc3542603.md` |
 | SBM-DB-001 | SBM-DB | habilitación de sbm-db | active | 5 | 2026-08-07 | FEATURE-enables-sbm-db | `context/documentation/pages/🤖 AI Architect Roadmap/🏢 SBM-Suite 3a50bde8acd580d0a068d6abc3542603.md` |
 
@@ -67,7 +67,7 @@ Rules:
 |---|---|---|---|---:|---|---|---|
 | SBM-MANAGER-002 | SBM-MANAGER | Corregir SBM-MANAGER para consumir correctamente SBM-API y DP-API según ownership canónico. | pending | 5 | N/A | BUGFIX-corrects-api-ownership | N/A |
 | SBM-MANAGER-003 | SBM-MANAGER | Corregir y completar QA de SBM-MANAGER. | pending | 5 | N/A | BUGFIX-completes-manager-qa | N/A |
-| OBJ-DOC-001 | SBM-SUITE | Implement the manual documentation deploy and upgrade workflow with dedicated RAG and Qdrant collection | pending | 4 |  | FEATURE-adds-documentation-workflow | `context/documentation/pages/AI Architect Roadmap/`, `context/documentation/pages/Roadmap/`, `context/documentation/pages/SBM-Suite/` |
+| OBJ-DOC-001 | SBM-SUITE | Implement the manual documentation deploy and upgrade workflow with dedicated RAG and Qdrant collection | pending | 4 | N/A | FEATURE-adds-documentation-workflow | `context/documentation/pages/AI Architect Roadmap/`, `context/documentation/pages/Roadmap/`, `context/documentation/pages/SBM-Suite/` |
 | SBM-DB-002 | SBM-DB | Actualizar SBM-DB al contrato lifecycle actual de Context, incluyendo objectives[], execution_mode, preservación literal de objetivos y paths relativos. | pending | 5 | N/A | FEATURE-updates-context-lifecycle | N/A |
 | OBJ-CTX-002 | SBM-SUITE | Habilitar un sistema automatizado para ejecutar flujos transversales sobre uno o varios proyectos. | pending | 5 | N/A | FEATURE-automates-cross-project-flows | N/A |
 | OBJ-CTX-003 | SBM-SUITE | Separar QA y Context mediante una estructura específica por proyecto. | pending | 5 | N/A | FEATURE-separates-qa-context | N/A |

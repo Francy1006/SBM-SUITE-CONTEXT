@@ -45,18 +45,26 @@ def lifecycle_patch_policy(
     lifecycle_phase: str, project_name: str
 ) -> tuple[set[str], set[str]]:
     route = lifecycle_route(lifecycle_phase)
-    required = {"patches/global-project-context.json"}
-    if project_name != "sbm-suite-context":
-        required.add("patches/project-context.json")
+    required: set[str] = set()
     forbidden: set[str] = set()
-    if route == "implementation-closure":
+
+    if route in {"planning-activation", "objective-activation"}:
+        required.add("patches/global-project-context.json")
+        if project_name != "sbm-suite-context":
+            required.add("patches/project-context.json")
+    elif route == "implementation-closure":
         required |= {
             "patches/completed-objectives.json",
+            "patches/global-project-context.json",
             "patches/global-qa-context.json",
         }
         if project_name != "sbm-suite-context":
-            required.add("patches/project-qa-context.json")
-    else:
+            required |= {
+                "patches/project-context.json",
+                "patches/project-qa-context.json",
+            }
+
+    if route != "implementation-closure":
         forbidden.add("patches/completed-objectives.json")
     return required, forbidden
 
@@ -195,6 +203,60 @@ def _activation_objective(raw_objectives: Any) -> dict[str, Any]:
             "objective-activation desired status must be active"
         )
     return objective
+
+
+def validate_planning_creation(
+    raw_objectives: Any,
+    operational_contexts: list[Path],
+    completed_context: Path,
+) -> None:
+    if not isinstance(raw_objectives, list) or not raw_objectives:
+        raise ObjectiveLifecycleError(
+            "planning-activation requires a non-empty objectives[] array"
+        )
+
+    objective_ids: list[str] = []
+    for objective in raw_objectives:
+        if not isinstance(objective, dict):
+            raise ObjectiveLifecycleError(
+                "planning-activation items must be objects"
+            )
+        objective_id = objective.get("objective_id")
+        if not isinstance(objective_id, str) or not objective_id:
+            raise ObjectiveLifecycleError(
+                "planning-activation requires objective_id for every item"
+            )
+        objective_ids.append(objective_id)
+
+    if len(objective_ids) != len(set(objective_ids)):
+        raise ObjectiveLifecycleError(
+            "planning-activation contains duplicate objective IDs"
+        )
+
+    completed = _completed_ids(_read_markdown(completed_context))
+    completed_collisions = sorted(set(objective_ids) & completed)
+    if completed_collisions:
+        raise ObjectiveLifecycleError(
+            "planning-activation objective ID already exists in completed/cancelled "
+            "history: " + ", ".join(completed_collisions)
+        )
+
+    seen_contexts: set[Path] = set()
+    requested = set(objective_ids)
+    for source in operational_contexts:
+        resolved = source.resolve(strict=True)
+        if resolved in seen_contexts:
+            continue
+        seen_contexts.add(resolved)
+        markdown = _read_markdown(resolved)
+        active = _rows_by_id(markdown, ACTIVE_HEADING)
+        pending = _rows_by_id(markdown, PENDING_HEADING)
+        collisions = sorted(requested & (set(active) | set(pending)))
+        if collisions:
+            raise ObjectiveLifecycleError(
+                f"planning-activation objective ID already exists in {source}: "
+                + ", ".join(collisions)
+            )
 
 
 def validate_activation(
@@ -349,14 +411,12 @@ def _main() -> int:
         route = lifecycle_route(arguments.lifecycle_phase)
         contexts = [Path(value) for value in arguments.operational_context]
         completed = Path(arguments.completed_context)
-        if route == "objective-activation":
+        if route == "planning-activation":
+            validate_planning_creation(objectives, contexts, completed)
+        elif route == "objective-activation":
             validate_activation(objectives, contexts, completed)
-        elif route in {"implementation-progress", "implementation-closure"}:
-            validate_existing_objective(objectives, route, contexts, completed)
         else:
-            raise ObjectiveLifecycleError(
-                "planning-activation does not use existing-objective preflight"
-            )
+            validate_existing_objective(objectives, route, contexts, completed)
     except (json.JSONDecodeError, ObjectiveLifecycleError, OSError) as exc:
         raise SystemExit(f"ERROR: {exc}") from exc
     print(f"{route} preflight validated")

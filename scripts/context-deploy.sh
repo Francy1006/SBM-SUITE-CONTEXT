@@ -333,26 +333,24 @@ else
   QA_RESULTS_FILE="${PROJECT_ROOT}/context/qa-results.md"
 fi
 
-if [[ "${LIFECYCLE_ROUTE}" != "planning-activation" ]]; then
-  LIFECYCLE_VALIDATOR="${SCRIPT_DIR}/objective_lifecycle.py"
-  [[ -f "${LIFECYCLE_VALIDATOR}" ]] || {
-    echo "ERROR: No existe ${LIFECYCLE_VALIDATOR}" >&2
-    exit 1
-  }
-  LIFECYCLE_CONTEXT_ARGS=(
-    --operational-context "${CONTEXT_ROOT}/PROJECT_CONTEXT.md"
+LIFECYCLE_VALIDATOR="${SCRIPT_DIR}/objective_lifecycle.py"
+[[ -f "${LIFECYCLE_VALIDATOR}" ]] || {
+  echo "ERROR: No existe ${LIFECYCLE_VALIDATOR}" >&2
+  exit 1
+}
+LIFECYCLE_CONTEXT_ARGS=(
+  --operational-context "${CONTEXT_ROOT}/PROJECT_CONTEXT.md"
+)
+if [[ "${PROJECT_NAME}" != "sbm-suite-context" ]]; then
+  LIFECYCLE_CONTEXT_ARGS+=(
+    --operational-context "${PROJECT_ROOT}/context/PROJECT_CONTEXT.md"
   )
-  if [[ "${PROJECT_NAME}" != "sbm-suite-context" ]]; then
-    LIFECYCLE_CONTEXT_ARGS+=(
-      --operational-context "${PROJECT_ROOT}/context/PROJECT_CONTEXT.md"
-    )
-  fi
-  python3 "${LIFECYCLE_VALIDATOR}" \
-    --lifecycle-phase "${LIFECYCLE_ROUTE}" \
-    --objectives-json "${NORMALIZED_OBJECTIVES}" \
-    --completed-context "${CONTEXT_ROOT}/COMPLETED_OBJECTIVES.md" \
-    "${LIFECYCLE_CONTEXT_ARGS[@]}"
 fi
+python3 "${LIFECYCLE_VALIDATOR}" \
+  --lifecycle-phase "${LIFECYCLE_ROUTE}" \
+  --objectives-json "${NORMALIZED_OBJECTIVES}" \
+  --completed-context "${CONTEXT_ROOT}/COMPLETED_OBJECTIVES.md" \
+  "${LIFECYCLE_CONTEXT_ARGS[@]}"
 
 QA_RESULTS=""
 QA_MANIFEST_JSON=""

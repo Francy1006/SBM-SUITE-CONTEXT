@@ -153,7 +153,7 @@ class QALifecycleTests(unittest.TestCase):
             with ZipFile(upload_package) as archive:
                 self.assertEqual(archive.read("context-package.zip"), expected_inner)
 
-    def test_cases_e_and_f_progress_and_real_objective_remain_unchanged(self) -> None:
+    def test_suite_qa_evaluation_does_not_mutate_operational_context(self) -> None:
         project_context = CONTEXT_ROOT / "PROJECT_CONTEXT.md"
         before = project_context.read_bytes()
         decision, evidence = require_closure_qa(
@@ -162,13 +162,6 @@ class QALifecycleTests(unittest.TestCase):
 
         self.assertEqual(decision.status, "not-applicable")
         self.assertIn("QA status: not-applicable", evidence)
-        self.assertIn(
-            "| OBJ-CTX-013 | SBM-SUITE |", before.decode("utf-8")
-        )
-        self.assertIn("| active |", next(
-            line for line in before.decode("utf-8").splitlines()
-            if "| OBJ-CTX-013 |" in line
-        ))
         self.assertEqual(project_context.read_bytes(), before)
 
         deploy = (CONTEXT_ROOT / "scripts/context-deploy.sh").read_text()
