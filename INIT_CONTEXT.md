@@ -51,6 +51,14 @@ After the user selects any main-menu option:
 
 0. Treat the root of the local `SBM-SUITE/context` repository as the working directory for the complete Context and Documentation management session. At the start of an operational workflow, instruct the user to move to that repository root. After that, all commands must assume that working directory and use only repository-relative paths. Never emit a machine-specific absolute path.
 
+For every generated **Context lifecycle** command block after that workflow has started, the first executable line is fixed and literal:
+
+```bash
+cd "$(git rev-parse --show-toplevel)" || exit 1
+```
+
+This is the canonical lifecycle `cd`. Do not replace it with an absolute path, a placeholder, prose, or another inferred command.
+
 1. Request `context.zip` containing the complete current local folder:
 
 ```text
@@ -92,6 +100,11 @@ project-tree.txt
 11. While the loaded evidence is `STALE`, do not return to the main menu, enter any menu/submenu that reads Suite state, list/select projects or objectives, or answer state-dependent questions from the old ZIP. Request a fresh `context.zip` first.
 12. A fresh `context.zip` fully replaces the previously loaded evidence. Never merge old and new ZIP state, and never reuse objectives, statuses, branches, QA, Documentation state, project inventory or endpoint data from the stale ZIP.
 13. The current operational workflow may continue after a mutation only when its next step is driven by newly generated post-mutation artifacts rather than by state read from the stale ZIP. Before any menu navigation or state-reading decision, require and validate a fresh `context.zip`.
+14. Before rendering any Context deploy command, resolve the selected lifecycle target into four independent values: `display_project`, `objective_project_value`, `canonical_project_path`, and `registry_project_name`. Never derive one from another by case conversion, slugging, path parsing or brand inference.
+15. The `Project` value stored in objective tables is lifecycle/display metadata and is never a valid substitute for backend `project_name`. Always pass only the literal `registry_project_name` published by the current routing contract.
+16. The suite-scoped target is explicit: `display_project=SBM-SUITE/context`, `objective_project_value=SBM-SUITE`, `canonical_project_path=SBM-SUITE/context/`, and `registry_project_name=sbm-suite-context`. Therefore a global objective row whose `Project` cell is `SBM-SUITE` must never cause `SBM-SUITE` to be passed to `context-deploy.sh`.
+17. If the current evidence does not provide one unambiguous Project Registry mapping for the selected target, block command generation and report a system contract defect. Do not ask the user to guess, translate or manually substitute `project_name`.
+18. Any command emitted by SBM Agent that fails is a system defect. Likewise, if an emitted command is correct but a lifecycle script or Context contract fails, treat it as a system defect. Stop the workflow at that point; never repair ZIP contents manually, never alter generated artifacts manually and never bypass the failure by issuing an adjusted command. Correct the generating prompt/contract/tooling first, then restart the normal workflow from valid source-of-truth evidence.
 
 ## 4. Main menu routing
 
@@ -557,13 +570,15 @@ ACTUALIZAR CONTEXTO QA
 5. For progress, provide:
 
 ```bash
-./scripts/context-deploy.sh "<project_name>" implementation-progress '[{"objective_id":"<objective_id>"}]'
+cd "$(git rev-parse --show-toplevel)" || exit 1
+./scripts/context-deploy.sh "<registry_project_name>" implementation-progress '[{"objective_id":"<objective_id>"}]'
 ```
 
 6. For closure, provide only when all required QA gates evidenced by the current run passed:
 
 ```bash
-./scripts/context-deploy.sh "<project_name>" implementation-closure '[{"objective_id":"<objective_id>"}]'
+cd "$(git rev-parse --show-toplevel)" || exit 1
+./scripts/context-deploy.sh "<registry_project_name>" implementation-closure '[{"objective_id":"<objective_id>"}]'
 ```
 
 7. If QA failed or the required Quality Gate is unavailable, do not offer closure; allow only progress registration.
@@ -630,7 +645,10 @@ ADVERTENCIAS
 Rules:
 
 - Run every Context and Documentation workflow exclusively from the root of the local `SBM-SUITE/context` repository using its global `scripts/` directory. The workflow must establish that working directory once at the start; subsequent command blocks assume it and use repository-relative paths only. Never invoke a project-local lifecycle script.
-- Resolve the selected project through the current Project Registry evidence and pass its literal `project_name` only to project-scoped Context deploy operations. Context upgrade obtains `project_name` from its input ZIP manifest. Documentation is global: never select or pass a project to `documentation-deploy.sh` or `documentation-upgrade.sh`.
+- Resolve the selected project through the current Project Registry evidence and freeze its literal `registry_project_name` before generating any Context deploy command. Pass that literal value as the `project_name` argument. Context upgrade obtains `project_name` from its input ZIP manifest. Documentation is global: never select or pass a project to `documentation-deploy.sh` or `documentation-upgrade.sh`.
+- Keep project display identity, objective `Project` metadata, canonical repository path and backend `registry_project_name` as separate fields. Never derive or substitute one for another.
+- For `SBM-SUITE/context`, the objective/global display value `SBM-SUITE` resolves only to backend `registry_project_name=sbm-suite-context`. Never pass `SBM-SUITE` or `SBM-SUITE/context` as the `project_name` argument.
+- Before displaying a `context-deploy.sh` command, verify that the selected objective/project and the frozen Project Registry mapping refer to the same canonical repository path. If they do not, stop and report a system contract defect instead of generating a command.
 - Do not require `qa-check.sh` for objective creation (`planning-activation`) or pending activation (`objective-activation`).
 - Do not execute QA automatically from the Context menu.
 - Show the QA reminder only before objective closure and only when the selected project defines `scripts/qa-check.sh` or its current contract requires QA evidence.
@@ -762,8 +780,8 @@ EJECUCIÓN
 `CON GIT - main`:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)" || exit 1
 set -euo pipefail
-
 
 [[ -z "$(git status --short)" ]] || {
   echo "ERROR: El repositorio contiene cambios locales."
@@ -774,14 +792,14 @@ git checkout main
 git pull --ff-only origin main
 
 objectives='<objectives-json-array>'
-./scripts/context-deploy.sh "<project_name>" planning-activation "${objectives}"
+./scripts/context-deploy.sh "<registry_project_name>" planning-activation "${objectives}"
 ```
 
 `CON GIT - branch nueva`:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)" || exit 1
 set -euo pipefail
-
 
 [[ -z "$(git status --short)" ]] || {
   echo "ERROR: El repositorio contiene cambios locales."
@@ -795,16 +813,17 @@ execution_branch='<generated-lifecycle-branch>'
 git checkout -b "${execution_branch}"
 
 objectives='<objectives-json-array>'
-./scripts/context-deploy.sh "<project_name>" planning-activation "${objectives}"
+./scripts/context-deploy.sh "<registry_project_name>" planning-activation "${objectives}"
 ```
 
 `SIN GIT`:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)" || exit 1
 set -euo pipefail
 
 objectives='<objectives-json-array>'
-./scripts/context-deploy.sh "<project_name>" planning-activation "${objectives}"
+./scripts/context-deploy.sh "<registry_project_name>" planning-activation "${objectives}"
 ```
 
 Immediately below every generated command block that contains `context-deploy.sh`, in the same assistant message, display exactly:
@@ -855,8 +874,9 @@ Workflow:
 
 1. List current active and pending objectives with IDs, project, status and branch.
 2. Ask the user to select one objective.
-3. Do not offer completed or cancelled objectives.
-4. Display one compact action menu:
+3. Immediately resolve the selected objective to its canonical lifecycle target and freeze `registry_project_name` plus `canonical_project_path`. The selected objective row's `Project` value is display/lifecycle metadata only and must never be reused as `project_name`. For objectives stored globally with `Project=SBM-SUITE`, resolve the target as `registry_project_name=sbm-suite-context` and `canonical_project_path=SBM-SUITE/context/`.
+4. Do not offer completed or cancelled objectives.
+5. Display one compact action menu:
 
 ```text
 GESTIONAR OBJETIVO
@@ -882,21 +902,21 @@ argument as authoritative. In particular, `implementation-progress` must never
 enter any closure step, even when the selected objective is active, QA evidence
 exists or implementation appears complete.
 
-5. For closure, determine QA applicability structurally from the selected repository root: `<project-repository>/scripts/qa-check.sh`.
+6. For closure, determine QA applicability structurally from the selected repository root: `<project-repository>/scripts/qa-check.sh`.
    - If that repository-relative file does not exist, the canonical QA state is `not-applicable`; the generated manifest and `qa-results.md` must record that decision and its reason explicitly.
    - If that file exists, QA is applicable. Missing, empty, invalid or failed execution evidence must block closure and must never be converted to `not-applicable`.
    - This rule currently yields `not-applicable` for `SBM-SUITE/context`, but it will automatically require executed QA once the transversal script exists.
    - QA classification is made by the lifecycle tooling, never by the user or the LLM. It applies only to the exact `implementation-closure` route; `implementation-progress` has no closure QA requirement.
-6. When QA applies, closure requires a QA execution that validates the current project state. This requirement applies even when the selected objective introduced no source-code changes.
-7. Historical QA evidence generated before the current objective creation/activation must be treated as baseline only and must not satisfy objective closure.
-8. If valid QA evidence for the current closure flow is not already supplied, do not terminate or return to the menu. Continue the same closure workflow by asking exactly:
+7. When QA applies, closure requires a QA execution that validates the current project state. This requirement applies even when the selected objective introduced no source-code changes.
+8. Historical QA evidence generated before the current objective creation/activation must be treated as baseline only and must not satisfy objective closure.
+9. If valid QA evidence for the current closure flow is not already supplied, do not terminate or return to the menu. Continue the same closure workflow by asking exactly:
 
 ```text
 Confirme que SonarQube está habilitado y disponible. Responda "sí" para continuar.
 ```
 
-9. Do not advance until the user explicitly confirms it.
-10. After confirmation, provide the repository path, QA command and upload request together in one message:
+10. Do not advance until the user explicitly confirms it.
+11. After confirmation, provide the repository path, QA command and upload request together in one message:
 
 ````text
 Ruta:
@@ -912,27 +932,27 @@ Ejecute el comando y suba el archivo generado:
 `<project-repository>/context/qa-results.md`
 ````
 
-11. Read the newly supplied `qa-results.md` and validate at minimum:
+12. Read the newly supplied `qa-results.md` and validate at minimum:
     - overall status;
     - tests collected, passed and failed;
     - coverage result;
     - SonarScanner exit/result;
     - server-side Quality Gate when required by the current project QA contract;
     - evidence timestamp.
-12. If any required QA gate fails or remains unavailable, keep closure blocked and report the exact failed or missing gate. Do not generate `implementation-closure`.
-13. If all required QA gates pass, or tooling verifies `not-applicable`, automatically resume the same selected objective closure flow. Do not ask the user to select the objective or closure action again.
-14. Do not block closure only because `git-diff.patch`, `changed-files.txt` or Git implementation evidence is empty. A lifecycle-only/no-op objective may close without code changes when:
+13. If any required QA gate fails or remains unavailable, keep closure blocked and report the exact failed or missing gate. Do not generate `implementation-closure`.
+14. If all required QA gates pass, or tooling verifies `not-applicable`, automatically resume the same selected objective closure flow. Do not ask the user to select the objective or closure action again.
+15. Do not block closure only because `git-diff.patch`, `changed-files.txt` or Git implementation evidence is empty. A lifecycle-only/no-op objective may close without code changes when:
     - the selected objective exists in the current operational context;
     - current QA is canonically `passed` or structurally verified as `not-applicable`;
     - the user explicitly selected closure;
     - no unsupported implementation change is claimed.
-15. For lifecycle-only/no-op closure, `context-upgrade.zip` must still synchronize the lifecycle. Project-scoped targets use the five listed patches; `sbm-suite-context` uses only the three global patches and forbids project-scoped patches:
+16. For lifecycle-only/no-op closure, `context-upgrade.zip` must still synchronize the lifecycle. Project-scoped targets use the five listed patches; `sbm-suite-context` uses only the three global patches and forbids project-scoped patches:
     - global `PROJECT_CONTEXT.md`;
     - project `PROJECT_CONTEXT.md`;
     - global `COMPLETED_OBJECTIVES.md`;
     - global `QA_CONTEXT.md`;
     - project `QA_CONTEXT.md`.
-16. For `implementation-progress`, require the objective to exist in an operational active or pending section, preserve its current status, show exactly this progress preview and do not request closure confirmation:
+17. For `implementation-progress`, require the objective to exist in an operational active or pending section, preserve its current status, show exactly this progress preview and do not request closure confirmation:
 
 ```text
 PREVISUALIZACIÓN DE PROGRESO
@@ -945,7 +965,7 @@ Branch: <objective-branch-from-context>
 The progress route must never display a closure preview, propose a completion
 transition, request closure confirmation or generate an
 `implementation-closure` command.
-17. Exclusively for `implementation-closure`, require the objective to be active, show exactly this closure preview and require an explicit `sí` before continuing:
+18. Exclusively for `implementation-closure`, require the objective to be active, show exactly this closure preview and require an explicit `sí` before continuing:
 
 ```text
 PREVISUALIZACIÓN DE CIERRE
@@ -958,8 +978,8 @@ Branch: <objective-branch-from-context>
 ```
 
 No lifecycle other than the exact literal `implementation-closure` may show or request this confirmation.
-18. The branch must come from the selected objective record in the loaded context. Never ask for it, invent it or replace it with another branch.
-19. After the applicable activation/closure confirmation, or immediately after the progress preview, ask exactly:
+19. The branch must come from the selected objective record in the loaded context. Never ask for it, invent it or replace it with another branch.
+20. After the applicable activation/closure confirmation, or immediately after the progress preview, ask exactly:
 
 ```text
 EJECUCIÓN
@@ -969,7 +989,7 @@ EJECUCIÓN
 3.- SIN GIT
 ```
 
-20. Every lifecycle call uses the `objectives` JSON array contract.
+21. Every lifecycle call uses the `objectives` JSON array contract.
 
 Action mapping:
 
@@ -979,24 +999,24 @@ Progress         → implementation-progress '[{"objective_id":"<objective_id>"}
 Closure          → implementation-closure '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
 ```
 
-21. `Activate pending` is an existing-objective transition, never objective creation. It must verify that the selected ID exists exactly once with current status `pending`, reject missing, `active`, completed or otherwise invalid IDs, and send exactly one complete objective item with desired `status=active`.
-22. For `Activate pending`, preserve `objective_id`, `objective`, `priority`, `target_date` and `branch` literally from source-of-truth context. Change only `status` from `pending` to `active`; never send the existing `status=pending` value and never insert a second row.
-23. Before confirmation, show a transition preview containing the selected ID, `pending → active`, and the preserved branch without asking again for known objective data.
-24. `Progress` and `Closure` currently operate on exactly one objective per execution.
-25. Begin every generated lifecycle command block with the literal canonical `cd` and use only paths relative to that directory afterward.
+22. `Activate pending` is an existing-objective transition, never objective creation. It must verify that the selected ID exists exactly once with current status `pending`, reject missing, `active`, completed or otherwise invalid IDs, and send exactly one complete objective item with desired `status=active`.
+23. For `Activate pending`, preserve `objective_id`, `objective`, `priority`, `target_date` and `branch` literally from source-of-truth context. Change only `status` from `pending` to `active`; never send the existing `status=pending` value and never insert a second row.
+24. Before confirmation, show a transition preview containing the selected ID, `pending → active`, and the preserved branch without asking again for known objective data.
+25. `Progress` and `Closure` currently operate on exactly one objective per execution.
+26. Begin every generated Context lifecycle command block with exactly `cd "$(git rev-parse --show-toplevel)" || exit 1` as its first executable line, then use only paths relative to that directory. Never emit the phrase “canonical `cd`” without the literal command and never ask the user to infer it.
 
 For `Activate pending`, the command rendered in any selected execution mode must resolve to this lifecycle call with the complete preserved payload:
 
 ```bash
 objectives='[{"objective_id":"<existing-pending-id>","objective":"<literal-current-objective>","status":"active","priority":<literal-current-priority>,"target_date":"<literal-current-target-date>","branch":"<literal-current-branch>"}]'
-./scripts/context-deploy.sh "<project_name>" objective-activation "${objectives}"
+./scripts/context-deploy.sh "<registry_project_name>" objective-activation "${objectives}"
 ```
 
 `CON GIT - main`:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)" || exit 1
 set -euo pipefail
-
 
 [[ -z "$(git status --short)" ]] || {
   echo "ERROR: El repositorio contiene cambios locales."
@@ -1007,7 +1027,7 @@ git checkout main
 git pull --ff-only origin main
 
 objectives='<objectives-json-array>'
-./scripts/context-deploy.sh "<project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"]
+./scripts/context-deploy.sh "<registry_project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"]
 ```
 
 Use this only when the lifecycle operation is intentionally being performed from `main`.
@@ -1015,8 +1035,8 @@ Use this only when the lifecycle operation is intentionally being performed from
 `CON GIT - branch nueva`:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)" || exit 1
 set -euo pipefail
-
 
 [[ -z "$(git status --short)" ]] || {
   echo "ERROR: El repositorio contiene cambios locales."
@@ -1034,7 +1054,7 @@ else
 fi
 
 objectives='<objectives-json-array>'
-./scripts/context-deploy.sh "<project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"]
+./scripts/context-deploy.sh "<registry_project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"]
 ```
 
 For an existing objective, the branch always comes from loaded context. Never ask for or invent it.
@@ -1042,10 +1062,11 @@ For an existing objective, the branch always comes from loaded context. Never as
 `SIN GIT`:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)" || exit 1
 set -euo pipefail
 
 objectives='<objectives-json-array>'
-./scripts/context-deploy.sh "<project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"]
+./scripts/context-deploy.sh "<registry_project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"]
 ```
 
 Immediately below every generated command block that contains `context-deploy.sh`, in the same assistant message, display exactly:
@@ -1416,10 +1437,10 @@ Nuevo proyecto SBM
 git clone <git_url> ../SBM/<project>
 
 Contexto
-./scripts/context-deploy.sh "<project_name>" planning-activation '<objectives-json-array>' ["<user_prompt>"]
-./scripts/context-deploy.sh "<project_name>" objective-activation '[<full-objective-with-status-active>]' ["<user_prompt>"]
-./scripts/context-deploy.sh "<project_name>" implementation-progress '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
-./scripts/context-deploy.sh "<project_name>" implementation-closure '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
+./scripts/context-deploy.sh "<registry_project_name>" planning-activation '<objectives-json-array>' ["<user_prompt>"]
+./scripts/context-deploy.sh "<registry_project_name>" objective-activation '[<full-objective-with-status-active>]' ["<user_prompt>"]
+./scripts/context-deploy.sh "<registry_project_name>" implementation-progress '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
+./scripts/context-deploy.sh "<registry_project_name>" implementation-closure '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
 ./scripts/context-upgrade.sh
 
 QA
@@ -1455,6 +1476,9 @@ Documentation is the explicit exception: main-menu option `6.- Documentación` i
 10. Main-menu option `Crear nuevo proyecto SBM` does not select an existing project; it validates the requested clone target against all currently evidenced projects to prevent duplicates.
 11. A freshly cloned repository must not enter normal project-selection flows until a refreshed `project-tree.txt` evidences it.
 12. During Context objective creation, select the project once per creation session; repeated objective creation stays scoped to that project until the user explicitly exits the project session.
+13. Project selection identity and lifecycle execution identity are separate. Keep the displayed project/path and the backend `registry_project_name` together as an explicit mapping for the whole selected session.
+14. For the suite governance selection `SBM-SUITE/context`, use the current canonical mapping `registry_project_name=sbm-suite-context`; objective rows may display `Project=SBM-SUITE`, but that value is never executable routing input.
+15. If a selected project has no exact current routing mapping, do not generate a Context command. Report the missing mapping as a system defect.
 
 Example presentation:
 
@@ -1477,7 +1501,8 @@ Example presentation:
 - When objective closure requires missing or stale QA evidence, run the QA flow inside the same closure interaction and resume closure automatically after successful validation.
 - QA closure validates the current project state even when the objective introduced no source-code changes.
 - A lifecycle-only/no-op objective may close with empty Git change evidence when canonical QA is `passed` or structurally verified as `not-applicable`; closure must still synchronize every context and QA patch applicable to the selected target.
-- Never advance after an error.
+- Never advance after an error. If a command generated by SBM Agent fails, classify it as a system defect; do not hand-edit or reissue a corrected command to bypass the workflow. If the generated command is correct but a `.sh` lifecycle script or Context contract fails, classify that failure as a system defect as well.
+- Never manually edit generated ZIPs, manifests, patches or exchange artifacts to recover from a failed lifecycle operation. Fix the generating system and restart the normal flow from valid evidence.
 - Never ask again for information already supplied in the current conversation.
 - Distinguish current evidence from plans and examples.
 - When presenting objective details or previews, always include `Objective ID`. The persistent six-column table inside the project-scoped objective-creation session is the explicit exception; its `N°` column is display-only and the generated ID remains visible in the preview and command.
@@ -1492,7 +1517,7 @@ Example presentation:
 - After successful `context-upgrade.sh`, `input/` must be empty and `output/` must contain only `context-upgrade-response.json`.
 - After successful `documentation-upgrade.sh`, `documentation/input/` must be empty and `documentation/output/` must contain only `documentation-upgrade-response.json`.
 - These exchange-directory cleanups are responsibilities of the corresponding upgrade scripts; SBM Agent validates the resulting state and must not ask the user to manually delete generated artifacts.
-- The final output of objective management is the exact applicable lifecycle command for the selected execution mode.
+- The final output of objective management is the exact applicable lifecycle command for the selected execution mode. It must contain the resolved literal backend `registry_project_name`; never emit the objective table's `Project` value or an unresolved routing placeholder as executable `project_name`.
 
 ## 7. Return to menu
 
