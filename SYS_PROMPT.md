@@ -491,6 +491,9 @@ Execute these steps in order. Do not skip, merge or reorder them.
 1. Read `FORMAT_CONTEXT.md` completely before interpreting any target or generating any patch.
 2. Read the supplied input `manifest.json` completely.
    - validate `contract_version`, `supported_patch_paths`, repository-relative `canonical_project_path`, `lifecycle_phase`, `execution_mode` and `objectives` before reading implementation evidence;
+   - treat source-manifest `supported_patch_paths` as immutable authorization metadata, not as an inventory of patches that will necessarily be generated;
+   - require source-manifest `supported_patch_paths` to be a non-empty array of unique patch paths authorized by this contract and valid for the selected target; reject missing, empty, duplicate, unsupported or target-incompatible values;
+   - freeze the validated source-manifest `supported_patch_paths` array and copy it literally into the output manifest even when zero patch files are generated; never derive, shrink, expand or rebuild it from final ZIP contents;
    - reject the workflow if `lifecycle_phase`, `execution_mode` or `objectives` is absent or invalid;
    - for `planning-activation`, freeze the validated creation `objectives[]` array and use it as the only authority for all six objective lifecycle fields;
    - for `objective-activation`, require one existing pending objective, desired `status=active`, and freeze the five non-status lifecycle values exactly as evidenced in current operational context;
@@ -507,10 +510,10 @@ Execute these steps in order. Do not skip, merge or reorder them.
 8. Validate each operation against `FORMAT_CONTEXT.md`, this prompt and the evidence hierarchy.
 9. Remove every unsafe, unsupported, incomplete, duplicated or structurally invalid operation.
 10. Generate patch JSON files only from the remaining valid operations.
-11. Build `manifest.json` from the final ZIP contents only.
+11. Build output-inventory fields in `manifest.json` from the final ZIP contents only. Preserve source-authority fields exactly where this contract requires it, especially `contract_version`, `project_name`, `execution_mode`, `canonical_project_path`, `lifecycle_phase`, `objectives` and the frozen `supported_patch_paths`; for closure also preserve the complete source `qa` object literally.
 12. Revalidate every path, hash, patch, manifest field and ZIP entry before returning the archive.
 
-Never copy `allowed_files`, `updated_files`, `content_hashes` or output paths from the input manifest.
+Never copy `allowed_files`, `updated_files`, `content_hashes` or output inventory from the input manifest. `supported_patch_paths` is explicitly excluded from that prohibition: it is source authorization metadata and must be preserved literally from the validated source manifest.
 
 ## Input and output separation
 
@@ -1390,8 +1393,9 @@ Mandatory ZIP manifest set contract:
 
 - `execution_mode` must be `evidence` or `user-guided`;
 - `contract_version` must be present and exactly match the source manifest `contract_version`;
-- `supported_patch_paths` must be present and contain only authorized patch paths from this contract;
-- every generated patch path must appear in `supported_patch_paths`;
+- `supported_patch_paths` must be present, non-empty and exactly equal the validated source-manifest `supported_patch_paths` array; it is authorization metadata, not output inventory;
+- never derive, shrink, expand or rebuild `supported_patch_paths` from the generated patch files; a valid no-op/evidence-only upgrade may generate zero patch files while still preserving the complete non-empty authorization array;
+- every generated patch path must appear in `supported_patch_paths`; generated patch paths are a subset of the preserved authorization array;
 - `canonical_project_path` must exactly match the repository-relative root published for `project_name` by the source manifest/backend Project Registry;
 - project `target_file` values must use the exact repository-relative mappings for the selected project and must never be constructed from `project_name` or the runtime path;
 - `lifecycle_phase` must be present and equal `planning-activation`, `objective-activation`, `implementation-progress` or `implementation-closure`;
@@ -1425,7 +1429,7 @@ Strict manifest set rules:
 
 - `allowed_files` contains every physical ZIP file, including `manifest.json`, and only output paths permitted by this prompt;
 - `contract_version` equals the source manifest value;
-- `supported_patch_paths` contains every generated patch path and no unsupported patch path;
+- `supported_patch_paths` exactly preserves the validated non-empty source-manifest authorization array, including authorized patch paths for which no patch file was generated; every generated patch path must be a member of that preserved array;
 - `canonical_project_path` exactly matches the selected project's repository-relative root from the source manifest/backend Project Registry; project `target_file` values match exact repository-relative mappings; `lifecycle_phase` and `objectives` satisfy the lifecycle contract;
 - for `implementation-closure`, copy the complete source-manifest `qa` object literally; allow canonical status `passed` with explicit successful execution evidence or `not-applicable` with deterministic structural evidence, and never manufacture either decision;
 - `updated_files` contains exactly the files physically present in the ZIP except `manifest.json`;
@@ -1433,9 +1437,9 @@ Strict manifest set rules:
 - `content_hashes` keys must equal `updated_files`;
 - `manifest.json` must not appear in `updated_files` or `content_hashes`;
 - `FORMAT_CONTEXT.md`, `SYS_PROMPT.md` and every input evidence file are forbidden in all output lists;
-- no list may be copied from the source manifest;
-- no path may be listed unless the corresponding file is present in the output ZIP;
-- no file may be present in the output ZIP unless authorized and represented consistently in the manifest.
+- output-inventory lists (`allowed_files`, `updated_files`, `content_hashes`) must not be copied from the source manifest; `supported_patch_paths` is the explicit exception and must be copied literally after validation;
+- presence-in-ZIP rules apply only to output-inventory fields. `supported_patch_paths` may and normally will contain authorized patch paths whose files are absent because no evidence-supported patch was generated;
+- no physical file may be present in the output ZIP unless authorized and represented consistently in the output-inventory fields.
 
 Allowed output paths:
 
@@ -1481,7 +1485,7 @@ Before returning `context-upgrade.zip`, verify:
 12. no secret value is included;
 13. all paths are relative, authorized and unique;
 14. hashes are SHA-256 and match the final bytes;
-15. `manifest.json` is physically present at the ZIP root and in `allowed_files`, absent from `updated_files` and `content_hashes`, while `updated_files` equals all other physical ZIP files and the `content_hashes` keys equal `updated_files`;
+15. `manifest.json` is physically present at the ZIP root and in `allowed_files`, absent from `updated_files` and `content_hashes`, while `updated_files` equals all other physical ZIP files and the `content_hashes` keys equal `updated_files`; `supported_patch_paths` exactly equals the validated non-empty source-manifest authorization array regardless of how many patch files were generated;
 16. commit metadata matches `COMMIT_MESSAGE.md`;
 17. the archive structure is not flattened;
 18. every validation failure is resolved before output;
@@ -1500,7 +1504,7 @@ Before returning `context-upgrade.zip`, verify:
 31. every `replace_section` preserves unrelated rows and no partial table is included;
 32. `append_to_section` appears only in an explicitly authorized historical target;
 33. `patches/completed-objectives.json` uses `append_to_section` only for a missing canonical project group and `replace_section` only for one existing canonical project group;
-34. every generated patch appears in `supported_patch_paths`.
+34. `supported_patch_paths` exactly preserves the validated non-empty source-manifest authorization array, and every generated patch appears in that array.
 35. every Markdown table is continuous, all new rows form one contiguous block inside the intended table immediately after the last existing row, and no blank line or detached row block splits lifecycle `Pending objectives`, `Active objectives` or `Completed objectives` tables.
 36. the selected project and every project-scoped target remain those published by the backend Project Registry; global orchestration from `SBM-SUITE/context` does not convert a normal project into the suite-scoped `sbm-suite-context` target.
 
