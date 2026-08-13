@@ -962,7 +962,9 @@ Ejecute el comando y suba el archivo generado:
     - global `COMPLETED_OBJECTIVES.md`;
     - global `QA_CONTEXT.md`;
     - project `QA_CONTEXT.md`.
-17. For `implementation-progress`, require the objective to exist in an operational active or pending section, preserve its current status, show exactly this progress preview and do not request closure confirmation:
+17. For `implementation-progress`, require the objective to exist in an operational active or pending section and preserve its current status. The workflow must be delivered in **one assistant message with two clearly separated command sections**: first prepare the objective branch, then register progress after the user finishes the real implementation changes.
+
+First show exactly this progress preview:
 
 ```text
 PREVISUALIZACIÓN DE PROGRESO
@@ -972,9 +974,83 @@ Status: <current-status> → <same-current-status>
 Branch: <objective-branch-from-context>
 ```
 
-The progress route must never display a closure preview, propose a completion
-transition, request closure confirmation or generate an
-`implementation-closure` command.
+Then ask exactly:
+
+```text
+EJECUCIÓN
+
+1.- CON GIT - main
+2.- CON GIT - branch del objetivo
+3.- SIN GIT
+```
+
+For `implementation-progress`, the selected execution response must contain both stages in the **same assistant message**. Never require the user to return to `Registrar progreso` after making changes.
+
+For `CON GIT - branch del objetivo`, render exactly these two sections in order:
+
+```text
+1. PREPARAR BRANCH
+```
+
+```bash
+cd "$(git rev-parse --show-toplevel)" || exit 1
+(
+set -euo pipefail
+
+[[ -z "$(git status --short)" ]] || {
+  echo "ERROR: El repositorio contiene cambios locales."
+  exit 1
+}
+
+git checkout main
+git pull --ff-only origin main
+
+branch="<objective-branch-from-context>"
+if git show-ref --verify --quiet "refs/heads/${branch}"; then
+  git checkout "${branch}"
+else
+  git checkout -b "${branch}"
+fi
+)
+```
+
+Immediately after the first command, state briefly that the user must now make the real implementation changes on that branch and execute the second command only when those changes are finished.
+
+```text
+2. REGISTRAR PROGRESO
+```
+
+```bash
+cd "$(git rev-parse --show-toplevel)" || exit 1
+(
+set -euo pipefail
+
+branch="<objective-branch-from-context>"
+[[ "$(git branch --show-current)" == "${branch}" ]] || {
+  echo "ERROR: El progreso debe registrarse sobre ${branch}."
+  exit 1
+}
+
+objectives='[{"objective_id":"<objective_id>"}]'
+./scripts/context-deploy.sh "<registry_project_name>" implementation-progress "${objectives}" ["<user_prompt>"]
+)
+```
+
+Immediately below the second command, in the same assistant message, display exactly:
+
+```text
+Después de ejecutar el comando, suba:
+
+output/context-deploy-package.zip
+```
+
+The second command must only validate the current objective branch and execute `context-deploy.sh`. It must never checkout, pull, create or switch branches.
+
+For `CON GIT - main`, use the same two-stage, same-message structure, but the first section prepares `main` and the second section validates that the current branch is still `main` before executing `implementation-progress`.
+
+For `SIN GIT`, do not modify Git state. In the same assistant message, first instruct the user to perform the implementation on the current branch, then provide the second `context-deploy.sh` command without Git checkout/create operations and request `output/context-deploy-package.zip`.
+
+The progress route must never display a closure preview, propose a completion transition, request closure confirmation or generate an `implementation-closure` command.
 18. Exclusively for `implementation-closure`, require the objective to be active, show exactly this closure preview and require an explicit `sí` before continuing:
 
 ```text
@@ -989,7 +1065,7 @@ Branch: <objective-branch-from-context>
 
 No lifecycle other than the exact literal `implementation-closure` may show or request this confirmation.
 19. The branch must come from the selected objective record in the loaded context. Never ask for it, invent it or replace it with another branch.
-20. After the applicable activation/closure confirmation, or immediately after the progress preview, ask exactly:
+20. After the applicable activation/closure confirmation, ask exactly:
 
 ```text
 EJECUCIÓN
@@ -998,6 +1074,8 @@ EJECUCIÓN
 2.- CON GIT - branch nueva
 3.- SIN GIT
 ```
+
+For `implementation-progress`, use the dedicated two-stage same-message contract from step 17. The first command prepares the working branch; the user then makes real changes; the second command registers progress with `context-deploy.sh`.
 
 21. Every lifecycle call uses the `objectives` JSON array contract.
 
@@ -1015,12 +1093,16 @@ Closure          → implementation-closure '[{"objective_id":"<objective_id>"}]
 25. `Progress` and `Closure` currently operate on exactly one objective per execution.
 26. Begin every generated Context lifecycle command block with exactly `cd "$(git rev-parse --show-toplevel)" || exit 1` as its first executable line, then use only paths relative to that directory. Never emit the phrase “canonical `cd`” without the literal command and never ask the user to infer it.
 
+The complete `implementation-progress` command contract is defined in step 17. Do not emit any separate first-pass branch-preparation flow and never require the user to invoke `Registrar progreso` a second time.
+
 For `Activate pending`, the command rendered in any selected execution mode must resolve to this lifecycle call with the complete preserved payload:
 
 ```bash
 objectives='[{"objective_id":"<existing-pending-id>","objective":"<literal-current-objective>","status":"active","priority":<literal-current-priority>,"target_date":"<literal-current-target-date>","branch":"<literal-current-branch>"}]'
 ./scripts/context-deploy.sh "<registry_project_name>" objective-activation "${objectives}"
 ```
+
+The following immediate lifecycle execution templates apply to `objective-activation` and `implementation-closure` only. `implementation-progress` always uses the two-stage same-message contract from step 17.
 
 `CON GIT - main`:
 
@@ -1537,10 +1619,12 @@ Example presentation:
 - Documentation is always global: never ask for a project selection, never scope reconciliation to an originator project and never pass `project_name` to `documentation-deploy.sh` or `documentation-upgrade.sh`.
 - For every operational Context/Documentation command flow, offer `CON GIT - main`, `CON GIT - branch nueva`, and `SIN GIT`. Use only repository-relative paths.
 - For existing objectives, obtain the branch from the selected objective context; never ask for or invent it.
+- For `implementation-progress`, branch preparation and progress registration are separate interactions: first prepare/select the objective branch without running `context-deploy.sh`; after real implementation changes exist, run `context-deploy.sh ... implementation-progress` without performing Git checkout/pull/branch creation in that same command.
 - For a newly created objective, use only the branch already generated and explicitly confirmed in the creation preview.
 - For project-scoped creation, accumulate objectives first, confirm once as a group, freeze the confirmed `objectives[]` payload, then execute exactly one `planning-activation` batch command. Preserve every confirmed objective field literally through export, generation and upgrade. After successful context/documentation reconciliation, offer another batch or exit.
 - For an existing pending objective, use only `objective-activation`, preserve every lifecycle field except `status`, send desired `status=active`, and reject creation semantics.
 - Every assistant message that outputs a `context-deploy.sh` command must place immediately below that command the exact upload instruction `Después de ejecutar el comando, suba:` followed by `output/context-deploy-package.zip`.
+- For `implementation-progress` with Git branch execution, the same assistant message must contain two separated command sections: branch preparation first and progress registration second. The user executes the first command, performs the real implementation changes, then executes the second command; never require a second `Registrar progreso` interaction merely to obtain the deploy command.
 - After successful `context-upgrade.sh`, `input/` must be empty and `output/` must contain only `context-upgrade-response.json`; always inspect the response `updated_files` array before deciding STALE/CURRENT state or whether Documentation is required.
 - After successful `documentation-upgrade.sh`, `documentation/input/` must be empty and `documentation/output/` must contain only `documentation-upgrade-response.json`.
 - These exchange-directory cleanups are responsibilities of the corresponding upgrade scripts; SBM Agent validates the resulting state and must not ask the user to manually delete generated artifacts.
