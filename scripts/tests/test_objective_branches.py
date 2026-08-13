@@ -24,7 +24,8 @@ def _run(*args: str, cwd: Path, check: bool = True) -> subprocess.CompletedProce
 
 
 class BranchEnvironment:
-    repositories = ("context", "dp/DP-API", "sbm/SBM-API")
+    repositories = ("context", "DP/DP-API", "SBM/SBM-API")
+    registered_repositories = ("context", "dp/DP-API", "sbm/SBM-API")
 
     def __init__(self, root: Path):
         self.root = root
@@ -34,7 +35,7 @@ class BranchEnvironment:
         self.remotes = root / "remotes"
         self.remotes.mkdir(parents=True)
 
-        self._write_project_context(self.repositories)
+        self._write_project_context(self.registered_repositories)
         self.script.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(SCRIPT_SOURCE, self.script)
         self.script.chmod(0o755)
@@ -103,11 +104,11 @@ class ObjectiveBranchesTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             env = BranchEnvironment(Path(directory))
             branch = "FEATURE-cross-repository"
-            extra_repository = "sbm/EXTRA"
+            extra_repository = "SBM/EXTRA"
             env._initialize_repository(extra_repository)
 
             _run("git", "branch", branch, "main", cwd=env.repository("context"))
-            remote = env.remotes / "dp-DP-API.git"
+            remote = env.remotes / "DP-DP-API.git"
             _run(
                 "git",
                 "--git-dir",
@@ -121,6 +122,7 @@ class ObjectiveBranchesTests(unittest.TestCase):
             result = env.execute("prepare", branch)
 
             self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn("el path registrado no es la raíz", result.stderr)
             for repository in (*env.repositories, extra_repository):
                 with self.subTest(repository=repository):
                     self.assertEqual(env.branch(repository), branch)
@@ -130,7 +132,7 @@ class ObjectiveBranchesTests(unittest.TestCase):
                 "--abbrev-ref",
                 "--symbolic-full-name",
                 "@{upstream}",
-                cwd=env.repository("dp/DP-API"),
+                cwd=env.repository("DP/DP-API"),
             ).stdout.strip()
             self.assertEqual(tracking, f"origin/{branch}")
             self.assertEqual(
@@ -140,7 +142,7 @@ class ObjectiveBranchesTests(unittest.TestCase):
                     "--is-ancestor",
                     "main",
                     branch,
-                    cwd=env.repository("sbm/SBM-API"),
+                    cwd=env.repository("SBM/SBM-API"),
                     check=False,
                 ).returncode,
                 0,
@@ -149,14 +151,14 @@ class ObjectiveBranchesTests(unittest.TestCase):
     def test_dirty_repository_aborts_before_any_branch_changes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             env = BranchEnvironment(Path(directory))
-            (env.repository("sbm/SBM-API") / "dirty.txt").write_text(
+            (env.repository("SBM/SBM-API") / "dirty.txt").write_text(
                 "dirty\n", encoding="utf-8"
             )
 
             result = env.execute("prepare", "FEATURE-must-abort")
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("sbm/SBM-API: working tree", result.stderr)
+            self.assertIn("SBM/SBM-API: working tree", result.stderr)
             self.assertIn("no se modificó ninguna branch", result.stderr)
             self.assertEqual(
                 [env.branch(repository) for repository in env.repositories],
@@ -168,7 +170,7 @@ class ObjectiveBranchesTests(unittest.TestCase):
             with self.subTest(invalid_kind=invalid_kind):
                 with tempfile.TemporaryDirectory() as directory:
                     env = BranchEnvironment(Path(directory))
-                    registered = (*env.repositories, "sbm/BROKEN")
+                    registered = (*env.registered_repositories, "sbm/BROKEN")
                     env._write_project_context(registered)
                     _run("git", "add", "PROJECT_CONTEXT.md", cwd=env.context_root)
                     _run(
@@ -201,12 +203,12 @@ class ObjectiveBranchesTests(unittest.TestCase):
             env = BranchEnvironment(Path(directory))
             branch = "FEATURE-verify-all"
             self.assertEqual(env.execute("prepare", branch).returncode, 0)
-            _run("git", "checkout", "main", cwd=env.repository("dp/DP-API"))
+            _run("git", "checkout", "main", cwd=env.repository("DP/DP-API"))
 
             result = env.execute("verify", branch)
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("dp/DP-API: branch actual 'main'", result.stderr)
+            self.assertIn("DP/DP-API: branch actual 'main'", result.stderr)
 
     def test_scripts_and_agent_contract_embed_no_machine_absolute_paths(self) -> None:
         content = SCRIPT_SOURCE.read_text(encoding="utf-8") + (

@@ -83,7 +83,7 @@ except ValueError as exc:
         "ERROR: Project objective summaries no contiene Main context"
     ) from exc
 
-repositories: list[str] = []
+registered_repositories: list[str] = []
 for line in table_lines[2:]:
     values = cells(line)
     if len(values) != len(headers):
@@ -111,18 +111,39 @@ for line in table_lines[2:]:
             "ERROR: Repositorio no canónico en Project objective summaries: "
             + repository
         )
-    if repository not in repositories:
-        repositories.append(repository)
+    if repository not in registered_repositories:
+        registered_repositories.append(repository)
 
+physical_repositories: list[str] = []
 for current_root, directory_names, file_names in os.walk(suite_root):
     if ".git" not in directory_names and ".git" not in file_names:
         continue
     repository = Path(current_root).relative_to(suite_root).as_posix()
     if repository == ".":
         raise SystemExit("ERROR: SBM-SUITE no debe ser un repositorio Git raíz")
+    physical_repositories.append(repository)
+    directory_names[:] = []
+
+physical_by_casefold: dict[str, list[str]] = {}
+for repository in physical_repositories:
+    physical_by_casefold.setdefault(repository.casefold(), []).append(repository)
+
+for key, matches in physical_by_casefold.items():
+    if len(matches) > 1:
+        raise SystemExit(
+            "ERROR: Repositorios Git ambiguos por casing: " + ", ".join(matches)
+        )
+
+repositories: list[str] = []
+for registered in registered_repositories:
+    matches = physical_by_casefold.get(registered.casefold(), [])
+    resolved = matches[0] if matches else registered
+    if resolved not in repositories:
+        repositories.append(resolved)
+
+for repository in physical_repositories:
     if repository not in repositories:
         repositories.append(repository)
-    directory_names[:] = []
 
 if not repositories:
     raise SystemExit("ERROR: No se resolvieron repositorios SBM registrados")
