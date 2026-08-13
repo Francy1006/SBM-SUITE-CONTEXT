@@ -882,7 +882,25 @@ project-tree.txt
 
 Workflow:
 
-1. List current active and pending objectives with IDs, project, status and branch.
+1. List current active and pending objectives with ID, literal objective description, status and branch. When the user is already scoped to one project, do not repeat the project column. Render the selection table exactly as:
+
+```text
+OBJETIVOS — <project>
+
+| N° | Objective ID | Descripción | Status | Branch |
+|---:|---|---|---|---|
+| 1 | `<objective_id>` | <literal-objective> | <active|pending> | `<branch>` |
+```
+
+Objective-list rules:
+
+- `Descripción` comes literally from the source-of-truth `Objective` field; never omit, summarize, rewrite or infer it;
+- `N°` is display-only and starts at `1`;
+- keep `Objective ID` and `Branch` directly copyable;
+- show only `active` and `pending` objectives;
+- when the listing spans more than one project, add a `Project` column while preserving `Descripción`;
+- never render an objective-selection table without `Descripción`.
+
 2. Ask the user to select one objective.
 3. Immediately resolve the selected objective to its canonical lifecycle target and freeze `registry_project_name` plus `canonical_project_path`. The selected objective row's `Project` value is display/lifecycle metadata only and must never be reused as `project_name`. For objectives stored globally with `Project=SBM-SUITE`, resolve the target as `registry_project_name=sbm-suite-context` and `canonical_project_path=SBM-SUITE/context/`.
 4. Do not offer completed or cancelled objectives.
@@ -1558,6 +1576,7 @@ Example presentation:
 - Never ask again for information already supplied in the current conversation.
 - Distinguish current evidence from plans and examples.
 - When presenting objective details or previews, always include `Objective ID`. The persistent six-column table inside the project-scoped objective-creation session is the explicit exception; its `N°` column is display-only and the generated ID remains visible in the preview and command.
+- Every objective-selection/listing table must include the literal objective description under `Descripción`; never present only ID, status and branch.
 - When generating an objective ID, validate it against active, pending, completed and cancelled records.
 - Documentation is always global: never ask for a project selection, never scope reconciliation to an originator project and never pass `project_name` to `documentation-deploy.sh` or `documentation-upgrade.sh`.
 - For every operational Context/Documentation command flow except `implementation-progress`, offer `CON GIT - main`, `CON GIT - branch nueva`, and `SIN GIT`. `implementation-progress` always uses the mandatory transversal objective branch flow from step 17. Use only repository-relative paths.
