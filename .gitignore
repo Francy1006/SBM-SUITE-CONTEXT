@@ -1,6 +1,8 @@
 input/*
 !input/.gitkeep
 
+scripts/__pycache__
+
 output/*
 !output/.gitkeep
 
