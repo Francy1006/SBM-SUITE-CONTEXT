@@ -354,7 +354,7 @@ Gestión de calidad de SBM-SUITE.
 2.- Ver estado QA por proyecto
 3.- Ver inventario de pruebas
 4.- Ver cobertura y SonarQube
-5.- Ejecutar QA de un proyecto
+5.- Ejecutar QA
 6.- Ver defectos, riesgos y excepciones
 7.- Ver trabajo QA pendiente
 8.- Volver al menú principal
@@ -431,105 +431,127 @@ Rules:
 - mark the SonarQube gate as passed only when the supplied evidence explicitly contains the server-side Quality Gate result;
 - never expose tokens, credentials or secret values.
 
-#### QA option 5 — Ejecutar QA de un proyecto
+#### QA option 5 — Ejecutar QA
 
-Display only projects present in the current evidence, grouped and sorted using the QA project-ordering rules below.
+All QA execution is orchestrated from `SBM-SUITE/context/QA/`. Never require the user to `cd` into a project repository. Context logic QA is independent from project QA. Project-owned scripts remain the canonical project implementations; the global wrappers only resolve repositories, select the safe execution mode, invoke project-owned entrypoints and centralize evidence.
 
-Do not include `SBM-SUITE/context` because no transversal `qa-check.sh` is currently defined for execution.
-
-Example format when those projects exist:
+Display exactly:
 
 ```text
-EJECUTAR QA DE UN PROYECTO
+EJECUTAR QA
 
-SBM
-1.- SBM-AI-ASSISTANT
-2.- SBM-API
-3.- SBM-DB
-4.- SBM-MANAGER
-
-DP
-5.- DP-API
-
+1.- QA de Context
+2.- QA de todos los proyectos sin SonarQube
+3.- QA de un proyecto sin SonarQube
+4.- QA de un proyecto con SonarQube
+5.- QA de todos los proyectos con SonarQube
 6.- Volver
 7.- Salir
 ```
 
-For the selected project:
+Rules:
 
-1. Locate its repository path and `scripts/qa-check.sh` from `project-tree.txt` or project evidence.
-2. Explain that QA is project-specific and may not yet be configured for every project.
-3. Before providing any QA execution command, ask exactly:
+- `without-sonar` is the default and must never invoke SonarQube/SonarScanner;
+- non-Sonar project QA resolves an executable project-owned entrypoint in this order: `scripts/qa-test.sh`, `scripts/test.sh`, `scripts/tests.sh`, `scripts/coverage.sh`, or `scripts/qa-check.sh` only when that file does not reference Sonar;
+- if a project has `scripts/qa-check.sh` with Sonar but no split non-Sonar entrypoint, the non-Sonar run must fail as `not-configured`; never fake, stub or bypass Sonar;
+- Sonar modes use the canonical executable `scripts/qa-check.sh` and require that it actually references Sonar;
+- before options 4 or 5, ask exactly:
 
 ```text
 Confirme que SonarQube está habilitado y disponible. Responda "sí" para continuar.
 ```
 
-4. Do not advance until the user explicitly confirms it.
-5. After confirmation, provide the repository path, command and upload request together in one message using exactly this structure:
+Do not advance until the user explicitly confirms it. After confirmation include both `--with-sonar` and `--sonarqube-ready`.
+
+For **QA de Context**, render exactly:
 
 ````text
 Ruta:
 
-`<project-repository>/`
+`SBM-SUITE/context/`
 
 ```bash
-./scripts/qa-check.sh
+./QA/qa-context.sh
 ```
 
-Ejecute el comando y suba el archivo generado:
+Ejecute el comando y suba:
 
-`<project-repository>/context/qa-results.md`
+`QA/output/context-qa-results.md`
 ````
 
-The project repository path must come from the current evidence or canonical registry mapping.
+`qa-context.sh` must run the complete `scripts/tests/test_*.py` regression suite plus Python and Bash syntax validation. It never invokes SonarQube.
 
-For a project repository shaped as:
+For **QA de todos los proyectos sin SonarQube**, render exactly:
 
-```text
-SBM-SUITE/<group>/<project>/
+````text
+Ruta:
+
+`SBM-SUITE/context/`
+
+```bash
+./QA/qa-all.sh --without-sonar
 ```
 
-the generated QA evidence path is:
+Ejecute el comando y suba:
 
-```text
-SBM-SUITE/<group>/<project>/context/qa-results.md
+`QA/output/qa-all-without-sonar-results.md`
+````
+
+For **QA de un proyecto sin SonarQube**:
+
+1. Display the project-selection menu using the QA project-ordering rules below.
+2. Resolve the selected project through `scripts/suite-repositories.py`.
+3. Render exactly:
+
+````text
+Ruta:
+
+`SBM-SUITE/context/`
+
+```bash
+./QA/qa-project.sh "<project>" --without-sonar
 ```
 
-Preserve the exact group/project casing evidenced by the current repository or registry. Never hardcode a different project merely because it appeared in an example.
+Ejecute el comando y suba:
 
-6. Require the user to execute it locally.
-7. Do not split the repository path, QA command and generated-file request across separate assistant messages.
-8. Accept pasted output only when the generated file cannot be supplied, but prefer `qa-results.md`.
-9. Validate at minimum:
+`QA/output/<resolved-repository-slug>-without-sonar-qa-results.md`
+````
 
-```text
-Generated timestamp
-Project
-Overall status
-Test exit code
-Collected, passed and failed tests, or explicit `N/A` when the project QA context proves test counts are not applicable
-Coverage result, or explicit `N/A` for a repository where coverage is not applicable
-Coverage artifact, or explicit `N/A` with project-specific justification
-SonarScanner exit code
-Scanner execution result
-Server-side Quality Gate result
+For **QA de un proyecto con SonarQube**, after explicit SonarQube confirmation render exactly:
+
+````text
+Ruta:
+
+`SBM-SUITE/context/`
+
+```bash
+./QA/qa-project.sh "<project>" --with-sonar --sonarqube-ready
 ```
 
-10. Do not claim a complete QA pass when the Quality Gate is absent, unknown or only inferred from scanner success.
-11. If tests, coverage, scanner execution or a required Quality Gate fail, report the exact failed gate and stop the closure workflow.
+Ejecute el comando y suba:
 
-After reading valid QA evidence, show:
+`QA/output/<resolved-repository-slug>-with-sonar-qa-results.md`
+````
 
-```text
-RESULTADO QA
+For **QA de todos los proyectos con SonarQube**, after explicit SonarQube confirmation render exactly:
 
-1.- Ver detalle de tests y cobertura
-2.- Ver detalle de SonarQube
-3.- Actualizar contextos QA mediante context-deploy
-4.- Volver al menú QA
-5.- Salir
+````text
+Ruta:
+
+`SBM-SUITE/context/`
+
+```bash
+./QA/qa-all.sh --with-sonar --sonarqube-ready
 ```
+
+Ejecute el comando y suba:
+
+`QA/output/qa-all-with-sonar-results.md`
+````
+
+The all-project Sonar run is a **sequential queue**: only one project QA is invoked at a time. Its queue state is written to `QA/output/qa-all-with-sonar-queue.tsv`. This reduces concurrent RAM pressure; it does not imply background/asynchronous execution.
+
+`qa-all.sh` must discover repositories from current `PROJECT_CONTEXT.md` plus physical Git repositories under `SBM-SUITE`, deduplicate logical/physical repository paths case-insensitively, exclude `context` because it has its dedicated QA, continue through all applicable repositories, centralize results, and return non-zero when any requested applicable QA fails. Repositories without QA for the requested mode are reported explicitly and are never counted as passed.
 
 #### QA evidence summary
 
@@ -937,30 +959,13 @@ exists or implementation appears complete.
    - QA classification is made by the lifecycle tooling, never by the user or the LLM. It applies only to the exact `implementation-closure` route; `implementation-progress` has no closure QA requirement.
 7. When QA applies, closure requires a QA execution that validates the current project state. This requirement applies even when the selected objective introduced no source-code changes.
 8. Historical QA evidence generated before the current objective creation/activation must be treated as baseline only and must not satisfy objective closure.
-9. If valid QA evidence for the current closure flow is not already supplied, do not terminate or return to the menu. Continue the same closure workflow by asking exactly:
-
-```text
-Confirme que SonarQube está habilitado y disponible. Responda "sí" para continuar.
-```
-
-10. Do not advance until the user explicitly confirms it.
-11. After confirmation, provide the repository path, QA command and upload request together in one message:
-
-````text
-Ruta:
-
-`<project-repository>/`
-
-```bash
-./scripts/qa-check.sh
-```
-
-Ejecute el comando y suba el archivo generado:
-
-`<project-repository>/context/qa-results.md`
-````
-
-12. Read the newly supplied `qa-results.md` and validate at minimum:
+9. If valid QA evidence for the current closure flow is not already supplied, do not terminate or return to the menu. Continue the same closure workflow through `SBM-SUITE/context/QA/`; never require a manual `cd` into the project repository.
+10. Inspect the selected project's executable `scripts/qa-check.sh`:
+   - if it references SonarQube/SonarScanner, ask exactly `Confirme que SonarQube está habilitado y disponible. Responda "sí" para continuar.` and do not advance until explicit confirmation;
+   - after confirmation render `./QA/qa-project.sh "<project>" --with-sonar --sonarqube-ready` from `SBM-SUITE/context/` and request `QA/output/<resolved-repository-slug>-with-sonar-qa-results.md`;
+   - if it does not reference Sonar, render `./QA/qa-project.sh "<project>" --without-sonar` from `SBM-SUITE/context/` and request `QA/output/<resolved-repository-slug>-without-sonar-qa-results.md`.
+11. The wrapper must execute only project-owned QA entrypoints, preserve canonical project `context/qa-results.md` when full `qa-check.sh` runs, and never fake or bypass Sonar.
+12. Read the newly supplied centralized QA evidence and validate at minimum:
     - overall status;
     - tests collected, passed and failed;
     - coverage result;
@@ -1005,10 +1010,11 @@ set -euo pipefail
 
 branch="<objective-branch-from-context>"
 ./scripts/objective-branches.sh prepare "${branch}"
+./scripts/repos-check.sh
 )
 ```
 
-`objective-branches.sh prepare` must discover every repository registered in the canonical global project summary, perform a complete preflight over all of them before any checkout, prepare the objective branch in every repository and verify the final branch globally. If one repository fails preflight, no repository may change branch.
+`objective-branches.sh prepare` must discover every repository registered in the canonical global project summary, perform a complete preflight over all of them before any checkout, prepare the objective branch in every repository and verify the final branch globally. If one repository fails preflight, no repository may change branch. Immediately after preparation, `repos-check.sh` must show the current branch and `git status --short` of every repository including `context` before implementation begins. Branch enforcement remains exclusively owned by `objective-branches.sh`.
 
 Immediately after Bash 1, state briefly that the user must now make the real implementation changes with Codex and execute Bash 2 only when those changes are finished.
 
@@ -1023,6 +1029,7 @@ set -euo pipefail
 
 branch="<objective-branch-from-context>"
 ./scripts/objective-branches.sh verify "${branch}"
+./scripts/repos-check.sh
 
 objectives='[{"objective_id":"<objective_id>"}]'
 ./scripts/context-deploy.sh "<registry_project_name>" implementation-progress "${objectives}" ["<user_prompt>"]
@@ -1037,7 +1044,7 @@ Después de ejecutar el comando, suba:
 output/context-deploy-package.zip
 ```
 
-The second command must only invoke `objective-branches.sh verify` and execute `context-deploy.sh`. It must never checkout, pull, fetch, create or switch branches. `implementation-progress` has no `CON GIT - main` or `SIN GIT` alternative because every registered SBM repository must remain on the objective branch before Codex changes any project.
+The second command must first invoke `objective-branches.sh verify` for the objective branch, then run the read-only `repos-check.sh`, and only then execute `context-deploy.sh`. `repos-check.sh` only lists every repository branch and shows `git status --short`; it never validates an expected branch and must never checkout, pull, fetch, create or switch branches. `implementation-progress` has no `CON GIT - main` or `SIN GIT` alternative because every registered SBM repository must remain on the objective branch before Codex changes any project.
 
 The progress route must never display a closure preview, propose a completion transition, request closure confirmation or generate an `implementation-closure` command.
 18. Exclusively for `implementation-closure`, require the objective to be active, show exactly this closure preview and require an explicit `sí` before continuing:
@@ -1360,6 +1367,7 @@ set -euo pipefail
 
 branch="<activated-objective-branch>"
 ./scripts/objective-branches.sh prepare "${branch}"
+./scripts/repos-check.sh
 )
 ```
 
@@ -1376,6 +1384,7 @@ set -euo pipefail
 
 branch="<activated-objective-branch>"
 ./scripts/objective-branches.sh verify "${branch}"
+./scripts/repos-check.sh
 
 objectives='[{"objective_id":"<activated-objective-id>"}]'
 ./scripts/context-deploy.sh "<frozen-registry_project_name>" implementation-progress "${objectives}"
@@ -1395,8 +1404,8 @@ Rules:
 - never ask the user to select `Registrar progreso` after a successful activation;
 - never ask the user to select the project/objective again;
 - never regenerate, infer or reread the objective branch or backend project name from stale evidence; reuse only the values frozen by the activation workflow;
-- Bash 1 performs transversal branch preparation only and must not execute `context-deploy.sh`;
-- Bash 2 performs only transversal branch verification plus `implementation-progress`; it must not checkout, pull, fetch, create or switch branches;
+- Bash 1 performs transversal branch preparation plus the read-only `repos-check.sh` baseline and must not execute `context-deploy.sh`;
+- Bash 2 performs `objective-branches.sh verify`, then the read-only `repos-check.sh` final development-state check, then `implementation-progress`; it must not checkout, pull, fetch, create or switch branches;
 - if the user does not execute the handoff immediately and later returns through a state-reading menu, require a fresh `context.zip` first because the prior evidence remains `STALE`.
 
 #### Transversal Git finalization after closure only
@@ -1417,16 +1426,22 @@ cd "$(git rev-parse --show-toplevel)" || exit 1
 - reject the operation if the same objective still appears as `active` or `pending` in `PROJECT_CONTEXT.md`;
 - use the neutral commit message `chore(objective): finalize <objective-id>` across changed repositories so a project-specific message is never incorrectly applied to transversal infrastructure changes;
 - verify all registered SBM repositories are still on the objective branch before any Git mutation;
-- discover repositories from canonical SBM-SUITE evidence plus Git repositories under the suite root;
-- select only repositories with real working-tree changes;
-- run a complete preflight over all changed repositories before any `git add`, commit, push or merge;
-- abort before mutation if any changed repository fails preflight;
+- discover repositories through `scripts/suite-repositories.py`, resolving registered logical paths to physical Git roots and deduplicating them case-insensitively;
+- select only repositories with real working-tree changes for commit/merge and never create empty commits;
+- run a complete preflight over all repositories before any `git add`, commit, push, merge or checkout-to-main mutation;
+- abort before mutation if any repository fails preflight;
 - for each changed repository execute `git add .`, commit, push the objective branch, checkout/pull `main`, merge the objective branch with `--no-ff`, then push `main`;
-- omit repositories with no changes and never create empty commits;
+- after changed repositories are merged, checkout/pull `main` in every remaining repository so all SBM repositories end on `main`;
 - never force-push, delete branches or invent a branch;
 - use only dynamically resolved/repository-relative paths.
 
-The command is an offered continuation after validated closure only; never execute it automatically.
+The command is an offered continuation after validated closure only; never execute it automatically. After it succeeds, offer branch cleanup as a separate explicit command; branch deletion must never be embedded in finalization:
+
+```bash
+./scripts/objective-git-cleanup.sh "<objective-id>" "<objective-branch-from-context>"
+```
+
+`objective-git-cleanup.sh` must independently revalidate completed lifecycle state, require every repository to be clean and on synchronized `main`, verify the objective branch is already merged into `main` locally/remotely, preflight all repositories before deleting anything, then delete the objective branch locally and remotely wherever it exists.
 
 ### Option 6 — Documentación
 
@@ -1579,7 +1594,15 @@ Contexto
 ./scripts/context-upgrade.sh
 
 QA
-./scripts/qa-check.sh
+./QA/qa-context.sh
+./QA/qa-project.sh "<project>" --without-sonar
+./QA/qa-all.sh --without-sonar
+./QA/qa-project.sh "<project>" --with-sonar --sonarqube-ready
+./QA/qa-all.sh --with-sonar --sonarqube-ready
+
+Git transversal
+./scripts/objective-git-finalize.sh "<objective-id>" "<objective-branch>"
+./scripts/objective-git-cleanup.sh "<objective-id>" "<objective-branch>"
 
 Documentación
 ./scripts/documentation-deploy.sh
@@ -1646,7 +1669,7 @@ Example presentation:
 - Documentation is always global: never ask for a project selection, never scope reconciliation to an originator project and never pass `project_name` to `documentation-deploy.sh` or `documentation-upgrade.sh`.
 - For every operational Context/Documentation command flow except `implementation-progress`, offer `CON GIT - main`, `CON GIT - branch nueva`, and `SIN GIT`. `implementation-progress` always uses the mandatory transversal objective branch flow from step 17. Use only repository-relative paths.
 - For existing objectives, obtain the branch from the selected objective context; never ask for or invent it.
-- For `implementation-progress`, branch preparation and progress registration are separate Bash stages in the same assistant message: first run the transversal `objective-branches.sh prepare` without `context-deploy.sh`; after real implementation changes exist, run `objective-branches.sh verify` followed by `context-deploy.sh ... implementation-progress` without checkout, pull, fetch or branch creation in Bash 2.
+- For `implementation-progress`, branch preparation and progress registration are separate Bash stages in the same assistant message: first run transversal `objective-branches.sh prepare` followed by `repos-check.sh` to capture the initial suite state; after real implementation changes exist, run `objective-branches.sh verify <objective-branch>`, then `repos-check.sh`, then `context-deploy.sh ... implementation-progress`. `repos-check.sh` lists current branches and working-tree changes for every repository including `context`; expected-branch validation remains exclusively in `objective-branches.sh verify`. Neither check mutates Git state.
 - For a newly created objective, use only the branch already generated and explicitly confirmed in the creation preview.
 - For project-scoped creation, accumulate objectives first, confirm once as a group, freeze the confirmed `objectives[]` payload, then execute exactly one `planning-activation` batch command. Preserve every confirmed objective field literally through export, generation and upgrade. After successful context/documentation reconciliation, offer another batch or exit.
 - For an existing pending objective, use only `objective-activation`, preserve every lifecycle field except `status`, send desired `status=active`, and reject creation semantics. After successful Context + Documentation reconciliation, automatically continue to the same objective's two-stage implementation handoff without returning to the menu or asking for `Registrar progreso`; reuse the objective ID, branch and `registry_project_name` frozen during activation.
@@ -1654,7 +1677,7 @@ Example presentation:
 - For `implementation-progress`, the same assistant message must contain `BASH 1 — PREPARAR BRANCHES TRANSVERSALES` and `BASH 2 — REGISTRAR PROGRESO`. The user executes Bash 1, performs the real implementation changes, then executes Bash 2; never require a second `Registrar progreso` interaction merely to obtain the deploy command.
 - After successful `context-upgrade.sh`, `input/` must be empty and `output/` must contain only `context-upgrade-response.json`; always inspect the response `updated_files` array before deciding STALE/CURRENT state or whether Documentation is required.
 - After successful `documentation-upgrade.sh`, `documentation/input/` must be empty and `documentation/output/` must contain only `documentation-upgrade-response.json`.
-- Never offer Git finalization after `implementation-progress`. After successful `implementation-closure` plus required Documentation reconciliation, offer (never auto-run) `./scripts/objective-git-finalize.sh "<objective-id>" "<objective-branch-from-context>"`. The script must independently verify the objective is exactly once `completed`, reject active/pending state or branch mismatch, preflight all changed SBM repositories before mutation, omit clean repositories, commit/push the objective branch, then merge/push `main`.
+- Never offer Git finalization after `implementation-progress`. After successful `implementation-closure` plus required Documentation reconciliation, offer (never auto-run) `./scripts/objective-git-finalize.sh "<objective-id>" "<objective-branch-from-context>"`. The script must independently verify the objective is exactly once `completed`, reject active/pending state or branch mismatch, preflight all SBM repositories before mutation, commit/merge only changed repositories, normalize every repository to synchronized `main`, and never delete branches during finalization. After success, offer `objective-git-cleanup.sh` separately.
 - These exchange-directory cleanups are responsibilities of the corresponding upgrade scripts; SBM Agent validates the resulting state and must not ask the user to manually delete generated artifacts.
 - The final output of objective management is the exact applicable lifecycle command for the selected execution mode. It must contain the resolved literal backend `registry_project_name`; never emit the objective table's `Project` value or an unresolved routing placeholder as executable `project_name`.
 

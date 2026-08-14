@@ -230,8 +230,10 @@ class ObjectiveBranchesTests(unittest.TestCase):
         self.assertIn("BASH 2 — REGISTRAR PROGRESO", progress)
         self.assertEqual(len(bash_blocks), 2)
         self.assertIn("objective-branches.sh prepare", bash_blocks[0])
+        self.assertIn("repos-check.sh", bash_blocks[0])
         self.assertNotIn("context-deploy.sh", bash_blocks[0])
         self.assertIn("objective-branches.sh verify", bash_blocks[1])
+        self.assertIn("repos-check.sh", bash_blocks[1])
         self.assertIn("context-deploy.sh", bash_blocks[1])
         for forbidden in ("checkout", "pull", "fetch", "checkout -b", "switch"):
             self.assertNotIn(forbidden, bash_blocks[1])
@@ -247,15 +249,17 @@ class ObjectiveBranchesTests(unittest.TestCase):
         handoff = contract.split(
             "#### Automatic activation-to-implementation handoff", maxsplit=1
         )[1].split(
-            "#### Optional transversal Git finalization for progress and closure",
+            "#### Transversal Git finalization after closure only",
             maxsplit=1,
         )[0]
 
         bash_blocks = re.findall(r"```bash\n(.*?)```", handoff, flags=re.DOTALL)
         self.assertEqual(len(bash_blocks), 2)
         self.assertIn("objective-branches.sh prepare", bash_blocks[0])
+        self.assertIn("repos-check.sh", bash_blocks[0])
         self.assertNotIn("context-deploy.sh", bash_blocks[0])
         self.assertIn("objective-branches.sh verify", bash_blocks[1])
+        self.assertIn("repos-check.sh", bash_blocks[1])
         self.assertIn("implementation-progress", bash_blocks[1])
         self.assertIn("<activated-objective-id>", bash_blocks[1])
         self.assertIn("<frozen-registry_project_name>", bash_blocks[1])

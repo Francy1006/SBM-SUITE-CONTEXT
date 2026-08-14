@@ -20,11 +20,22 @@ SBM-SUITE/
 │   ├── input/
 │   ├── output/
 │   ├── backup/
+│   ├── QA/
+│   │   ├── qa-context.sh
+│   │   ├── qa-project.sh
+│   │   ├── qa-all.sh
+│   │   └── output/
 │   ├── scripts/
 │   │   ├── context-deploy.sh
 │   │   ├── context-upgrade.sh
 │   │   ├── documentation-deploy.sh
 │   │   ├── documentation-upgrade.sh
+│   │   ├── objective-git-finalize.sh
+│   │   ├── objective-git-cleanup.sh
+│   │   ├── repos-branches.sh
+│   │   ├── repos-changes.sh
+│   │   ├── repos-check.sh
+│   │   ├── suite-repositories.py
 │   │   └── project-tree.sh
 │   └── project-tree.txt
 ├── dp/DP-API/
@@ -70,10 +81,20 @@ Execute from the local repository root `SBM-SUITE/context`:
 ./scripts/context-upgrade.sh
 ./scripts/documentation-deploy.sh
 ./scripts/documentation-upgrade.sh
+./QA/qa-context.sh
+./QA/qa-project.sh <project> --without-sonar
+./QA/qa-all.sh --without-sonar
+./QA/qa-project.sh <project> --with-sonar --sonarqube-ready
+./QA/qa-all.sh --with-sonar --sonarqube-ready
+./scripts/objective-git-finalize.sh <objective-id> <objective-branch>
+./scripts/objective-git-cleanup.sh <objective-id> <objective-branch>
+./scripts/repos-check.sh
 ./scripts/project-tree.sh
 ```
 
 All Context and Documentation commands and artifact paths are relative to this working directory.
+
+QA modes are intentionally split. Context QA runs the Context regression suite and syntax checks without Sonar. Project `without-sonar` mode uses only project-owned split test/coverage entrypoints and never bypasses Sonar. Project `with-sonar` mode executes canonical `scripts/qa-check.sh` after explicit SonarQube readiness confirmation. The all-project Sonar mode runs sequentially and records its local queue in `QA/output/qa-all-with-sonar-queue.tsv`.
 
 When Documentation is already synchronized, deploy exits successfully with `Documentation already synchronized` and does not create a package that would lead to a metadata-only upgrade.
 
@@ -101,7 +122,7 @@ Do not commit or package secrets, tokens, credentials, `.env` files, raw vectors
 
 ## Known limitations
 
-The workflows remain manually initiated. Git branch creation, commit and push are not automated. Documentation creation, deletion, rename, and structural moves require explicit manual contract updates.
+The workflows remain manually initiated. Objective branch preparation/finalization and post-finalization branch cleanup are automated by explicit transversal scripts, but are never executed implicitly by the agent. Documentation creation, deletion, rename, and structural moves require explicit manual contract updates.
 
 ## Related documentation
 
@@ -112,3 +133,5 @@ The workflows remain manually initiated. Git branch creation, commit and push ar
 - `SYS_PROMPT.md`
 - `documentation/FORMAT_CONTEXT.md`
 - `documentation/SYS_PROMPT.md`
+
+`repos-check.sh` is the single read-only repository-state entrypoint. It lists the current branch and displays `git status --short` for every suite repository including `context`, without modifying Git state. It does not accept or validate an expected branch; objective branch enforcement remains in `objective-branches.sh verify`. Use it immediately after objective branch preparation and again after implementation changes before progress export.

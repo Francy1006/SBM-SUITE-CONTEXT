@@ -37,6 +37,7 @@ SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
 PROJECT_CONTEXT_FILE="${CONTEXT_ROOT}/PROJECT_CONTEXT.md"
 COMPLETED_OBJECTIVES_FILE="${CONTEXT_ROOT}/COMPLETED_OBJECTIVES.md"
 OBJECTIVE_BRANCH_SCRIPT="${SCRIPT_DIR}/objective-branches.sh"
+REPOSITORY_HELPER="${SCRIPT_DIR}/suite-repositories.py"
 
 [[ -f "${PROJECT_CONTEXT_FILE}" ]] || {
   echo "ERROR: No existe context/PROJECT_CONTEXT.md" >&2
@@ -48,6 +49,10 @@ OBJECTIVE_BRANCH_SCRIPT="${SCRIPT_DIR}/objective-branches.sh"
 }
 [[ -x "${OBJECTIVE_BRANCH_SCRIPT}" ]] || {
   echo "ERROR: No existe scripts/objective-branches.sh ejecutable" >&2
+  exit 1
+}
+[[ -x "${REPOSITORY_HELPER}" ]] || {
+  echo "ERROR: No existe scripts/suite-repositories.py ejecutable" >&2
   exit 1
 }
 
@@ -123,80 +128,7 @@ REPOSITORY_LIST="$(mktemp)"
 CHANGED_LIST="$(mktemp)"
 trap 'rm -f "${REPOSITORY_LIST}" "${CHANGED_LIST}"' EXIT
 
-python3 - "${PROJECT_CONTEXT_FILE}" "${SUITE_ROOT}" > "${REPOSITORY_LIST}" <<'PY'
-from pathlib import Path, PurePosixPath
-import os
-import re
-import sys
-
-source = Path(sys.argv[1]).read_text(encoding="utf-8")
-suite_root = Path(sys.argv[2]).resolve(strict=True)
-match = re.search(
-    r"^## 6\. Project objective summaries\s*$"
-    r"(.*?)(?=^##\s+|\Z)",
-    source,
-    flags=re.MULTILINE | re.DOTALL,
-)
-if match is None:
-    raise SystemExit("ERROR: PROJECT_CONTEXT.md no contiene Project objective summaries")
-
-table_lines = [
-    line.strip()
-    for line in match.group(1).splitlines()
-    if line.strip().startswith("|") and line.strip().endswith("|")
-]
-if len(table_lines) < 2:
-    raise SystemExit("ERROR: Project objective summaries no contiene una tabla")
-
-
-def cells(line: str) -> list[str]:
-    return [value.strip() for value in line[1:-1].split("|")]
-
-
-headers = cells(table_lines[0])
-try:
-    main_context_index = headers.index("Main context")
-except ValueError as exc:
-    raise SystemExit("ERROR: Project objective summaries no contiene Main context") from exc
-
-repositories: list[str] = []
-for line in table_lines[2:]:
-    values = cells(line)
-    if len(values) != len(headers):
-        raise SystemExit("ERROR: Project objective summaries contiene una fila inválida")
-    main_context = values[main_context_index].strip("`")
-    suffix = "/context/PROJECT_CONTEXT.md"
-    if main_context == "context/PROJECT_CONTEXT.md":
-        repository = "context"
-    elif main_context.endswith(suffix):
-        repository = main_context[: -len(suffix)]
-    else:
-        raise SystemExit(
-            "ERROR: Main context no resuelve un repositorio canónico: " + main_context
-        )
-    path = PurePosixPath(repository)
-    if path.is_absolute() or ".." in path.parts or str(path) != repository or not path.parts:
-        raise SystemExit(
-            "ERROR: Repositorio no canónico en Project objective summaries: " + repository
-        )
-    if repository not in repositories:
-        repositories.append(repository)
-
-for current_root, directory_names, file_names in os.walk(suite_root):
-    if ".git" not in directory_names and ".git" not in file_names:
-        continue
-    repository = Path(current_root).relative_to(suite_root).as_posix()
-    if repository == ".":
-        raise SystemExit("ERROR: SBM-SUITE no debe ser un repositorio Git raíz")
-    if repository not in repositories:
-        repositories.append(repository)
-    directory_names[:] = []
-
-if not repositories:
-    raise SystemExit("ERROR: No se resolvieron repositorios SBM registrados")
-
-print("\n".join(repositories))
-PY
+python3 "${REPOSITORY_HELPER}" list-paths > "${REPOSITORY_LIST}"
 
 # La verificación transversal sucede antes de cualquier add/commit/push/merge.
 "${OBJECTIVE_BRANCH_SCRIPT}" verify "${OBJECTIVE_BRANCH}"
@@ -210,8 +142,7 @@ while IFS= read -r relative_path; do
 done < "${REPOSITORY_LIST}"
 
 if [[ ! -s "${CHANGED_LIST}" ]]; then
-  echo "Sin repositorios con cambios; no hay nada que finalizar."
-  exit 0
+  echo "Sin repositorios con cambios; se normalizarán todos los repositorios a main."
 fi
 
 preflight_repository() {
@@ -272,7 +203,7 @@ preflight_failed=0
 while IFS= read -r relative_path; do
   [[ -n "${relative_path}" ]] || continue
   preflight_repository "${relative_path}" || preflight_failed=1
-done < "${CHANGED_LIST}"
+done < "${REPOSITORY_LIST}"
 
 [[ "${preflight_failed}" == "0" ]] || {
   echo "ERROR: Preflight Git transversal fallido; no se ejecutó add/commit/push/merge." >&2
@@ -286,7 +217,7 @@ while IFS= read -r relative_path; do
   echo "Finalizando ${relative_path}..."
   git -C "${repository}" add .
   if git -C "${repository}" diff --cached --quiet; then
-    echo "Sin cambios staged en ${relative_path}; se omite."
+    echo "Sin cambios staged en ${relative_path}; se omite commit."
     continue
   fi
   git -C "${repository}" commit -m "${COMMIT_MESSAGE}"
@@ -300,4 +231,14 @@ while IFS= read -r relative_path; do
 
 done < "${CHANGED_LIST}"
 
-echo "Finalización Git transversal completada para ${OBJECTIVE_ID} (${OBJECTIVE_BRANCH})."
+while IFS= read -r relative_path; do
+  [[ -n "${relative_path}" ]] || continue
+  repository="${SUITE_ROOT}/${relative_path}"
+  if [[ "$(git -C "${repository}" branch --show-current)" != "main" ]]; then
+    echo "Normalizando ${relative_path} a main..."
+    git -C "${repository}" checkout main
+  fi
+  git -C "${repository}" pull --ff-only origin main
+done < "${REPOSITORY_LIST}"
+
+echo "Finalización Git transversal completada para ${OBJECTIVE_ID} (${OBJECTIVE_BRANCH}). Todos los repositorios quedaron en main."

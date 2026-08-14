@@ -949,7 +949,11 @@ Rules:
 
 ## QA context rules
 
-`qa-check.sh` executes tests, coverage and SonarQube.
+Global QA execution is orchestrated only from `SBM-SUITE/context/QA/`. `qa-context.sh` validates Context logic and syntax without Sonar. `qa-project.sh` executes one project in explicit `without-sonar` or `with-sonar` mode, and `qa-all.sh` executes the requested mode across the suite while excluding `context`, which has its dedicated QA. The orchestrator must resolve repositories from current suite evidence, deduplicate logical/physical paths case-insensitively, never duplicate project-specific QA logic, and centralize evidence under `context/QA/output/`.
+
+Project-owned `scripts/qa-check.sh` remains the canonical **full** QA implementation. A `without-sonar` run may use only an executable project-owned `scripts/qa-test.sh`, `scripts/test.sh`, `scripts/tests.sh`, `scripts/coverage.sh`, or `scripts/qa-check.sh` when that file does not reference Sonar. If a Sonar-backed `qa-check.sh` has no split non-Sonar entrypoint, report `not-configured`; never stub, fake, strip or bypass Sonar commands.
+
+Before `--with-sonar` execution, explicit user confirmation that SonarQube is enabled and available is mandatory and must be represented by `--sonarqube-ready`. `qa-all.sh --with-sonar --sonarqube-ready` executes project QA sequentially as a local queue and writes queue state to `QA/output/qa-all-with-sonar-queue.tsv`; it is not a background or asynchronous job.
 
 `context-deploy` extracts and packages the resulting evidence.
 
@@ -1516,3 +1520,9 @@ Before returning `context-upgrade.zip`, verify:
 If any ZIP-level validation fails, do not generate the archive.
 
 Do not include explanations outside the ZIP.
+
+## Transversal development-state checks
+
+During every `implementation-progress` development handoff, use `scripts/repos-check.sh` as the canonical read-only suite-state check. It must run immediately after transversal objective branch preparation and again after the implementation changes, immediately before `context-deploy.sh implementation-progress`.
+
+The check must always execute these two read-only operations for every discovered SBM Git repository, including `context`: list the current branch and show `git status --short`. It must resolve repositories through `suite-repositories.py`, preserve case-insensitive physical deduplication, and never mutate Git state. It must not accept or validate an expected branch. When an objective branch must be enforced, invoke `objective-branches.sh verify <objective-branch>` separately immediately before the final `repos-check.sh` and progress export.

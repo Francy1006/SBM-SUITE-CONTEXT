@@ -27,3 +27,6 @@ project-tree.txt
 .venv
 
 scripts/tests/__pycache__
+
+QA/output/*
+!QA/output/.gitkeep

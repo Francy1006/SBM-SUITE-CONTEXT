@@ -1,6 +1,6 @@
 # QA_CONTEXT.md
 
-> **Last updated:** 2026-08-07
+> **Last updated:** 2026-08-14
 >
 > **Purpose**
 >
@@ -27,6 +27,8 @@ Global QA applies to:
 
 Project-specific test plans, fixtures, commands and detailed evidence remain in each project's `context/QA_CONTEXT.md`.
 
+Transversal execution is centralized under `SBM-SUITE/context/QA/`: `qa-context.sh` validates Context logic without Sonar, `qa-project.sh` runs one project with or without Sonar, and `qa-all.sh` runs all applicable project repositories in the requested mode. Sonar-enabled all-project execution is sequentially queued to reduce concurrent RAM pressure. Wrappers orchestrate project-owned QA entrypoints; they never fake or duplicate project QA logic.
+
 ## 2. Quality policy
 
 1. Validate behavior through public contracts.
@@ -49,6 +51,10 @@ Project-specific test plans, fixtures, commands and detailed evidence remain in 
 18. Closure QA uses the canonical semantic states `passed`, `failed` and `not-applicable`; legacy `success` evidence is normalized to `passed`.
 19. Derive `not-applicable` only when the selected repository root has no repository-relative `scripts/qa-check.sh`. It is not equivalent to missing, unknown, not-run or failed evidence.
 20. If `scripts/qa-check.sh` exists, missing, empty, invalid or failed `qa-results.md` blocks closure and can never be overridden by user or generated manifest text.
+21. Execute Context logic QA from the suite root through `QA/qa-context.sh`; execute project QA through `QA/qa-project.sh`; execute all-project QA through `QA/qa-all.sh`.
+22. `without-sonar` is the safe default. It may execute only project-owned non-Sonar QA entrypoints and must fail `not-configured` when a Sonar-backed project has no split non-Sonar entrypoint.
+23. Central QA wrappers must centralize evidence under `QA/output/` and return non-zero if the requested applicable QA scope fails.
+24. Explicit SonarQube readiness confirmation is required before `--with-sonar`; all-project Sonar execution is sequential and records queue state in `QA/output/qa-all-with-sonar-queue.tsv`.
 
 ## 3. Quality gates
 

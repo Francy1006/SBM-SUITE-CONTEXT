@@ -10,6 +10,7 @@ from pathlib import Path
 CONTEXT_ROOT = Path(__file__).resolve().parents[2]
 FINALIZE_SOURCE = CONTEXT_ROOT / "scripts" / "objective-git-finalize.sh"
 BRANCH_SOURCE = CONTEXT_ROOT / "scripts" / "objective-branches.sh"
+REPOSITORY_SOURCE = CONTEXT_ROOT / "scripts" / "suite-repositories.py"
 
 
 def _run(*args: str, cwd: Path, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -42,8 +43,10 @@ class FinalizeEnvironment:
         scripts.mkdir(parents=True, exist_ok=True)
         shutil.copy2(FINALIZE_SOURCE, scripts / FINALIZE_SOURCE.name)
         shutil.copy2(BRANCH_SOURCE, scripts / BRANCH_SOURCE.name)
+        shutil.copy2(REPOSITORY_SOURCE, scripts / REPOSITORY_SOURCE.name)
         (scripts / FINALIZE_SOURCE.name).chmod(0o755)
         (scripts / BRANCH_SOURCE.name).chmod(0o755)
+        (scripts / REPOSITORY_SOURCE.name).chmod(0o755)
         _run("git", "add", ".", cwd=self.context_root)
         _run("git", "commit", "-m", "add lifecycle scripts", cwd=self.context_root)
         _run("git", "push", "origin", "main", cwd=self.context_root)
@@ -176,7 +179,8 @@ class ObjectiveGitFinalizeTests(unittest.TestCase):
                 )
 
             unchanged = env.repository("sbm/SBM-API")
-            self.assertEqual(_run("git", "branch", "--show-current", cwd=unchanged).stdout.strip(), branch)
+            self.assertEqual(_run("git", "branch", "--show-current", cwd=unchanged).stdout.strip(), "main")
+            self.assertEqual(_run("git", "status", "--porcelain", cwd=unchanged).stdout, "")
 
     def test_not_completed_aborts_before_any_commit(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -254,6 +258,11 @@ class ObjectiveGitFinalizeTests(unittest.TestCase):
 
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("Sin repositorios con cambios", result.stdout)
+            for relative_path in env.repositories:
+                self.assertEqual(
+                    _run("git", "branch", "--show-current", cwd=env.repository(relative_path)).stdout.strip(),
+                    "main",
+                )
 
     def test_agent_contract_allows_finalization_only_after_closure(self) -> None:
         contract = (CONTEXT_ROOT / "INIT_CONTEXT.md").read_text(encoding="utf-8")
@@ -267,6 +276,8 @@ class ObjectiveGitFinalizeTests(unittest.TestCase):
         self.assertIn("COMPLETED_OBJECTIVES.md", section)
         self.assertIn('objective-git-finalize.sh "<objective-id>" "<objective-branch-from-context>"', section)
         self.assertIn("chore(objective): finalize <objective-id>", section)
+        self.assertIn("all SBM repositories end on `main`", section)
+        self.assertIn("objective-git-cleanup.sh", section)
 
 
 if __name__ == "__main__":
