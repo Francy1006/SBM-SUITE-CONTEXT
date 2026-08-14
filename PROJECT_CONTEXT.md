@@ -107,7 +107,7 @@ Canonical project roots include `SBM-SUITE/dp/DP-API/`, `SBM-SUITE/sbm/SBM-API/`
 | Project | Purpose | Active objective | Pending objectives | Branch | Main context | QA context | Documentation |
 |---|---|---|---|---|---|---|---|
 | DP-API | Client-facing business API | test fix | Dedicated Service app; Material consumer migration; duplicate Product endpoint retirement | `BUGFIX-test-fix` | `dp/DP-API/context/PROJECT_CONTEXT.md` | `dp/DP-API/context/QA_CONTEXT.md` | `context/documentation/pages/QA & Testing/`, `context/documentation/pages/Development Roadmap/` |
-| SBM-MANAGER | Enterprise web frontend | Integrar SBM-MANAGER completamente a SBM Suite | Corregir SBM-MANAGER para consumir correctamente SBM-API y DP-API según ownership canónico.<br>Corregir y completar QA de SBM-MANAGER. | `FEATURE-integrates-sbm-manager` | `sbm/SBM-MANAGER/context/PROJECT_CONTEXT.md` | `sbm/SBM-MANAGER/context/QA_CONTEXT.md` | `context/documentation/pages/🤖 AI Architect Roadmap/🏢 SBM-Suite 3a50bde8acd580d0a068d6abc3542603.md` |
+| SBM-MANAGER | Enterprise web frontend | Integrar SBM-MANAGER completamente a SBM Suite<br>Corregir SBM-MANAGER para consumir correctamente SBM-API y DP-API según ownership canónico. | Corregir y completar QA de SBM-MANAGER. | `FEATURE-integrates-sbm-manager`<br>`BUGFIX-corrects-api-ownership` | `sbm/SBM-MANAGER/context/PROJECT_CONTEXT.md` | `sbm/SBM-MANAGER/context/QA_CONTEXT.md` | `context/documentation/pages/🤖 AI Architect Roadmap/🏢 SBM-Suite 3a50bde8acd580d0a068d6abc3542603.md` |
 | SBM-DB | PostgreSQL schema and migration authority | habilitación de sbm-db | Actualizar SBM-DB al contrato lifecycle actual de Context, incluyendo objectives[], execution_mode, preservación literal de objetivos y paths relativos. | `FEATURE-enables-sbm-db` | `sbm/SBM-DB/context/PROJECT_CONTEXT.md` | `sbm/SBM-DB/context/QA_CONTEXT.md` | `context/documentation/pages/🤖 AI Architect Roadmap/🏢 SBM-Suite 3a50bde8acd580d0a068d6abc3542603.md` |
 | SBM-API | Internal platform API | Not defined | Not defined | N/A | `sbm/SBM-API/context/PROJECT_CONTEXT.md` | `sbm/SBM-API/context/QA_CONTEXT.md` | To be mapped |
 | sbm-ai-assistant | AI orchestration and RAG | Support expanded context governance and project-tree evidence | Add documentation export, upgrade and dedicated collection | `FEATURE-expands-context-governance` | `sbm/sbm-ai-assistant/context/PROJECT_CONTEXT.md` | `sbm/sbm-ai-assistant/context/QA_CONTEXT.md` | `context/documentation/pages/AI Engineering/`, `context/documentation/pages/SBM-Suite/` |
@@ -385,6 +385,7 @@ Verified current capabilities include:
 - timestamped backup, atomic replacement and rollback support exist;
 - completed objectives use a single global historical register outside the operational development context;
 - current Project Tree evidence shows the lifecycle shell scripts centralized under `context/scripts/` while project-specific QA, coverage, SonarQube and database scripts remain in their owning projects.
+- `SBM-MANAGER-002` implementation progress now evidences Service, Catalog and Provider client-owned frontend flows on `dpApi`, while franchise/internal platform lookup remains on `sbmApi`; current QA reports 45/45 tests passed, 70.14% coverage and SonarQube server-side Quality Gate PASSED.
 
 Current evidence limitations and pending validation:
 

@@ -571,6 +571,10 @@ Before including a patch file, verify all of the following:
 19. every Markdown table is one continuous block with no blank line between its header row, separator row or data rows;
 20. all new rows added to an existing table form one contiguous block immediately after its last existing data row and before any blank line, prose, heading or later section;
 21. no operation creates a second visually similar row block outside the intended table, especially for lifecycle `Pending objectives`, `Active objectives` and `Completed objectives` tables.
+22. before accepting any `replace_section`, compare every original Markdown table row from the complete source snapshot with the replacement. An existing row may be changed or removed only when at least one requested `objective_id` appears literally in that row, or when the row is the selected project's row in exactly one of the two global summary tables authorized below.
+23. the only selected-project summary rows that may change without containing `objective_id` are: `SBM-SUITE/context/PROJECT_CONTEXT.md` with header `| Project | Purpose | Active objective | Pending objectives | Branch | Main context | QA context | Documentation |`, and `SBM-SUITE/context/QA_CONTEXT.md` with header `| Project | QA context | Test count | Passed | Failed | Coverage | SonarQube status | Last execution | Overall risk | Evidence |`. No other existing table row receives a project-based exception.
+24. every other existing row is immutable and must remain byte-for-byte identical, including rows in Coverage summary, Static analysis summary, test inventories, defects, exceptions, risks and any other current-state table. Fresh evidence must not be used to rewrite such an existing row unless it contains the requested `objective_id`; use an authorized summary/prose section, add a genuinely new evidence row when structurally allowed, or omit the unsafe operation and report it in `EXECUTIVE_README.md`.
+25. never normalize, reformat, reorder, refresh, translate or reconstruct an immutable existing row. Copy it literally from the complete source snapshot. RAG/retrieved context is never authoritative for preserved-row bytes.
 
 If a complete snapshot of the target section is unavailable, exclude the patch instead of generating a partial section. If any operation fails, exclude that operation. If a patch has no valid operations after validation, exclude the patch file. Report every omission and its reason in `EXECUTIVE_README.md`.
 
@@ -609,6 +613,7 @@ Rules:
 - `replace_section` replaces exactly one existing section identified by its exact heading;
 - `replace_section` returns the complete section and preserves every unrelated row;
 - `replace_section` must never return a partial table or remove another objective, another global QA project, or an unrelated reusable component;
+- for every existing table row, enforce the exact row-mutation authorization from **Mandatory patch validation** before emitting the patch: requested-objective rows may change; only the selected-project row in the two exact global summary tables receives the summary exception; every other existing row must be copied literally and unchanged;
 - every Markdown table must remain a single continuous block: never place a blank line between its header, separator or data rows;
 - when adding rows to an existing table, all new rows must form one contiguous block immediately after its last existing data row and before any blank line, prose, heading or later section;
 - never emit a second visually similar block of rows outside the intended table; apply this rule to all tables and especially to lifecycle `Pending objectives`, `Active objectives` and `Completed objectives` tables;
@@ -1489,25 +1494,25 @@ Before returning `context-upgrade.zip`, verify:
 16. commit metadata matches `COMMIT_MESSAGE.md`;
 17. the archive structure is not flattened;
 18. every validation failure is resolved before output;
-19. evidence-triggered lifecycle context/README patches are present when services, `.sh` scripts, models, structure, runtime, configuration or reusable components changed: project-scoped patches for project targets, suite-scoped global patches for `sbm-suite-context`;
-20. the applying workflow is contractually bound to `SBM-SUITE/context/backup/<timestamp>_<project>/` and the required `BACKUP_MANIFEST.json` contents;
-21. `FORMAT_CONTEXT.md` and every `SYS_PROMPT.md` remain protected and absent from patches;
-22. `planning-activation` synchronizes project + global operational objectives for project-scoped targets and global operational objectives only for `sbm-suite-context`, without creating completed history;
-23. `objective-activation` validates one existing pending objective, requires desired `status=active`, preserves its other lifecycle fields literally, removes it from Pending objectives and inserts it exactly once in Active objectives in every applicable operational context;
-24. `implementation-closure` removes the objective from operational contexts and appends it only to global `COMPLETED_OBJECTIVES.md`;
-25. no project-level `COMPLETED_OBJECTIVES.md` is generated;
-26. `planning-activation` preserves the source-manifest `execution_mode`, requires `USER_PROMPT.md` only for `user-guided`, forbids it for `evidence`, preserves every validated creation field exactly, and forbids `patches/completed-objectives.json`;
-27. `objective-activation` rejects missing, already-active and completed IDs, never creates a duplicate row and forbids `patches/completed-objectives.json`;
-28. `implementation-progress` forbids `patches/completed-objectives.json` and objective closure;
-29. `implementation-closure` includes `patches/completed-objectives.json`, `patches/global-project-context.json` and `patches/global-qa-context.json` for every target; project-scoped targets additionally include `patches/project-context.json` and `patches/project-qa-context.json`, while `sbm-suite-context` forbids those project-scoped patches; canonical QA status `passed` or structurally verified `not-applicable` and explicit closure are required for the single `objectives[0].objective_id`; implementation evidence is additionally required only when implementation changes are claimed; lifecycle-only/no-op closure may use empty Git change evidence;
-30. `implementation-closure` manifest copies the complete source-manifest `qa` object literally, with canonical `qa.status` equal to `passed` or `not-applicable`; `failed`, missing, unexecuted or invalid applicable QA blocks closure;
-31. every `replace_section` preserves unrelated rows and no partial table is included;
-32. `append_to_section` appears only in an explicitly authorized historical target;
-33. `patches/completed-objectives.json` uses `append_to_section` only for a missing canonical project group and `replace_section` only for one existing canonical project group;
-34. `supported_patch_paths` exactly preserves the validated non-empty source-manifest authorization array, and every generated patch appears in that array.
-35. every Markdown table is continuous, all new rows form one contiguous block inside the intended table immediately after the last existing row, and no blank line or detached row block splits lifecycle `Pending objectives`, `Active objectives` or `Completed objectives` tables.
-36. the selected project and every project-scoped target remain those published by the backend Project Registry; global orchestration from `SBM-SUITE/context` does not convert a normal project into the suite-scoped `sbm-suite-context` target.
-
+19. preserved-row validation was executed against the complete source snapshots and no generated patch changes or removes an immutable existing table row;
+20. evidence-triggered lifecycle context/README patches are present when services, `.sh` scripts, models, structure, runtime, configuration or reusable components changed: project-scoped patches for project targets, suite-scoped global patches for `sbm-suite-context`;
+21. the applying workflow is contractually bound to `SBM-SUITE/context/backup/<timestamp>_<project>/` and the required `BACKUP_MANIFEST.json` contents;
+22. `FORMAT_CONTEXT.md` and every `SYS_PROMPT.md` remain protected and absent from patches;
+23. `planning-activation` synchronizes project + global operational objectives for project-scoped targets and global operational objectives only for `sbm-suite-context`, without creating completed history;
+24. `objective-activation` validates one existing pending objective, requires desired `status=active`, preserves its other lifecycle fields literally, removes it from Pending objectives and inserts it exactly once in Active objectives in every applicable operational context;
+25. `implementation-closure` removes the objective from operational contexts and appends it only to global `COMPLETED_OBJECTIVES.md`;
+26. no project-level `COMPLETED_OBJECTIVES.md` is generated;
+27. `planning-activation` preserves the source-manifest `execution_mode`, requires `USER_PROMPT.md` only for `user-guided`, forbids it for `evidence`, preserves every validated creation field exactly, and forbids `patches/completed-objectives.json`;
+28. `objective-activation` rejects missing, already-active and completed IDs, never creates a duplicate row and forbids `patches/completed-objectives.json`;
+29. `implementation-progress` forbids `patches/completed-objectives.json` and objective closure;
+30. `implementation-closure` includes `patches/completed-objectives.json`, `patches/global-project-context.json` and `patches/global-qa-context.json` for every target; project-scoped targets additionally include `patches/project-context.json` and `patches/project-qa-context.json`, while `sbm-suite-context` forbids those project-scoped patches; canonical QA status `passed` or structurally verified `not-applicable` and explicit closure are required for the single `objectives[0].objective_id`; implementation evidence is additionally required only when implementation changes are claimed; lifecycle-only/no-op closure may use empty Git change evidence;
+31. `implementation-closure` manifest copies the complete source-manifest `qa` object literally, with canonical `qa.status` equal to `passed` or `not-applicable`; `failed`, missing, unexecuted or invalid applicable QA blocks closure;
+32. every `replace_section` preserves unrelated rows and no partial table is included;
+33. `append_to_section` appears only in an explicitly authorized historical target;
+34. `patches/completed-objectives.json` uses `append_to_section` only for a missing canonical project group and `replace_section` only for one existing canonical project group;
+35. `supported_patch_paths` exactly preserves the validated non-empty source-manifest authorization array, and every generated patch appears in that array.
+36. every Markdown table is continuous, all new rows form one contiguous block inside the intended table immediately after the last existing row, and no blank line or detached row block splits lifecycle `Pending objectives`, `Active objectives` or `Completed objectives` tables.
+37. the selected project and every project-scoped target remain those published by the backend Project Registry; global orchestration from `SBM-SUITE/context` does not convert a normal project into the suite-scoped `sbm-suite-context` target.
 If any ZIP-level validation fails, do not generate the archive.
 
 Do not include explanations outside the ZIP.

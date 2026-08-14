@@ -14,6 +14,7 @@ cd "${CONTEXT_ROOT}"
 INPUT_DIR="${CONTEXT_ROOT}/input"
 OUTPUT_DIR="${CONTEXT_ROOT}/output"
 UPGRADE_ZIP="${INPUT_DIR}/context-upgrade.zip"
+DEPLOY_PACKAGE="${OUTPUT_DIR}/context-deploy-package.zip"
 RESPONSE_FILE="${OUTPUT_DIR}/context-upgrade-response.json"
 
 get_env() {
@@ -53,6 +54,10 @@ fi
 }
 [[ -f "${UPGRADE_ZIP}" ]] || {
   echo "ERROR: No existe ${UPGRADE_ZIP}" >&2
+  exit 1
+}
+[[ -f "${DEPLOY_PACKAGE}" ]] || {
+  echo "ERROR: No existe ${DEPLOY_PACKAGE}; ejecute context-deploy nuevamente antes de context-upgrade." >&2
   exit 1
 }
 
@@ -349,6 +354,11 @@ print(f"Preflight validado: {phase}")
 print(f"Modo: {execution_mode}")
 print("Objetivos: " + ", ".join(ids))
 PY
+
+python3 "${SCRIPT_DIR}/validate-context-upgrade.py" \
+  "${UPGRADE_ZIP}" \
+  "${DEPLOY_PACKAGE}" \
+  "${SBM_SUITE_ROOT}"
 
 mkdir -p "${OUTPUT_DIR}"
 

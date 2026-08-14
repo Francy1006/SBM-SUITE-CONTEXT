@@ -73,7 +73,7 @@ A gate may be bypassed only through a documented accepted exception.
 |---|---|---:|---:|---:|---|---|---|---:|---|
 | DP-API | `SBM-SUITE/dp/DP-API/context/QA_CONTEXT.md` | 65 | 65 | 0 | 88% | Quality Gate OK | 2026-08-07 | 3 | `qa-results.md`: 65 tests passed; coverage 88%; SonarScanner exit code 0; Quality Gate OK |
 | SBM-API | `SBM-SUITE/sbm/SBM-API/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | N/A | N/A | 3 | Project QA context pending |
-| SBM-MANAGER | `SBM-SUITE/sbm/SBM-MANAGER/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | not validated | N/A | 3 | Project QA context and `qa-check.sh` configured; fresh `qa-results.md` pending |
+| SBM-MANAGER | `SBM-SUITE/sbm/SBM-MANAGER/context/QA_CONTEXT.md` | 45 | 45 | 0 | 70.14% | Quality Gate PASSED | 2026-08-13 | 3 | `qa-results.md`: 45 tests passed; coverage 70.14%; SonarScanner exit code 0; server-side Quality Gate PASSED |
 | SBM-DB | `SBM-SUITE/sbm/SBM-DB/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | Quality Gate PASSED | 2026-08-08 | 4 | `qa-results.md`: Flyway validated 33 sbm_business, 55 ditaly_pasta, 5 cross and 2 analytics migrations; SonarScanner exit code 0; Quality Gate PASSED |
 | SBM-AI-ASSISTANT | `SBM-SUITE/sbm/sbm-ai-assistant/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | N/A | N/A | 3 | Project QA context pending |
 | SBM-SUITE | `SBM-SUITE/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | not-applicable | 2026-08-13 | 0 | `qa-results.md`: QA structurally not applicable because `scripts/qa-check.sh` does not exist for `sbm-suite-context` |
@@ -358,7 +358,7 @@ Current suite QA state:
 
 ```text
 Status: PARTIALLY VALIDATED
-Reason: DP-API supplied successful current test, coverage, SonarScanner execution and server-side Quality Gate evidence; SBM-MANAGER QA is configured but has no fresh execution evidence yet; other projects and transversal gates remain incomplete.
+Reason: DP-API and SBM-MANAGER supplied successful current test, coverage, SonarScanner execution and server-side Quality Gate evidence; other projects and transversal gates remain incomplete.
 ```
 
 Closure applicability for the Context orchestration repository:
@@ -382,6 +382,19 @@ SonarScanner exit code 0
 ANALYSIS SUCCESSFUL
 EXECUTION SUCCESS
 Quality Gate: OK
+```
+
+Verified SBM-MANAGER implementation-progress evidence:
+
+```text
+Generated at: 2026-08-13T23:14:53Z
+45 tests passed
+0 tests failed
+Coverage: 70.14%
+SonarScanner exit code: 0
+Scanner execution result: success
+Server-side Quality Gate: PASSED
+Runtime: Docker
 ```
 
 Tenant isolation, object permissions, cross-project integration, deployment and database compatibility remain outside the validated scope.
@@ -410,8 +423,7 @@ Reason: no applicable QA workflow is currently defined for sbm-suite-context: sc
 7. Add frontend-to-API contract tests.
 8. Add AI Tool-to-API authorization tests.
 9. Add API-to-database compatibility tests.
-10. Execute fresh SBM-MANAGER QA and record `context/qa-results.md`.
-11. Create QA contexts for remaining projects.
+10. Create QA contexts for remaining projects.
 
 ## 18. Related documentation
 

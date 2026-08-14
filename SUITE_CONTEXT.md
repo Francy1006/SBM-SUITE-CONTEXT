@@ -311,6 +311,8 @@ Rules:
 | Context workflow | ChatGPT | ZIP + SYS_PROMPT | Reviewed context generation | active |
 | Documentation workflow | ChatGPT | ZIP + SYS_PROMPT | Reviewed documentation generation | planned |
 
+Current `SBM-MANAGER-002` evidence confirms that Service, Catalog and Provider client-owned frontend flows use `dpApi`; franchise lookup remains on `sbmApi` as an internal/platform operation.
+
 Cross-project communication must use explicit APIs or contracts. Direct repository imports and uncontrolled shared writes are prohibited.
 
 ## 13. Infrastructure and containers
@@ -421,7 +423,7 @@ Current deployment principles:
 Current verified direction:
 
 - SBM-MANAGER is the canonical Vue 3 web frontend consuming DP-API and SBM-API through explicit frontend clients.
-- SBM-MANAGER context, QA and lifecycle scaffolding is present; fresh QA and lifecycle execution remain pending.
+- SBM-MANAGER context, QA and lifecycle scaffolding is present; current implementation-progress QA reports 45/45 tests passed, 70.14% coverage and server-side SonarQube Quality Gate PASSED while SBM-MANAGER-002 remains active.
 - SBM-DB is the canonical PostgreSQL/Flyway authority; project context, QA/lifecycle scaffolding and canonical routing are defined, while fresh QA and complete migration-chain validation remain pending.
 - Product is the accepted DP-API reference vertical.
 - Material is separated into its own domain app.

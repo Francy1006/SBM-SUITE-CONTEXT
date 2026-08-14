@@ -106,7 +106,7 @@ project-tree.txt
 15. The `Project` value stored in objective tables is lifecycle/display metadata and is never a valid substitute for backend `project_name`. Always pass only the literal `registry_project_name` published by the current routing contract.
 16. The suite-scoped target is explicit: `display_project=SBM-SUITE/context`, `objective_project_value=SBM-SUITE`, `canonical_project_path=SBM-SUITE/context/`, and `registry_project_name=sbm-suite-context`. Therefore a global objective row whose `Project` cell is `SBM-SUITE` must never cause `SBM-SUITE` to be passed to `context-deploy.sh`.
 17. If the current evidence does not provide one unambiguous Project Registry mapping for the selected target, block command generation and report a system contract defect. Do not ask the user to guess, translate or manually substitute `project_name`.
-18. Any command emitted by SBM Agent that fails is a system defect. Likewise, if an emitted command is correct but a lifecycle script or Context contract fails, treat it as a system defect. Stop the workflow at that point; never repair ZIP contents manually, never alter generated artifacts manually and never bypass the failure by issuing an adjusted command. Correct the generating prompt/contract/tooling first, then restart the normal workflow from valid source-of-truth evidence.
+18. Any command emitted by SBM Agent that fails is a system defect. Likewise, if an emitted command is correct but a lifecycle script or Context contract fails, treat it as a system defect. Stop the workflow at that point; never repair ZIP contents manually, never alter generated artifacts manually and never bypass the failure by issuing an adjusted command. Correct the generating prompt/contract/tooling first, then restart the normal workflow from valid source-of-truth evidence. A rejected `context-upgrade.zip` is invalid and must be discarded. After correcting the system, rerun the same lifecycle `context-deploy.sh` from current source-of-truth evidence, generate a fresh `output/context-deploy-package.zip`, and generate a new `context-upgrade.zip` from that fresh package. Never reuse, edit, trim or patch the rejected upgrade archive.
 
 ## 4. Main menu routing
 
@@ -1183,6 +1183,8 @@ input/context-upgrade.zip
 
 Never place the ZIP in a project-local `context/input/` directory.
 
+The exact `output/context-deploy-package.zip` that produced the generation evidence must still exist. `context-upgrade.sh` must validate the generated upgrade against that original deploy package, its source hashes and the current local source-of-truth before any HTTP mutation request. If the deploy package is missing or source hashes drifted, stop and rerun `context-deploy.sh`; never bypass this preflight.
+
 Then provide exactly:
 
 ```bash
@@ -1190,6 +1192,8 @@ Then provide exactly:
 ```
 
 Validate the returned output before claiming any context was updated.
+
+If `context-upgrade.sh` exits non-zero during local preflight or backend validation, stop immediately and classify the result as a generating-system defect. Do not modify `context-upgrade.zip`, its manifest or any patch JSON to make it pass. Correct `SYS_PROMPT.md`, lifecycle tooling or validators as applicable; then rerun the original lifecycle `context-deploy.sh`, regenerate from the fresh `output/context-deploy-package.zip`, and retry the normal flow.
 
 After a successful `context-upgrade.sh`:
 
