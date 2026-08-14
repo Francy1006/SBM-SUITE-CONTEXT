@@ -1,6 +1,6 @@
 # 🏢 SBM-Suite
 
-> **Last updated:** 2026-08-13
+> **Last updated:** 2026-08-14
 >
 > **Purpose:**
 >
@@ -116,12 +116,24 @@ Se está ejecutando una migración para establecer responsabilidades definitivas
 5. Preparar comunicación síncrona y asíncrona.
 6. Documentar responsabilidades por servicio.
 
+#### Cierre validado de `SBM-MANAGER-002` — 2026-08-14
+
+El frontend `SBM-MANAGER` completó la corrección de ownership canónico para los flujos cliente evidenciados de Service, Catalog y Provider:
+
+- las operaciones cliente usan `dpApi` hacia `DP-API`;
+- las consultas internas de franquicia permanecen en `sbmApi` hacia `SBM-API`;
+- los contratos evidenciados de Catalog, Service y Provider quedaron alineados con `DP-API`;
+- el cierre fue validado con 45 tests passing, 0 failures, coverage 70.14%, SonarScanner exit code 0 y server-side Quality Gate `PASSED`.
+
+Este cierre corrige el consumo del frontend; no acredita eliminación de endpoints duplicados que todavía puedan existir en `SBM-API`.
+
 ### 7. Estado validado de Context y Documentation
 
 | Objective ID | Project | Objective | Status | Validation |
 |---|---|---|---|---|
 | OBJ-CTX-013 | SBM-SUITE | Corregir y validar el workflow de documentación de `SBM-SUITE/context`, incluyendo `documentation-deploy.sh`, `documentation-upgrade.sh` y el flujo completo posterior a `context-upgrade`. | completed | `implementation-closure` y `context-upgrade` completados; Context/Documentation quedaron centralizados bajo `SBM-SUITE/context`, Documentation opera globalmente y QA fue validado estructuralmente como `not-applicable` al no existir `scripts/qa-check.sh`. |
 | OBJ-CTX-001 | SBM-SUITE | Validate and stabilize the expanded context governance model, synchronized section patches and project-tree evidence | completed | Lifecycle-only/no-op closure registrada el 2026-08-13; `implementation-closure` y `context-upgrade` completados. QA fue `not-applicable` porque `scripts/qa-check.sh` no existe para `sbm-suite-context`; no se acreditan cambios de implementación. |
+| SBM-MANAGER-002 | SBM-MANAGER | Corregir SBM-MANAGER para consumir correctamente SBM-API y DP-API según ownership canónico. | completed | Cierre registrado el 2026-08-14; Service, Catalog y Provider consumen `DP-API` mediante `dpApi`, las consultas internas de franquicia permanecen en `SBM-API` mediante `sbmApi`, y QA registró 45/45 tests, coverage 70.14% y Quality Gate `PASSED`. |
 
 ---
 
@@ -821,6 +833,18 @@ La evidencia QA suministrada el `2026-08-08` registra:
 - SonarQube Quality Gate `PASSED`;
 - Flyway SQL fuera del análisis estático de SonarQube Community Build.
 
+### Evidencia actual de `SBM-MANAGER`
+
+La evidencia de cierre de `SBM-MANAGER-002` del `2026-08-14` registra:
+
+- 45 tests collected y 45 passed;
+- 0 failures;
+- coverage 70.14%;
+- SonarScanner exit code 0;
+- scanner execution `SUCCESS`;
+- server-side Quality Gate `PASSED`;
+- runtime Docker.
+
 ## 11. Known limitations
 
 Limitaciones y transiciones explícitas en el documento fuente:
@@ -837,10 +861,9 @@ Limitaciones y transiciones explícitas en el documento fuente:
 | Objective ID | Objective | Status | Priority | Target date | Branch |
 |---|---|---|---:|---|---|
 | SBM-MANAGER-001 | Integrar SBM-MANAGER completamente a SBM Suite, incluyendo contextos, lifecycle scripts, QA/SonarQube, registro en sbm-ai-assistant, sincronización global y actualización del diagrama canónico de arquitectura en SUITE_CONTEXT.md. | active | 5 | 2026-08-07 | `FEATURE-integrates-sbm-manager` |
-| SBM-MANAGER-002 | Corregir SBM-MANAGER para consumir correctamente SBM-API y DP-API según ownership canónico. | active | 5 | N/A | `BUGFIX-corrects-api-ownership` |
 | SBM-MANAGER-003 | Corregir y completar QA de SBM-MANAGER. | pending | 5 | N/A | `BUGFIX-completes-manager-qa` |
 
-Estos objetivos permanecen **active/pending**. Su presencia en el roadmap representa planificación vigente y no acredita cierre ni implementación completada.
+`SBM-MANAGER-001` permanece **active** y `SBM-MANAGER-003` permanece **pending**. `SBM-MANAGER-002` fue retirado del roadmap tras su cierre validado y quedó registrado en `Current state`.
 
 ### Objetivo activo de `SBM-DB`
 

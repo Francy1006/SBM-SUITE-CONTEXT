@@ -1,6 +1,6 @@
 # ☸️ DevOps & Platform Engineering
 
-> **Last updated:** 2026-08-12
+> **Last updated:** 2026-08-14
 >
 > **Purpose:**
 >
@@ -28,6 +28,7 @@ This page covers:
 - documentation deployment and upgrade;
 - Qdrant collection separation;
 - ZIP manifests, authorized paths and SHA-256 validation;
+- closure-only transversal Git finalization with objective/branch preflight;
 - shared backups, atomic replacement and rollback;
 - current validation boundaries.
 
@@ -51,6 +52,7 @@ Validated lifecycle state from current global Context:
 | DP-QA-001 | DP-API | completed | Historical closure evidence records the completed QA procedure and its validated scope. |
 | DP-TEST-001 | DP-API | completed | Lifecycle-only/no-op closure with current QA evidence; no implementation-state change claimed. |
 | OBJ-CTX-013 | SBM-SUITE | completed | Context closure evidence confirms the centralized Context/Documentation workflow, exact lifecycle dispatch, global reconciliation, stale-output handling and structured QA `not-applicable` support. |
+| SBM-MANAGER-002 | SBM-MANAGER | completed | Closure evidence records canonical DP-API/SBM-API frontend ownership, 45/45 passing tests, 70.14% coverage and server-side Quality Gate `PASSED`. |
 
 Current workflow behavior includes:
 
@@ -61,6 +63,9 @@ Current workflow behavior includes:
 - bounded QA evidence persisted to `context/qa-results.md`;
 - client-side ZIP manifest and physical-patch preflight before backend context upgrade;
 - mandatory project/global objective and QA synchronization during closure;
+- `implementation-progress` never triggers Git finalization; a valid progress no-op may skip Documentation but continues implementation;
+- closure-only Git finalization is allowed only after the objective is persisted as `completed` and required Documentation reconciliation is complete;
+- `objective-git-finalize.sh` verifies the completed objective and exact objective branch before any Git mutation, preflights all changed repositories and omits repositories with no changes;
 - final documentation deployment only after successful QA and context closure.
 
 The current documentation deployment completed for `dp-api`, indexed `28` documentation sources and `3390` chunks in `sbm_documentation`, and reported no errors.
@@ -81,6 +86,7 @@ Executed QA evidence generated on `2026-08-07` records `65` collected and passed
 - **Atomic replacement:** validated files are backed up and replaced as one controlled operation, with rollback on application failure.
 - **Evidence-first generation:** unsupported claims are omitted rather than inferred.
 - **Lifecycle-only/no-op closure:** an objective may be validated and closed without an implementation-state claim when current evidence explicitly shows no implementation change and QA validates the current project state.
+- **Closure-only Git finalization:** `objective-git-finalize.sh` is a manually invoked continuation after closure; it rejects objectives not recorded as completed or whose recorded branch does not match the requested branch before any add, commit, push or merge.
 
 ## 5. Architecture or operating model
 
@@ -90,12 +96,18 @@ Objective assignment
 → reviewed context-upgrade
 → implementation
 → qa-check.sh
-→ context-deploy implementation-progress or implementation-closure
+→ context-deploy implementation-progress
+   → reviewed progress context-upgrade
+   → continue implementation without Git finalization
+→ context-deploy implementation-closure
 → reviewed closing context-upgrade
 → documentation-deploy
-→ LLM-generated documentation-upgrade.zip
-→ documentation-upgrade
-→ shared backup and atomic replacement
+→ LLM-generated documentation-upgrade.zip when differences exist
+→ documentation-upgrade or validated Documentation no-op
+→ objective-git-finalize.sh (manual invocation, closure-only)
+→ transversal preflight
+→ commit/push/merge only changed repositories
+→ shared backup and atomic replacement for lifecycle artifacts
 ```
 
 | Component | Project | Responsibility | Technology | Runtime | Owner | Status |
@@ -147,6 +159,7 @@ Exact DP-API, backend and Qdrant ports are not established by the supplied packa
 | 7 | Documentation indexer and exporter | Validated contexts, Git and QA evidence when applicable | Index documentation, retrieve relevant documentation/context and build the package | `documentation-package.zip` | Planning-only for `active`/`pending`; implemented-state only after closure |
 | 8 | LLM generation | Documentation package | Generate complete authorized replacements | `documentation-upgrade.zip` | Prompt and format contract |
 | 9 | Documentation upgrade | Reviewed documentation ZIP | Validate, back up and replace existing authorized pages | Updated documentation | Hash, metadata, heading, path and rollback checks |
+| 10 | Objective Git finalizer | Completed objective ID/branch state plus changed repositories | Verify closure/branch, preflight all changed repositories, then commit/push the objective branch and merge/push `main` only for changed repositories | Finalized changed repositories | Objective recorded as `completed`, exact branch match and successful transversal Git preflight |
 
 | Artifact | Workflow | Producer | Consumer | Path | Required | Description |
 |---|---|---|---|---|---:|---|
@@ -258,7 +271,7 @@ The documentation upgrade validator additionally requires exact metadata labels,
 - No migration or production deployment execution is evidenced.
 - Exact runtime ports for DP-API, the documentation backend and Qdrant were not established by this package.
 - Notion synchronization remains planned downstream work.
-- The workflows remain manually initiated; Git commit and push remain manual.
+- The workflows remain manually initiated. Git finalization is not automatic: after validated closure and Documentation reconciliation, `objective-git-finalize.sh` performs the guarded commit/push/merge sequence only when explicitly invoked and only for repositories with real changes.
 - Historical documentation backup artifacts may appear as retrieval evidence, but only existing files below `documentation/pages/` are valid replacement targets.
 - Related QA, SBM-Suite and development-roadmap pages retain legacy structures that do not satisfy the current complete-page contract and are not replaced automatically by this upgrade.
 
