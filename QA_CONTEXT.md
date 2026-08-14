@@ -73,7 +73,7 @@ A gate may be bypassed only through a documented accepted exception.
 |---|---|---:|---:|---:|---|---|---|---:|---|
 | DP-API | `SBM-SUITE/dp/DP-API/context/QA_CONTEXT.md` | 65 | 65 | 0 | 88% | Quality Gate OK | 2026-08-07 | 3 | `qa-results.md`: 65 tests passed; coverage 88%; SonarScanner exit code 0; Quality Gate OK |
 | SBM-API | `SBM-SUITE/sbm/SBM-API/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | N/A | N/A | 3 | Project QA context pending |
-| SBM-MANAGER | `SBM-SUITE/sbm/SBM-MANAGER/context/QA_CONTEXT.md` | 45 | 45 | 0 | 70.14% | Quality Gate PASSED | 2026-08-13 | 3 | `qa-results.md`: 45 tests passed; coverage 70.14%; SonarScanner exit code 0; server-side Quality Gate PASSED |
+| SBM-MANAGER | `SBM-SUITE/sbm/SBM-MANAGER/context/QA_CONTEXT.md` | 45 | 45 | 0 | 70.14% | Quality Gate PASSED | 2026-08-14 | 3 | `qa-results.md`: 45 tests passed; coverage 70.14%; SonarScanner exit code 0; server-side Quality Gate PASSED |
 | SBM-DB | `SBM-SUITE/sbm/SBM-DB/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | Quality Gate PASSED | 2026-08-08 | 4 | `qa-results.md`: Flyway validated 33 sbm_business, 55 ditaly_pasta, 5 cross and 2 analytics migrations; SonarScanner exit code 0; Quality Gate PASSED |
 | SBM-AI-ASSISTANT | `SBM-SUITE/sbm/sbm-ai-assistant/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | N/A | N/A | 3 | Project QA context pending |
 | SBM-SUITE | `SBM-SUITE/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | not-applicable | 2026-08-13 | 0 | `qa-results.md`: QA structurally not applicable because `scripts/qa-check.sh` does not exist for `sbm-suite-context` |
@@ -384,10 +384,10 @@ EXECUTION SUCCESS
 Quality Gate: OK
 ```
 
-Verified SBM-MANAGER implementation-progress evidence:
+Verified SBM-MANAGER implementation-closure evidence:
 
 ```text
-Generated at: 2026-08-13T23:14:53Z
+Generated at: 2026-08-14T16:05:03Z
 45 tests passed
 0 tests failed
 Coverage: 70.14%

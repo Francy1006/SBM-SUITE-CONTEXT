@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Uso:
-  ./scripts/objective-git-finalize.sh <objective-branch> <commit-message>
+  ./scripts/objective-git-finalize.sh <objective-id> <objective-branch>
 USAGE
 }
 
@@ -13,11 +13,12 @@ USAGE
   exit 1
 }
 
-OBJECTIVE_BRANCH="$1"
-COMMIT_MESSAGE="$2"
+OBJECTIVE_ID="$1"
+OBJECTIVE_BRANCH="$2"
+COMMIT_MESSAGE="chore(objective): finalize ${OBJECTIVE_ID}"
 
-[[ -n "${COMMIT_MESSAGE//[[:space:]]/}" ]] || {
-  echo "ERROR: commit-message no puede estar vacío" >&2
+[[ -n "${OBJECTIVE_ID//[[:space:]]/}" ]] || {
+  echo "ERROR: objective-id no puede estar vacío" >&2
   exit 1
 }
 
@@ -34,16 +35,89 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTEXT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
 PROJECT_CONTEXT_FILE="${CONTEXT_ROOT}/PROJECT_CONTEXT.md"
+COMPLETED_OBJECTIVES_FILE="${CONTEXT_ROOT}/COMPLETED_OBJECTIVES.md"
 OBJECTIVE_BRANCH_SCRIPT="${SCRIPT_DIR}/objective-branches.sh"
 
 [[ -f "${PROJECT_CONTEXT_FILE}" ]] || {
   echo "ERROR: No existe context/PROJECT_CONTEXT.md" >&2
   exit 1
 }
+[[ -f "${COMPLETED_OBJECTIVES_FILE}" ]] || {
+  echo "ERROR: No existe context/COMPLETED_OBJECTIVES.md" >&2
+  exit 1
+}
 [[ -x "${OBJECTIVE_BRANCH_SCRIPT}" ]] || {
   echo "ERROR: No existe scripts/objective-branches.sh ejecutable" >&2
   exit 1
 }
+
+# Hard lifecycle gate: finalization is legal only after the objective is already
+# persisted as completed and removed from active/pending operational state.
+python3 - "${OBJECTIVE_ID}" "${OBJECTIVE_BRANCH}" \
+  "${PROJECT_CONTEXT_FILE}" "${COMPLETED_OBJECTIVES_FILE}" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+objective_id, objective_branch, project_path, completed_path = sys.argv[1:]
+project_text = Path(project_path).read_text(encoding="utf-8")
+completed_text = Path(completed_path).read_text(encoding="utf-8")
+
+
+def cells(line: str) -> list[str]:
+    return [value.strip() for value in line[1:-1].split("|")]
+
+
+def table_records(text: str):
+    headers = None
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not (line.startswith("|") and line.endswith("|")):
+            headers = None
+            continue
+        values = cells(line)
+        if values and all(re.fullmatch(r":?-{3,}:?", value) for value in values):
+            continue
+        if "Objective ID" in values or "ID" in values:
+            headers = values
+            continue
+        if headers is None or len(values) != len(headers):
+            continue
+        yield dict(zip(headers, values))
+
+
+completed_matches = [
+    row
+    for row in table_records(completed_text)
+    if row.get("Objective ID") == objective_id
+]
+if len(completed_matches) != 1:
+    raise SystemExit(
+        f"ERROR: {objective_id} no está completed exactamente una vez en COMPLETED_OBJECTIVES.md"
+    )
+
+record = completed_matches[0]
+status = record.get("Final status", "")
+branch = record.get("Branch", "").strip("`")
+if status != "completed":
+    raise SystemExit(
+        f"ERROR: {objective_id} tiene Final status '{status or 'N/A'}'; se requiere completed"
+    )
+if branch != objective_branch:
+    raise SystemExit(
+        f"ERROR: Branch de cierre para {objective_id} es '{branch or 'N/A'}', no '{objective_branch}'"
+    )
+
+for row in table_records(project_text):
+    row_id = row.get("ID") or row.get("Objective ID")
+    status = row.get("Status", "")
+    if row_id == objective_id and status in {"active", "pending"}:
+        raise SystemExit(
+            f"ERROR: {objective_id} todavía figura como {status} en PROJECT_CONTEXT.md"
+        )
+
+print(f"Lifecycle finalizado validado: {objective_id} / {objective_branch}")
+PY
 
 REPOSITORY_LIST="$(mktemp)"
 CHANGED_LIST="$(mktemp)"
@@ -74,8 +148,10 @@ table_lines = [
 if len(table_lines) < 2:
     raise SystemExit("ERROR: Project objective summaries no contiene una tabla")
 
+
 def cells(line: str) -> list[str]:
     return [value.strip() for value in line[1:-1].split("|")]
+
 
 headers = cells(table_lines[0])
 try:
@@ -224,4 +300,4 @@ while IFS= read -r relative_path; do
 
 done < "${CHANGED_LIST}"
 
-echo "Finalización Git transversal completada para ${OBJECTIVE_BRANCH}."
+echo "Finalización Git transversal completada para ${OBJECTIVE_ID} (${OBJECTIVE_BRANCH})."
