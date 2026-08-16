@@ -1471,3 +1471,9 @@ Observability
 ```
 
 SBM Suite debe evolucionar hacia un sistema operativo empresarial multimarcas donde una fuerza de trabajo digital especializada ejecute procesos, genere recomendaciones y coordine operaciones bajo supervisión humana, permisos mínimos y trazabilidad completa.
+
+---
+
+# 61. SBM named-agent operating baseline — 2026-08-16
+
+Agent hierarchy now targets `sbm-agent` as orchestrator plus `dev-agent`, `qa-agent`, `security-agent`, `backlog-agent`, brand agents (`ks-agent`, `pc-agent`, `cg-agent`) and domain agents (`marketing-agent`, `content-agent`). Control/approval UIs are separated from agent execution through `sbm-ai-manager`, `sbm-security` and `sbm-control`.

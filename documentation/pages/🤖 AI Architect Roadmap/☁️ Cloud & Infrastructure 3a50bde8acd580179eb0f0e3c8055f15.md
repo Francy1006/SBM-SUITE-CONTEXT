@@ -1355,3 +1355,9 @@ Security and Observability
 ```
 
 SBM Suite debe operar sobre una infraestructura híbrida, portátil, económica y escalable, capaz de crecer desde un laboratorio personal hacia una plataforma empresarial sin perder control, seguridad ni trazabilidad.
+
+---
+
+# 47. Production runtime baseline — 2026-08-16
+
+Production runtime should prioritize brand APIs/channels, PostgreSQL, shared platform services and required async workers. SonarQube is a temporary QA workload and does not need permanent production uptime. Mobile binaries are distributed through mobile channels/stores rather than hosted as persistent VPS services. Capacity upgrades are driven by sustained CPU/RAM/I/O, queue lag and DB latency rather than the raw number of containers.

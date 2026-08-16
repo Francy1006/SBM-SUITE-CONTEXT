@@ -1,5 +1,7 @@
 # 🏢 SBM-Suite
 
+> **Nota de arquitectura 2026-08-16:** `sbm-comercial` y `sbm-digital-api` se conservan solo como conceptos históricos del roadmap. No son proyectos aprobados para crear actualmente; el diseño vigente prioriza APIs de marca + stores/mobile/client channels directos.
+>
 > **Last updated:** 2026-08-14
 >
 > **Purpose:**
@@ -282,7 +284,7 @@ sbm-api
 
 Usuarios públicos
        │
-       ├── dp-store
+       ├── ks-store
        ├── sbm-comercial
        ├── futuras tiendas
        ├── aplicaciones móviles
@@ -558,13 +560,13 @@ Repositorio central de persistencia y migraciones.
 - SEO;
 - configuraciones de tienda.
 
-Estos datos de marca se incorporarán cuando comience formalmente la etapa de publicación de `dp-store`.
+Estos datos de marca se incorporarán cuando comience formalmente la etapa de publicación de `ks-store`.
 
 ##### Estado
 
 🚧 En desarrollo.
 
-#### `dp-store`
+#### `ks-store`
 
 ##### Tipo
 
@@ -659,7 +661,7 @@ Unificar y adaptar información para canales públicos.
 
 ##### Justificación
 
-Esta API permite que `sbm-comercial`, `dp-store` y futuros canales consuman una capa especializada sin conectarse directamente a múltiples servicios internos.
+Esta API permite que `sbm-comercial`, `ks-store` y futuros canales consuman una capa especializada sin conectarse directamente a múltiples servicios internos.
 
 ##### Estado
 
@@ -1466,7 +1468,7 @@ Antes de continuar con nuevos módulos, SBM Suite implementará una base transve
 
 ### 18. Desarrollo posterior
 
-1. `dp-store`.
+1. `ks-store`.
 2. Configuración digital por marca.
 3. `sbm-digital-api`.
 4. Futuras APIs cliente.
@@ -1542,3 +1544,26 @@ SBM Suite busca convertirse en un **sistema operativo empresarial inteligente**,
 Esta página documenta la visión, arquitectura, componentes, estado, validación y roadmap de SBM Suite.
 
 No sustituye los contextos operacionales de `SBM-SUITE/context/`, los contextos de cada proyecto, los contratos de API, los scripts ejecutables ni la evidencia QA original. No contiene secretos ni acredita como completado un objetivo que permanezca `active` o `pending`.
+
+---
+
+# 21. Multi-brand SBM baseline — 2026-08-16
+
+- DP/Ditaly Pasta: closed, one year of real data, historical/reference implementation.
+- Production targets: Kiseki Tech (KS), PortalConvenios.cl (PC), Consorcio y Gestión (CG).
+- New shared projects: `sbm-core`, `sbm-calculation`, `sbm-util`, `sbm-ai-manager`, `sbm-security`, `sbm-marketing`, `sbm-content`, `sbm-control`, `sbm-mobile`.
+- Brand APIs: `ks-api`, `pc-api`, `cg-api`.
+- Public stores: `ks-store`, `pc-store`, `cg-store`.
+- Brand-user mobile: `ks-mobile`, `pc-mobile`, `cg-mobile`.
+- Client applications: `ks-client`, `pc-client`, `cg-client`; PC additionally requires `pc-customer`.
+- `SBM-DB` remains Flyway/DBML authority and not a query gateway.
+- `sbm-core` owns async orchestration; `sbm-calculation` owns financial/accounting calculations; `sbm-util` owns deterministic integrations.
+- `sbm-control`, `sbm-security` and `sbm-ai-manager` are distinct operational control planes.
+
+Canonical business model target: Product, Material, Service, planned Equipment, mandatory Package, compositional Catalog, commercial/reporting Ticket and versioned Price/FX.
+
+---
+
+## Legacy digital roadmap concepts
+
+`sbm-comercial` and `sbm-digital-api` remain historical roadmap concepts, not current approved project-creation objectives. The current target favors direct brand APIs plus brand stores/client/mobile channels. Reactivate a transversal commercial portal/BFF only if a concrete cross-brand requirement justifies it.

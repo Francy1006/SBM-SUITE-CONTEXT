@@ -1537,3 +1537,9 @@ Human Approval
 ```
 
 SBM Suite debe evolucionar hacia una plataforma financiera y contable multimarcas capaz de controlar, conciliar, proyectar y auditar operaciones, manteniendo la integración tributaria desacoplada y supervisada.
+
+---
+
+# 59. sbm-calculation and commercial costing baseline — 2026-08-16
+
+`sbm-calculation` is the planned shared engine for `base_net_amount → net_amount → taxes → gross_amount`, currencies/FX, commissions, provisions, cost allocation and reconciliation. KS requires acquisition-specific import costs and provision-versus-actual tracking; PC requires percentage commissions and monthly max(fixed fee, per-treated-patient amount); Ditaly provides real historical purchase/sale/VAT/document flows.

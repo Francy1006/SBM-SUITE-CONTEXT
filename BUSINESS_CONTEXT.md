@@ -1,6 +1,6 @@
 # BUSINESS_CONTEXT.md
 
-> **Last updated:** 2026-07-30
+> **Last updated:** 2026-08-16
 >
 > **Purpose**
 >
@@ -42,50 +42,52 @@ Provide a multi-brand platform where each authorized business can operate indepe
 
 | Actor | Scope | Main responsibilities | Restrictions |
 |---|---|---|---|
-| Client user | Own brand or tenant | Operate products, materials, services, catalogs, prices, providers, branches, tickets and approved AI workflows | No cross-brand or platform administration |
-| Client administrator | Own brand or tenant | Manage permitted users, roles, modules and operational configuration | Cannot provision tenants, franchises or uncontracted modules |
-| Internal SBM user | Platform | Provision clients, franchises, subscriptions, modules and global services | Must remain within internal authority |
-| AI-assisted user | Inherited user scope | Perform approved operations through Tools and responsible APIs | AI gains no independent authority |
+| SBM User | Platform | Provisioning, governance, global configuration, shared services and internal administration | Must not bypass brand/client ownership |
+| Franchise/Brand User | One brand/franchise (`DP User`, `KS User`, `PC User`, `CG User`) | Operate the brand, its providers, catalogs, inventory, services, clients and approved workflows | No cross-brand or platform administration |
+| Client User | One client of a brand | Operate client-specific inventory, documents, schedules, equipment or workflows exposed by that brand | No access to other clients or brand administration |
+| Customer | Downstream person or organization served by a Client/brand; may authenticate when a customer channel exists | Consume/confirm services, appointments, purchases or status | Minimum required scope only |
+| AI-assisted user | Inherited caller scope | Perform approved operations through Tools and responsible APIs | AI gains no independent authority |
 
-Authorization target:
+Canonical hierarchy:
 
 ```text
-requesting user
-→ tenant or franchise
-→ active modules
-→ role
-→ permission
-→ restriction
-→ approved business action
+SBM User
+→ Franchise/Brand User
+→ Client / Client User
+→ Customer / Customer User when applicable
 ```
+
+The database currently uses `franchise` as the canonical brand scope; that naming remains unchanged for now.
 
 ## 4. Brands and franchises
 
 | Brand ID | Brand | Franchise | Description | Status | Source |
 |---|---|---:|---|---|---|
-| SBM | SBM | 0 | Platform owner, internal services and shared infrastructure | active | Suite context |
-| DITALY-PASTA | Ditaly Pasta | 1 | Initial validated food-service business operating on SBM Suite | active | Current business context |
+| SBM | SBM | 0 | Platform owner, shared services and infrastructure | active | Suite context |
+| DITALY-PASTA | Ditaly Pasta | 1 | Closed business with one year of real historical data; reference implementation for reusable brand logic | historical-reference | User-confirmed business state |
+| KS | Kiseki Tech | 1 | Importer/seller of technology and innovation products; current production target | production-target | User-confirmed business model |
+| PC | PortalConvenios.cl | 1 | Health/wellness operational coordination and hospital waiting-list referral services; current production target | production-target | User-confirmed business model |
+| CG | Consorcio y Gestión | 1 | Commercial permits, sanitary resolutions, premises enablement and related procedures; current production target | production-target | User-confirmed business model |
 
 Rules:
 
-- `Franchise` uses `1 = true`, `0 = false`.
-- Every brand operates within isolated business and authorization boundaries.
-- A shared physical schema does not authorize cross-brand access.
-- New brands or franchise changes require updating this context and related documentation.
+- `Franchise` uses `1 = true`, `0 = false` in this context convention.
+- Every brand operates within isolated authorization/data boundaries.
+- Ditaly historical data must be preserved and may be used as a reference/test dataset subject to security/privacy rules.
+- KS, PC and CG are the current production-target brands.
+- New brand repositories must be onboarded before being treated as implemented projects.
 
 ## 5. Brand operational profile
 
-| Brand | Locales enabled | Local count | Client count | Product count | Ticket count | Stock tracked | Last updated | Source |
-|---|---:|---:|---:|---:|---:|---:|---|---|
-| SBM | 0 | N/A | N/A | N/A | N/A | 0 | 2026-07-30 | Context definition |
-| Ditaly Pasta | 1 | N/A | N/A | N/A | N/A | N/A | 2026-07-30 | Authoritative endpoint pending |
+| Brand | Operational state | Production target | Historical/reference data | Current source |
+|---|---|---:|---:|---|
+| SBM | active platform | 1 | 1 | Suite context |
+| Ditaly Pasta | closed | 0 | 1 | One year of real operating data retained |
+| Kiseki Tech | active business / platform onboarding planned | 1 | 0 | User-confirmed business model |
+| PortalConvenios.cl | active business / platform onboarding planned | 1 | 0 | User-confirmed business model |
+| Consorcio y Gestión | active business / platform onboarding planned | 1 | 0 | User-confirmed business model |
 
-Rules:
-
-- Boolean values use `1 = true`, `0 = false`.
-- Unknown counts use `N/A`.
-- Future endpoint-driven values must include source and update timestamp.
-- Counts must never be inferred from code, filenames or incomplete database evidence.
+Exact operational counts remain `N/A` until an authoritative endpoint/source is connected.
 
 ## 6. Enabled modules by brand
 
@@ -109,75 +111,84 @@ Rules:
 
 ## 7. Core business domains
 
-Canonical client-facing domains:
+Canonical business domains:
 
 ```text
 Product
 Material
 Service
+Equipment        # planned database/domain addition
 Catalog
 Ticket
+Package
 Price
 Provider
 Branch
 Agreement
-User and authorization
+Client
+Customer
 ```
 
-Canonical ownership currently defined:
+Core meanings:
 
-```text
-Product  → products app
-Material → material app
-Service  → service app
-Catalog  → catalog app
-Ticket   → ticket app
-```
+- `Product`: purchased item intended for resale.
+- `Material`: purchased item consumed/used operationally and not sold as the primary commercial item.
+- `Service`: contracted or performed service, including third-party services, fees, commissions and logistics.
+- `Equipment`: planned retained asset/fixed asset that may be used or rented; Kiseki rental/maintenance/spares remain long-term scope.
+- `Catalog`: configurable commercial/acquisition composition (BOM/recipe) that may combine Product, Material, Service and Equipment with quantities/dosage.
+- `Ticket`: sellable/reportable unit or scheduled commercial event exposed to the sales/channel layer.
+- `Package`: mandatory item packaging/logistics association; Services use a special logical/non-physical package instead of `NULL`.
 
-Each domain remains independent even when models share common fields.
+These domains remain independent even when they share common fields.
 
 ## 8. Business entities
 
-| Entity | Description | Client-facing owner | Platform/internal owner | Main lifecycle |
-|---|---|---|---|---|
-| Product | Sellable business item | DP-API | Internal support only when explicitly required | create, confirm, update, version, soft-delete |
-| Material | Input used in production, packaging or operations | DP-API | Internal support only when explicitly required | create, confirm, update, version, soft-delete |
-| Service | Non-physical commercial or operational offering | DP-API | Internal support only when explicitly required | create, confirm, update, version, soft-delete |
-| Catalog | Grouping and publication of offerings | DP-API | Global policy only when explicitly platform-owned | create, configure, publish, deactivate |
-| Ticket | Client-facing operational or support request | DP-API | Internal escalation or support workflow | create, assign, progress, resolve |
-| Price | Monetary state of a priced business record | DP-API | Global fiscal policy where applicable | create version, activate current, preserve history |
-| Provider | Supplier of products, materials or services | DP-API | Shared references where applicable | create, update, deactivate |
-| Branch | Physical or operational business location | DP-API | Tenant provisioning remains internal | create, configure, activate, deactivate |
-| Agreement | Commercial relationship and applicable conditions | DP-API | Contractual policy where applicable | create, activate, expire |
-| Franchise | Contractual business unit | Not client-controlled | SBM-API | provision, configure, activate, deactivate |
-| Tenant | Isolated operational business scope | Not client-controlled | SBM-API | provision, configure, activate, deactivate |
+| Entity | Description | Operational owner | Implementation state |
+|---|---|---|---|
+| Product | Purchased item intended for resale | Brand API | implemented in DP reference; planned for KS/PC/CG as applicable |
+| Material | Purchased operational/production input not primarily sold | Brand API | implemented in DP reference; reusable |
+| Service | Contracted/performed commercial or operational service | Brand API | implemented direction; extended semantics planned |
+| Equipment | Retained asset/fixed asset, potentially rentable | Brand API | planned |
+| Catalog | BOM/recipe/commercial composition joining item components and quantities | Brand API | existing concept; richer composition planned |
+| Ticket | Unit sold/reported/scheduled by the commercial channel | Brand API | existing concept; semantics generalized |
+| Package | Mandatory packaging/logistics classification for every item type, including logical Service package | Brand API / SBM-DB | existing concepts require canonicalization |
+| Price | Versioned monetary state derived from base amount, rules, tax and currency | Brand API / sbm-calculation | existing + planned extension |
+| Provider | Supplier/service provider | Brand API | existing |
+| Branch | Physical/operational location | Brand API | existing |
+| Agreement | Commercial relationship/conditions | Brand API | existing |
+| Franchise | Canonical brand/business scope | SBM-API | existing |
+| Client | Organization/person directly served/contracted by a brand | Brand API | existing/brand-specific evolution |
+| Customer | Downstream beneficiary/end customer of a Client/brand | Brand API | planned generic model; required explicitly by PC |
+
+SBM-DB remains the physical schema/migration authority for business tables.
 
 ## 9. Business rules
 
-1. Client users operate only within their tenant or brand.
-2. Routine client operations should not require internal SBM intervention.
-3. Product, Material, Service, Catalog and Ticket remain separate capabilities.
-4. Similar fields do not justify merging domains.
-5. Each business capability has one canonical owner.
-6. Price calculations and versioning remain backend responsibilities.
-7. Audit and confirmation metadata are server-controlled.
-8. AI actions use the same permissions as direct user actions.
-9. Frontends do not reproduce authoritative backend rules.
-10. Platform provisioning remains internal.
-11. Physical schema location does not determine business ownership.
-12. Legacy data must not be silently deleted or hidden.
-13. Business changes must remain traceable.
-14. Cross-brand access is prohibited unless explicitly designed.
-15. Business capability changes must update this context and related documentation.
+1. Users operate only within their authorized SBM/franchise/client/customer scope.
+2. Routine brand/client operations should not require internal SBM intervention.
+3. Product, Material, Service, Equipment, Catalog and Ticket remain separate capabilities.
+4. Package is mandatory for item domains; Service uses a logical/non-physical package.
+5. Catalog composes items/quantities/dosage but does not transfer lifecycle ownership of its components.
+6. Ticket is the sellable/reportable/scheduled commercial unit; its exact lifecycle is brand-specific.
+7. Each business capability has one canonical owner.
+8. Price calculations/versioning remain backend responsibilities and must preserve currency/tax history.
+9. Audit and confirmation metadata are server-controlled.
+10. AI actions use the same permissions as direct user actions.
+11. Frontends do not reproduce authoritative backend rules.
+12. Platform provisioning remains internal.
+13. Physical schema location does not determine business ownership.
+14. Legacy/historical DP data must not be silently deleted or rewritten.
+15. Cross-brand/client/customer access is prohibited unless explicitly designed.
+16. Business capability changes must update this context and related documentation.
 
 ## 10. Commercial flows
 
-Client operation:
+Brand operation:
 
 ```text
-Client user
-→ SBM Manager or approved channel
-→ DP-API
+Franchise/Brand User or Client User
+→ approved manager/mobile/client/store channel
+→ responsible brand API (DP reference; KS/PC/CG planned)
 → validated business operation
 → persisted business state
 ```
@@ -185,102 +196,95 @@ Client user
 Internal platform operation:
 
 ```text
-Internal SBM user
-→ SBM Manager or internal channel
+SBM User
+→ SBM Manager / sbm-mobile / approved internal channel
 → SBM-API
-→ provisioning, subscription or global configuration
+→ identity, provisioning, authorization or global configuration
+```
+
+Customer operation when applicable:
+
+```text
+Customer
+→ public/customer channel
+→ responsible brand API
+→ scoped purchase/schedule/confirmation/status operation
 ```
 
 AI-assisted operation:
 
 ```text
-Authorized user
-→ SBM AI Assistant
-→ explicit Tool
+Authorized caller
+→ sbm-ai-assistant
+→ explicit Tool / specialized agent
 → responsible API
 → validated result
 ```
 
-The AI must not invent business identifiers, bypass validation or exceed the requesting user's authority.
+The AI must not invent business identifiers, bypass validation or exceed the requesting caller's authority.
 
 ## 11. Pricing and fiscal concepts
 
-A Price may include:
+A Price target may include:
 
-- base net amount;
-- net amount;
-- tax amount;
-- additional tax;
+- `base_net_amount`;
+- calculated `net_amount`;
+- VAT;
+- additional taxes (including future category/international taxes where applicable);
 - retention;
-- gross amount;
+- `gross_amount`;
+- source currency;
+- exchange-rate reference/history;
 - price configuration;
-- record type;
-- referenced item code;
+- referenced item;
 - current-version state;
-- confirmation state;
-- audit information.
+- confirmation/audit state.
 
 Rules:
 
-- pricing calculations are authoritative in the backend;
-- formula evaluation must be deterministic;
-- monetary values use exact decimal handling;
-- price history must remain auditable;
-- only compatible and confirmed configurations are accepted;
-- frontends and AI assistants must not reproduce fiscal logic.
-
-Expected history flow:
-
-```text
-current price
-→ business value changes
-→ create new price version
-→ link business record to new price
-→ previous owned price becomes non-current
-```
+- `sbm-calculation` is the planned reusable financial/accounting calculation engine;
+- brand APIs remain responsible for the business operation invoking those calculations;
+- `sbm-util` may ingest authoritative exchange-rate observations such as USD and future EUR/UF;
+- formula evaluation must be deterministic and monetary values use exact decimal handling;
+- price/currency history must remain auditable; converted values are not silently overwritten;
+- estimated/provisioned costs must remain distinguishable from actual paid/reconciled costs;
+- frontends and agents must not duplicate authoritative fiscal/calculation logic.
 
 ## 12. Inventory and catalog concepts
 
-Inventory concepts may include:
+Inventory may include stock, availability, branch/warehouse location, package/unit, provider, dispatch and retained Equipment.
 
-- stock;
-- availability;
-- material consumption;
-- package and unit of measure;
-- branch-specific availability;
-- provider and dispatch data.
+Catalog is the configurable composition/BOM/recipe layer and may reference:
 
-Catalog concepts may include:
-
-- products;
-- services;
-- materials when commercially applicable;
-- menus;
-- groups;
-- categories;
-- visibility rules;
-- publication state;
-- branch or channel conditions.
+- Products;
+- Materials;
+- Services;
+- Equipment when applicable;
+- quantities, dosage, unit conversions and package rules;
+- estimated and actual cost components;
+- brand/channel/branch visibility rules.
 
 Rules:
 
-- Catalog does not own Product, Material or Service lifecycle.
-- Stock values must come from authoritative operational sources.
-- Catalog visibility may depend on branch, channel, franchise, state or configuration.
+- Catalog does not own component lifecycle.
+- Stock values come from authoritative operational sources.
+- Components may have independent purchase orders, providers, currencies, lead times, taxes and accounting documents.
+- Ditaly uses Catalog for recipe/dosage and franchise/internal supply composition.
+- Kiseki uses Catalog for import/acquisition cost composition per sellable unit.
+- PC/CG reuse Catalog to compose service/event/procedure offerings.
 
 ## 13. Sales and order concepts
 
-Sales and order capabilities may include:
+Ticket is the commercial/reporting unit exposed to sales or service channels.
 
-- priced items;
-- catalogs;
-- branch availability;
-- agreements;
-- discounts;
-- fiscal configuration;
-- tickets or support related to an order.
+Examples:
 
-No complete sales or order workflow is considered validated unless explicitly evidenced by the responsible project and database contexts.
+- Ditaly: sold prepared item/recipe reported in sales;
+- Kiseki: sold imported product or delivery item;
+- PC: scheduled operative/referral whose value/status is reconciled after service confirmation;
+- CG: contracted procedure/trámite.
+
+Sales/acquisition workflows may involve Catalog, Price, inventory, agreements, orders, purchase orders, invoices, dispatch guides, transfers, commissions and fiscal configuration. No complete workflow is considered implemented outside the evidence of its responsible API and SBM-DB migrations.
 
 ## 14. Provider and branch concepts
 
@@ -342,10 +346,10 @@ Specific page and subpage paths must be added when the documentation tree format
 
 | Decision | Status | Business effect | Source |
 |---|---|---|---|
-| Client operations belong to DP-API | accepted | Routine business operations remain client-facing | Current architecture |
+| Brand operations belong to the responsible brand API | accepted | DP-API remains the reference; KS/PC/CG will own their brand-facing operations | Multi-brand architecture 2026-08-16 |
 | Platform provisioning belongs to SBM-API | accepted | Tenants, franchises and contracted modules remain internal | Current architecture |
 | Product, Material, Service, Catalog and Ticket remain separate domains | accepted | Independent lifecycle and ownership | Current business direction |
-| Ditaly Pasta is the initial validated business | accepted | First configured brand and operational model | Existing context |
+| Ditaly Pasta is the historical reference implementation | accepted | Preserve one year of real data and reuse validated patterns without treating DP as current production | User-confirmed 2026-08-16 |
 | Git is the current source of truth for business context and documentation | accepted | Changes are versioned before future API synchronization | Current workflow |
 
 ## 18. Business constraints
@@ -369,7 +373,98 @@ Specific page and subpage paths must be added when the documentation tree format
 - automated Git-to-Notion synchronization;
 - bidirectional conflict management between Git and Notion.
 
-## 20. Document boundary
+## 20. Multi-brand commercial baseline — 2026-08-16
+
+### Ditaly Pasta reference
+
+Ditaly Pasta is closed but provides real operational data and remains the reference implementation.
+
+Example sale flow:
+
+```text
+Ticket: vaso de fetuccine al huevo / salsa bolognesa / tamaño
+→ Catalog: recipe/BOM and dosage
+→ Product/Material/Service components
+→ inventory, purchase/transfer/sale documents, price and accounting effects
+```
+
+The Catalog may include food, packaging, condiments and logistics services. Internal stock movement may require only dispatch/transfer evidence, while sale to a franchise/client may require purchase order, invoice, dispatch guide and accounting movement. Purchase invoices may generate recoverable purchase VAT according to applicable rules.
+
+### Kiseki Tech — sale/import now, rental later
+
+Immediate sales scope:
+
+```text
+Ticket
+→ Catalog for the imported/sold unit plus delivery
+→ Product (FOB and source currency)
+→ purchase-specific Service instances
+→ Materials
+→ Price / FX / taxes / final cost
+```
+
+Import services are instantiated per acquisition/unit even when provider/value is similar, so actual and provisioned costs remain traceable. Examples include shipping line, forwarder, customs, deconsolidation, insurance, land freight, warehouse, cranes, warranty service and warranty-replacement provision.
+
+`sbm-util` is planned to retrieve/store authoritative exchange-rate observations (initially USD; future EUR/UF or others), while `sbm-calculation` applies deterministic financial formulas. Kiseki equipment rental, contracts, technical service and spare-parts inventory remain long-term scope and are not part of the immediate sales implementation.
+
+### PortalConvenios.cl
+
+PC reuses `Ticket → Catalog → Service` with scheduling and settlement semantics.
+
+```text
+SBM User → PC User → PC Client → PC Customer
+```
+
+Operational examples:
+
+- health/wellness on-site event: Ticket starts at zero, tracks future schedule/status and is reconciled after client/customer confirmation; PC commission is configurable as a percentage of total collected;
+- waiting-list referral: Ticket represents the referral/appointment and is confirmed through QR/customer interaction;
+- subscription may charge the greater of a fixed monthly amount or the configured per-treated-patient amount.
+
+`pc-client` serves PC Client users; `pc-customer` serves the downstream customer/patient with QR, profile, scheduling and confirmation.
+
+### Consorcio y Gestión
+
+CG reuses `Ticket → Catalog → Service → Client` for permit/procedure workflows.
+
+Required business capabilities include:
+
+- commercial permits, sanitary resolutions and premises enablement;
+- external-provider services and calendar/stage management;
+- client SII/basic business data and documentation;
+- plans/drawings, missing-document dependencies and status tracking;
+- `cg-client` for client-visible progress, documents, dependencies, general information and FAQ;
+- SBM-MANAGER plan module with drag/drop editing, export and OCR/AI-assisted digitization from PDF/PNG through authorized services.
+
+## 21. Pricing, package and accounting baseline
+
+All item types use a `Package`; Service uses an explicit logical/non-physical package. Package is expected to carry quantity/unit, weight/volume when physical, packaging type and logistics classification such as frozen, disposable or technology.
+
+Pricing target:
+
+```text
+base_net_amount
+→ deterministic calculation/rules
+→ net_amount
+→ VAT + additional taxes/retentions
+→ gross_amount
+```
+
+Price must preserve currency and exchange-rate history instead of silently overwriting converted values. Purchase/acquisition flows must distinguish estimated/provisioned versus actual cost and retain document/accounting traceability.
+
+## 22. Channel/application audience model
+
+| Channel | Primary audience |
+|---|---|
+| `sbm-manager` / `sbm-mobile` | SBM User and approved administration |
+| `ks-mobile` / `pc-mobile` / `cg-mobile` | Brand/Franchise User |
+| `ks-client` / `pc-client` / `cg-client` | Client User |
+| `pc-customer` | PC Customer/patient |
+| `ks-store` / `pc-store` / `cg-store` | Public/end-customer commercial channel |
+
+The exact feature set is brand-owned; common naming does not imply identical business behavior.
+
+## 23. Document boundary
 
 This file stores business meaning, brands, franchises, capabilities, entities, rules and operational profiles.
 

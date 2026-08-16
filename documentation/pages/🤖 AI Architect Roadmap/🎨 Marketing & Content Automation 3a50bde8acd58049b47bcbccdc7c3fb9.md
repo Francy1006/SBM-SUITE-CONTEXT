@@ -1346,3 +1346,9 @@ Analytics
 ```
 
 SBM Suite debe evolucionar hacia una Content Factory multimarcas capaz de producir, adaptar, publicar y medir contenido de forma integrada, automatizada y controlada.
+
+---
+
+# 49. Dedicated SBM applications — 2026-08-16
+
+`sbm-marketing` will own campaign/social data, Meta API ingestion, metrics and marketing workflows with `marketing-agent`. `sbm-content` will own assets and content-production workflows with `content-agent`, including controlled integrations with Photoshop, Blender and other creative tools. `sbm-ai-assistant` orchestrates reasoning; domain applications retain persistent state and permissions.

@@ -34,7 +34,7 @@ Construir una capa digital transversal que permita:
 
 La estrategia cubre:
 
-- `dp-store`;
+- `ks-store`;
 - `sbm-comercial`;
 - `sbm-digital-api`;
 - sitios corporativos;
@@ -1328,7 +1328,7 @@ social.message.received
 7. Tag Manager;
 8. Lighthouse.
 
-## Etapa 2 — `dp-store`
+## Etapa 2 — `ks-store`
 
 1. catálogo;
 2. SEO;
@@ -1373,7 +1373,7 @@ social.message.received
 ## Urgente
 
 1. definir configuración digital por marca;
-2. preparar SEO de `dp-store`;
+2. preparar SEO de `ks-store`;
 3. implementar Cloudinary;
 4. implementar Analytics;
 5. implementar Search Console;
@@ -1458,3 +1458,15 @@ AI Agents
 ```
 
 SBM Suite debe evolucionar hacia una plataforma digital omnicanal donde cada marca pueda publicar, medir, automatizar y optimizar su presencia digital desde una arquitectura común y controlada.
+
+---
+
+# 60. Mobile/client channel naming — 2026-08-16
+
+- `sbm-mobile`: SBM User.
+- `ks-mobile`, `pc-mobile`, `cg-mobile`: Brand/Franchise User.
+- `ks-client`, `pc-client`, `cg-client`: Client User.
+- `pc-customer`: PC Customer/patient.
+- `ks-store`, `pc-store`, `cg-store`: public/end-customer web channels.
+
+Mobile targets use React Native; exact features remain brand-specific and permission-scoped.

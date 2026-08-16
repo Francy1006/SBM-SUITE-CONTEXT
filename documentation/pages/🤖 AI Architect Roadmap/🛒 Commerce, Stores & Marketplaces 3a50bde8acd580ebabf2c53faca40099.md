@@ -1,5 +1,7 @@
 # 🛒 Commerce, Stores & Marketplaces
 
+> **Nota de arquitectura 2026-08-16:** `sbm-comercial` y `sbm-digital-api` se conservan solo como conceptos históricos del roadmap. No son proyectos aprobados para crear actualmente; el diseño vigente prioriza APIs de marca + stores/mobile/client channels directos.
+>
 > Estrategia de comercio digital, tiendas, catálogo, pedidos y marketplaces para SBM Suite.
 > 
 > 
@@ -35,7 +37,7 @@ Construir una capa comercial transversal que permita:
 
 La estrategia cubre:
 
-- `dp-store`;
+- `ks-store`;
 - `sbm-comercial`;
 - `sbm-digital-api`;
 - `dp-api`;
@@ -99,7 +101,7 @@ La estrategia cubre:
     
 10. **Progressive implementation**
     
-    `dp-store` será el primer caso real antes de generalizar la plataforma.
+    `ks-store` será el primer caso real antes de generalizar la plataforma.
     
 
 ---
@@ -142,7 +144,7 @@ Internal Platform
 
 # 5. Modelo de aplicaciones
 
-## `dp-store`
+## `ks-store`
 
 Primera tienda pública de marca.
 
@@ -1258,7 +1260,7 @@ Los agentes consumen APIs y tools autorizadas; no escriben directamente en base 
 7. APIs;
 8. QA.
 
-## Etapa 2 — `dp-store`
+## Etapa 2 — `ks-store`
 
 1. diseño;
 2. catálogo público;
@@ -1325,7 +1327,7 @@ Los agentes consumen APIs y tools autorizadas; no escriben directamente en base 
 
 ## Corto plazo
 
-1. `dp-store`;
+1. `ks-store`;
 2. catálogo público;
 3. SEO;
 4. multimedia;
@@ -1409,3 +1411,15 @@ Commercial AI Agents
 ```
 
 SBM Suite debe evolucionar hacia una plataforma comercial omnicanal donde cada marca pueda operar sus tiendas, marketplaces y canales digitales desde una arquitectura centralizada, segura y escalable.
+
+---
+
+# 49. Brand commerce channels — 2026-08-16
+
+Production-target stores are `ks-store`, `pc-store` and `cg-store`, implemented as brand public Ticket vitrines/channels consuming their canonical APIs. Catalog is the internal BOM/composition; Ticket is the sellable/reportable/scheduled commercial unit. Ditaly remains the historical reference and does not require a new production store.
+
+---
+
+## Legacy digital roadmap concepts
+
+`sbm-comercial` and `sbm-digital-api` remain historical roadmap concepts, not current approved project-creation objectives. The current target favors direct brand APIs plus brand stores/client/mobile channels. Reactivate a transversal commercial portal/BFF only if a concrete cross-brand requirement justifies it.

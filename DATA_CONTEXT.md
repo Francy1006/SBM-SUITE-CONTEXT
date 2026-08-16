@@ -1,6 +1,6 @@
 # DATA_CONTEXT.md
 
-> **Last updated:** 2026-07-30
+> **Last updated:** 2026-08-16
 >
 > **Purpose**
 >
@@ -24,7 +24,7 @@ Versioned database changes
 → Flyway
 
 Application access
-→ DP-API or SBM-API
+→ responsible brand API or SBM-API
 
 AI access
 → approved API Tools only
@@ -39,7 +39,7 @@ Application repositories consume the schema but do not own business-schema migra
 
 | Data domain | Source of truth | Operational owner | Schema owner | Access path |
 |---|---|---|---|---|
-| Client business data | PostgreSQL | DP-API | SBM-DB | DP-API |
+| Brand business data | PostgreSQL | Brand API (`DP-API` reference; `ks-api`/`pc-api`/`cg-api` planned) | SBM-DB | Responsible brand API |
 | Internal platform data | PostgreSQL | SBM-API | SBM-DB | SBM-API |
 | Physical schema and migrations | Flyway / DBML | SBM-DB | SBM-DB | Flyway |
 | Global contexts | Git Markdown | SBM-SUITE | SBM-SUITE | Context workflow |
@@ -51,152 +51,148 @@ Application repositories consume the schema but do not own business-schema migra
 
 ## 3. Databases and schemas
 
-| Database | Schema | Owner project | Brand | Purpose | Migration owner | Status |
+| Database/platform | Schema/logical domain | Owner project | Brand/domain | Purpose | Migration owner | Status |
 |---|---|---|---|---|---|---|
-| PostgreSQL | `ditaly_pasta` | SBM-DB | Ditaly Pasta | Brand operational and commercial data | Flyway | active |
-| PostgreSQL | `sbm_business` | SBM-DB | SBM | Shared platform and business reference data | Flyway | active |
+| PostgreSQL | `ditaly_pasta` | SBM-DB | Ditaly Pasta | Historical/reference brand operational/commercial data | Flyway | active-reference |
+| PostgreSQL | `sbm_business` | SBM-DB | SBM | Shared platform/business reference data | Flyway | active |
 | PostgreSQL | `public` | SBM-DB | SBM | Shared technical objects where applicable | Flyway | active |
-| PostgreSQL | N/A | SonarQube infrastructure | SBM | SonarQube persistence | SonarQube stack | active |
+| PostgreSQL | TBD | future KS domain | KS | Brand operational/commercial data | SBM-DB/Flyway | planned |
+| PostgreSQL | TBD | future PC domain | PC | Service/scheduling/client/customer data | SBM-DB/Flyway | planned |
+| PostgreSQL | TBD | future CG domain | CG | Procedure/document/workflow data | SBM-DB/Flyway | planned |
+| PostgreSQL | TBD | sbm-core | SBM | Async process flags/job/workflow state | sbm-core schema contract + approved migration ownership | planned |
+| PostgreSQL | N/A | SonarQube infrastructure | SBM | QA/static-analysis persistence only | SonarQube stack | QA-only |
 | Qdrant | `sbm_docs` | SBM-AI-ASSISTANT | SBM | Confluence documentation vectors | SBM-AI-ASSISTANT | active |
-| Qdrant | `sbm_contexts` | SBM-AI-ASSISTANT | SBM | Global and project context vectors | SBM-AI-ASSISTANT | active |
+| Qdrant | `sbm_contexts` | SBM-AI-ASSISTANT | SBM | Global/project context vectors | SBM-AI-ASSISTANT | active |
 | Qdrant | `sbm_documentation` | SBM-AI-ASSISTANT | SBM | Git documentation vectors | SBM-AI-ASSISTANT | planned |
+
+Exact KS/PC/CG physical database/schema names are intentionally `TBD` until the SBM-DB topology objective is implemented.
 
 ## 4. Core entities
 
-| Entity | Owner project | Schema | Brand | Description | Sensitive | Source of truth |
-|---|---|---|---|---|---:|---|
-| Product | DP-API | `ditaly_pasta` | Ditaly Pasta | Sellable business item | 0 | PostgreSQL |
-| Material | DP-API | `ditaly_pasta` | Ditaly Pasta | Production or operational input | 0 | PostgreSQL |
-| Service | DP-API | `ditaly_pasta` | Ditaly Pasta | Non-physical commercial offering | 0 | PostgreSQL |
-| Catalog | DP-API | `ditaly_pasta` | Ditaly Pasta | Grouping and publication of offerings | 0 | PostgreSQL |
-| Ticket | DP-API | `ditaly_pasta` | Ditaly Pasta | Operational or support request | 1 | PostgreSQL |
-| Price | DP-API | `ditaly_pasta` | Ditaly Pasta | Monetary state and history | 0 | PostgreSQL |
-| Provider | DP-API | `ditaly_pasta` | Ditaly Pasta | Supplier and related business data | 1 | PostgreSQL |
-| Branch | DP-API | `ditaly_pasta` | Ditaly Pasta | Physical or operational location | 1 | PostgreSQL |
-| Agreement | DP-API | `ditaly_pasta` | Ditaly Pasta | Commercial relationship | 1 | PostgreSQL |
-| Franchise | SBM-API | `sbm_business` | SBM | Contractual business unit | 1 | PostgreSQL |
-| Tenant | SBM-API | `sbm_business` | SBM | Isolated client scope | 1 | PostgreSQL |
-| User | DP-API / SBM-API | N/A | SBM / client brand | Authenticated person or service identity | 1 | PostgreSQL / auth system |
-| Role | DP-API / SBM-API | N/A | SBM / client brand | Permission grouping | 0 | PostgreSQL |
-| Permission | DP-API / SBM-API | N/A | SBM / client brand | Authorized capability | 0 | PostgreSQL |
-| Restriction | DP-API / SBM-API | N/A | SBM / client brand | Constraint on capability scope | 0 | PostgreSQL |
-| Context document | SBM-SUITE | Git | SBM | Persistent technical or business context | 0 | Git |
-| Documentation page | SBM-SUITE | Git | SBM | Persistent operational documentation | 0 | Git |
-| Vector chunk | SBM-AI-ASSISTANT | Qdrant | SBM | Embedded fragment of an indexed document | depends on source | Rebuildable index |
+| Entity | Operational owner | Data state | Description | Sensitive |
+|---|---|---|---|---:|
+| Product | Brand API | DP implemented/reference; reusable | Purchased item intended for resale | 0 |
+| Material | Brand API | DP implemented/reference; reusable | Operational/production input not primarily sold | 0 |
+| Service | Brand API | existing concept + planned extension | Contracted/performed service, fee, commission or logistics component | depends |
+| Equipment | Brand API | planned | Retained/fixed asset; future rental/maintenance/spares | 0 |
+| Package | Brand API / SBM-DB | normalization planned | Mandatory item packaging/logistics relation; Service uses logical package | 0 |
+| Catalog | Brand API | existing concept + planned composition | BOM/recipe/acquisition composition | 0 |
+| CatalogComponent | Brand API | planned | Typed component reference with quantity/dosage/unit/cost semantics | 0 |
+| Ticket | Brand API | existing concept + generalized semantics | Sold/reported/scheduled commercial unit | depends |
+| Price | Brand API / sbm-calculation | existing + planned extension | Versioned monetary state, tax, currency and FX reference | 0 |
+| ExchangeRate | sbm-util / calculation consumers | planned | Authoritative observed rate and source/time metadata | 0 |
+| Provider | Brand API | existing | Supplier/service provider | 1 |
+| Branch | Brand API | existing | Physical/operational location | 1 |
+| Agreement | Brand API | existing | Commercial/contractual conditions | 1 |
+| Franchise | SBM-API | existing | Canonical brand/business authorization scope | 1 |
+| Client | Brand API | existing/brand evolution | Direct customer organization/person of a brand | 1 |
+| Customer | Brand API | planned generic; required PC | Downstream beneficiary/end customer | 1 |
+| User/Role/Permission/Restriction | SBM-API + scoped brand auth | existing/evolving | Authentication/authorization structures | 1 |
+| Schedule/Referral/QR | pc-api | planned | PC event/referral and confirmation lifecycle | 1 |
+| Document/Plan/WorkflowStage | cg-api | planned | CG procedure files/plans/dependencies/stages | 1 |
+| AsyncJob/ProcessFlag | sbm-core | planned | Durable async execution state | 0/1 |
+| Context/Documentation | SBM-SUITE | existing | Governed Git knowledge | 0/1 |
+| Vector chunk | sbm-ai-assistant | existing | Rebuildable embedded fragment | depends on source |
 
-Boolean rule:
-
-```text
-1 = contains or may contain sensitive data
-0 = not normally sensitive
-```
+`planned` rows do not assert current PostgreSQL tables.
 
 ## 5. Entity relationships
 
-Validated high-level relationships:
+Validated/current authorization baseline:
 
 ```text
-Tenant or franchise
+Franchise/brand scope
 → users
 → roles
 → permissions
 → restrictions
 ```
 
-```text
-Brand
-→ products
-→ materials
-→ services
-→ catalogs
-→ prices
-→ providers
-→ branches
-→ agreements
-→ tickets
-```
+Target business hierarchy:
 
 ```text
-Product / Material / Service
-→ current Price
-→ Price history
+SBM User
+→ Franchise/Brand User
+→ Client / Client User
+→ Customer / Customer User when applicable
 ```
+
+Target commercial composition:
 
 ```text
-Catalog
-→ references Products, Services and applicable Materials
+Product / Material / Service / Equipment
+→ mandatory Package
+→ CatalogComponent(quantity/dosage/unit)
+→ Catalog
+→ Ticket
+→ Price/version/currency/tax
 ```
 
-Rules:
+Brand-specific extensions:
 
-- Do not infer foreign keys from names alone.
-- Physical relationships must be verified against PostgreSQL, Flyway and DBML.
-- Shared references do not transfer domain ownership.
-- Tenant and brand relationships must preserve isolation.
+```text
+KS Catalog/acquisition → purchase-specific import Service instances → provision vs actual cost
+PC Ticket → schedule/referral/QR confirmation → commission/subscription settlement
+CG Ticket/Catalog → Service components → documents/plans/workflow stages/dependencies
+```
+
+Physical relationships remain subject to PostgreSQL/Flyway/DBML evidence and must not be inferred from this target model alone.
 
 ## 6. Data flows
 
-Client operation:
+Brand operation:
 
 ```text
-Client user
-→ SBM-MANAGER
-→ DP-API
-→ PostgreSQL
+Brand/Client/Customer channel
+→ responsible brand API
+→ PostgreSQL business domain
 ```
 
-Internal platform operation:
+Shared platform operation:
 
 ```text
-Internal SBM user
-→ SBM-MANAGER
+SBM/admin channel
 → SBM-API
-→ PostgreSQL
+→ shared platform data
+```
+
+Async flow target:
+
+```text
+API/event/schedule
+→ sbm-core
+→ durable state/queue/worker
+→ authorized service/API
+```
+
+Financial calculation target:
+
+```text
+Brand API
+→ sbm-calculation
+→ deterministic result
+→ brand-owned persistence/transaction
+```
+
+External deterministic integration target:
+
+```text
+Authorized service/agent
+→ sbm-util
+→ email / external API / exchange-rate provider / file utility
 ```
 
 AI-assisted operation:
 
 ```text
-Authorized user
-→ SBM-AI-ASSISTANT
-→ Tool
-→ DP-API or SBM-API
-→ PostgreSQL
+Authorized caller
+→ sbm-ai-assistant
+→ Tool/agent
+→ responsible API/service
+→ no direct PostgreSQL write
 ```
 
-Context flow:
-
-```text
-Git contexts
-→ SBM-AI-ASSISTANT
-→ embeddings
-→ Qdrant sbm_contexts
-→ RAG package
-→ reviewed patches
-→ Git contexts
-```
-
-Documentation flow:
-
-```text
-Git documentation
-→ SBM-AI-ASSISTANT
-→ embeddings
-→ Qdrant sbm_documentation
-→ documentation package
-→ reviewed Markdown updates
-→ Git documentation
-```
-
-Confluence flow:
-
-```text
-Confluence
-→ SBM-AI-ASSISTANT
-→ chunking
-→ embeddings
-→ Qdrant sbm_docs
-```
+Context/documentation/Qdrant flows remain governed by the existing Context and Documentation workflows.
 
 ## 7. Data contracts
 
@@ -251,7 +247,10 @@ Sensitive data may include:
 - credentials and tokens;
 - provider contacts;
 - branch contacts;
-- support ticket contents.
+- support ticket contents;
+- PC patient identity, health/prevision and appointment data;
+- CG SII/business documents, plans and procedure records;
+- KS client/device/camera access metadata where applicable.
 
 Rules:
 
@@ -296,7 +295,7 @@ PostgreSQL
 
 Canonical rules:
 
-- SBM-DB owns physical database changes.
+- SBM-DB owns physical database changes and Flyway/DBML evolution; it is not a runtime query gateway.
 - Flyway owns versioned business-schema migrations.
 - DBML represents the high-level relational design.
 - Application repositories map existing business tables.
@@ -423,6 +422,10 @@ Data observability must not expose secrets or unrestricted personal data.
 12. Define audit and correlation standards.
 13. Add authoritative metrics endpoints for business counts.
 14. Document complete sales and order data models.
+15. Execute the approved SBM-DB objectives for multibrand isolation, Equipment/Package, Catalog BOM, pricing/FX and acquisition/accounting traceability.
+16. Define PC restricted-data retention/access rules before production.
+17. Define CG document/plan storage metadata and object-storage linkage.
+18. Define sbm-core job/flag persistence independently from business calculation data.
 
 ## 17. Related documentation
 
@@ -448,7 +451,44 @@ SBM-SUITE/context/documentation/pages/<page>/subpages/<subpage>.md
 
 Specific page paths will be added after the documentation structure is finalized.
 
-## 18. Document boundary
+## 18. Planned multi-brand data evolution — 2026-08-16
+
+No schema listed below is considered implemented until its SBM-DB objective is delivered through DBML/Flyway/PostgreSQL evidence.
+
+### Brand/data topology
+
+- Preserve `ditaly_pasta` historical data as reference/test evidence subject to security rules.
+- Add isolated KS, PC and CG logical data domains with independent credentials/authorization boundaries.
+- Prefer one manageable PostgreSQL service initially with explicit logical isolation; do not introduce one database container per brand solely for application separation.
+- Cross-brand/transversal reads must use approved APIs, events or a dedicated analytics/read model; SBM-DB does not query brands as an application service.
+- `sbm-core` owns its own operational state/flag/job persistence when created.
+
+### Planned core entities/relations
+
+| Entity/capability | State | Purpose |
+|---|---|---|
+| Equipment | planned | Retained/fixed asset; future rental/service/spares |
+| Package canonical relation | planned-normalization | Mandatory association for Product, Material, Service, Equipment, Catalog and Ticket; Service uses logical package |
+| CatalogComponent/BOM | planned | Product/Material/Service/Equipment composition, quantity, dosage and unit conversion |
+| ExchangeRate | planned | Versioned source currency/rate observations such as USD, future EUR/UF |
+| Procurement/document trace | planned | PO, invoice, purchase VAT, dispatch guide, transfer, sale and accounting references |
+| Provision vs actual cost | planned | Import/logistics/warranty and other estimated-versus-paid costs |
+| Customer | planned generic | Downstream customer/beneficiary; PC requires person/org variants |
+| Schedule/Referral/QR confirmation | planned PC | PC operational event/referral lifecycle |
+| Document/Plan/WorkflowStage | planned CG | Procedure documentation, plans, dependencies and stage/calendar state |
+| AsyncJob/ProcessFlag | planned sbm-core | Durable workflow state, retries, scheduler and worker coordination |
+
+### Sensitive brand-specific data
+
+- PC may process patient identity, health/prevision and appointment information: classify as restricted and minimize exposure/logging/embedding.
+- CG may store SII/business documentation, plans and client records: classify per document and restrict object access.
+- KS client/device/camera integrations may expose operational/device information: require explicit authorization and secure transport.
+
+### Price/currency target
+
+Price evolution must preserve `base_net_amount`, calculated `net_amount`, VAT, additional taxes/retentions, `gross_amount`, currency and exchange-rate reference/history. `sbm-util` may ingest authoritative external rates; `sbm-calculation` owns deterministic calculation rules; brand APIs remain the business operation boundary.
+
+## 19. Document boundary
 
 This file defines transversal data ownership, schemas, entities, flows, classification, integrity, lifecycle, migration ownership, backup and risks.
 

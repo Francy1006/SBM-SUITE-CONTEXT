@@ -1,6 +1,6 @@
 # QA_CONTEXT.md
 
-> **Last updated:** 2026-08-14
+> **Last updated:** 2026-08-16
 >
 > **Purpose**
 >
@@ -75,25 +75,16 @@ A gate may be bypassed only through a documented accepted exception.
 
 ## 4. Project QA summaries
 
-| Project | QA context | Test count | Passed | Failed | Coverage | SonarQube status | Last execution | Overall risk | Evidence |
+| Project | QA context/evidence | Test count | Passed | Failed | Coverage | SonarQube status | Last execution | Overall risk | Evidence |
 |---|---|---:|---:|---:|---|---|---|---:|---|
-| DP-API | `SBM-SUITE/dp/DP-API/context/QA_CONTEXT.md` | 65 | 65 | 0 | 88% | Quality Gate OK | 2026-08-07 | 3 | `qa-results.md`: 65 tests passed; coverage 88%; SonarScanner exit code 0; Quality Gate OK |
-| SBM-API | `SBM-SUITE/sbm/SBM-API/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | N/A | N/A | 3 | Project QA context pending |
-| SBM-MANAGER | `SBM-SUITE/sbm/SBM-MANAGER/context/QA_CONTEXT.md` | 45 | 45 | 0 | 70.14% | Quality Gate PASSED | 2026-08-14 | 3 | `qa-results.md`: 45 tests passed; coverage 70.14%; SonarScanner exit code 0; server-side Quality Gate PASSED |
-| SBM-DB | `SBM-SUITE/sbm/SBM-DB/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | Quality Gate PASSED | 2026-08-08 | 4 | `qa-results.md`: Flyway validated 33 sbm_business, 55 ditaly_pasta, 5 cross and 2 analytics migrations; SonarScanner exit code 0; Quality Gate PASSED |
-| SBM-AI-ASSISTANT | `SBM-SUITE/sbm/sbm-ai-assistant/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | N/A | N/A | 3 | Project QA context pending |
-| SBM-SUITE | `SBM-SUITE/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | not used | 2026-08-16 | 0 | `qa-results.md`: transversal `without-sonar` queue passed for DP-API, SBM-MANAGER, SBM-DB, SBM-API and sbm-ai-assistant; Context QA passed with exit code 0 |
+| DP-API | `QA/output/DP-DP-API-without-sonar-qa-results.md` | 65 | 65 | 0 | 88% | not used in transversal run | 2026-08-16 | 3 | without-sonar exit 0; prior Sonar Quality Gate OK remains separate historical evidence |
+| SBM-API | `QA/output/SBM-SBM-API-without-sonar-qa-results.md` | 3 | 3 | 0 | 72% | not used | 2026-08-16 | 3 | real executable tests; zero-test guard fixed; coverage.xml generated |
+| SBM-MANAGER | `QA/output/SBM-SBM-MANAGER-without-sonar-qa-results.md` | 45 | 45 | 0 | 70.14% | not used in transversal run | 2026-08-16 | 3 | without-sonar exit 0; prior server-side Quality Gate PASSED remains separate evidence |
+| SBM-DB | `QA/output/SBM-SBM-DB-without-sonar-qa-results.md` | migration QA | passed | 0 | N/A | not used | 2026-08-16 | 3 | isolated PostgreSQL/Flyway migrate+validate passed: 33/55/5/2 validations |
+| SBM-AI-ASSISTANT | `QA/output/SBM-sbm-ai-assistant-without-sonar-qa-results.md` | 177 + 11 subtests | passed | 0 | N/A | not used | 2026-08-16 | 3 | isolated pytest run exit 0 |
+| SBM-SUITE | `QA/output/context-qa-results.md` + transversal summary | 5 repositories + Context | passed | 0 | N/A | not used | 2026-08-16 | 0 | all five project repositories passed without-sonar; Context QA exit 0 |
 
-Risk scale:
-
-```text
-0 = none
-1 = very low
-2 = low
-3 = medium
-4 = high
-5 = critical
-```
+Risk scale remains 0–5; these rows summarize available evidence and do not claim production readiness for future projects.
 
 ## 5. Test inventory
 
@@ -133,21 +124,15 @@ deployment
 
 ## 6. Coverage summary
 
-| Project | Tool | Coverage | Threshold | Status | Last execution | Evidence |
-|---|---|---|---|---|---|---|
-| DP-API | pytest-cov | 88% | N/A | recorded | 2026-08-02 | `qa-results.md`; `coverage.xml` generated; exit code 0 |
-| SBM-API | N/A | N/A | N/A | not validated | N/A | No coverage evidence supplied |
-| SBM-MANAGER | Vitest / V8 | N/A | lines/statements/functions 70%; branches 60% | not validated | N/A | Project QA configuration present; fresh `qa-results.md` pending |
-| SBM-DB | N/A | N/A | N/A | N/A | N/A | Coverage is not applicable to the database/migration repository |
-| SBM-AI-ASSISTANT | N/A | N/A | N/A | not validated | N/A | No coverage evidence supplied |
+| Project | Tool | Coverage | Status | Last execution | Evidence |
+|---|---|---|---|---|---|
+| DP-API | pytest-cov | 88% | passed | 2026-08-16 | transversal without-sonar log/evidence |
+| SBM-API | coverage.py | 72% | passed with 3 real tests | 2026-08-16 | `coverage.xml`, transversal log/evidence |
+| SBM-MANAGER | Vitest / V8 | 70.14% | passed | 2026-08-16 | transversal without-sonar log/evidence |
+| SBM-DB | N/A | N/A | migration validation passed | 2026-08-16 | isolated Flyway QA |
+| SBM-AI-ASSISTANT | pytest | N/A | 177 tests + 11 subtests passed | 2026-08-16 | transversal without-sonar log/evidence |
 
-Coverage rules:
-
-- `qa-check.sh` generates coverage evidence after implementation.
-- Planning upgrades may define required coverage checks, but must not record percentages or pass/fail state.
-- Coverage must use the real project configuration.
-- Exclusions require documented justification.
-- Coverage percentage alone does not prove contract or integration quality.
+Coverage thresholds and Sonar Quality Gates remain project-specific and require their own current evidence when used as release gates.
 
 ## 7. Static analysis summary
 
@@ -465,7 +450,26 @@ SBM-SUITE/context/documentation/pages/<page>/subpages/<subpage>.md
 
 Specific paths will be added when the documentation format and tree are finalized.
 
-## 19. Document boundary
+## 19. Planned QA expansion for multi-brand architecture — 2026-08-16
+
+Pending projects must add project-owned QA before production onboarding. Minimum transversal scenarios:
+
+- brand isolation across DP reference, KS, PC and CG;
+- SBM/Franchise/Client/Customer authorization boundaries;
+- Catalog composition/dosage and Package invariants;
+- Price/FX/tax calculation determinism and historical rate reference;
+- sbm-core retries, idempotency, scheduler and queue failure handling;
+- sbm-calculation formula/commission/provision reconciliation;
+- PC QR/schedule/customer confirmation and restricted-data access;
+- CG document/plan object authorization and workflow-stage transitions;
+- KS import provision-versus-actual cost reconciliation;
+- privileged control-plane authorization for sbm-control, sbm-security and sbm-ai-manager;
+- agent Tool calls preserving caller scope;
+- store/mobile/client apps consuming only canonical APIs.
+
+SonarQube remains an explicit QA step and does not need to run permanently in production.
+
+## 20. Document boundary
 
 This file stores transversal QA policy, planned and executed test inventory, summarized project status, quality gates, evidence state, risks and release criteria.
 

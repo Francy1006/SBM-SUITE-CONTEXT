@@ -1,6 +1,6 @@
 # SECURITY_CONTEXT.md
 
-> **Last updated:** 2026-07-30
+> **Last updated:** 2026-08-16
 >
 > **Purpose**
 >
@@ -57,7 +57,7 @@ No component may bypass this chain.
 
 | Asset | Owner | Classification | Trust boundary | Main risk |
 |---|---|---|---|---|
-| Client business data | Brand / tenant | confidential | DP-API and PostgreSQL | cross-tenant access |
+| Brand/client/customer business data | Brand / client | confidential/restricted | Responsible brand API and PostgreSQL | cross-brand/client/customer access |
 | Platform configuration | SBM | restricted | SBM-API | unauthorized administration |
 | Credentials and tokens | Service owner | secret | environment and secret stores | leakage or misuse |
 | Context files | SBM-SUITE | internal | Git and context workflow | unauthorized modification |
@@ -119,36 +119,27 @@ Rules:
 
 | Role type | Scope | Allowed responsibility | Prohibited responsibility |
 |---|---|---|---|
-| Client user | Own tenant | Routine permitted operations | Platform administration |
-| Client administrator | Own tenant | Users, roles and business configuration | Tenant provisioning and global settings |
-| Internal SBM user | Platform | Provisioning, subscriptions and internal support | Unauthorized client business operations |
+| SBM User | Platform | Provisioning, governance, subscriptions, shared services and internal administration | Unauthorized brand/client business operations |
+| Franchise/Brand User | One franchise/brand | Brand operations and approved client/business management | Other brands or platform administration |
+| Client User | One client within one brand | Client-specific workflows/assets/documents/schedules/inventory exposed by brand | Other clients, brand administration, platform controls |
+| Customer User | Own customer/beneficiary scope when customer login exists | Purchase/schedule/confirm/status actions explicitly exposed | Client/brand administration and unrelated customer data |
 | Service account | Technical integration | Explicit machine-to-machine actions | Human privilege inheritance |
-| AI-assisted user | Inherited user scope | Approved Tool operations | Independent authority |
+| AI-assisted caller | Inherited caller scope | Approved Tool/agent operations | Independent authority |
 
-Role and permission changes must update project and global security contexts.
+`franchise` remains the current database scope name for the brand boundary.
 
 ## 7. Tenant and brand isolation
 
-Mandatory protections:
+Mandatory protections apply at every relevant level:
 
-- tenant-scoped queries;
-- tenant-scoped writes;
-- tenant-scoped searches;
-- tenant-scoped exports;
-- tenant-scoped AI Tool calls;
-- tenant-aware audit logs;
-- tenant-safe caches and vector indexes;
-- separation of internal and client data.
+- franchise/brand-scoped queries and writes;
+- client-scoped queries/writes/exports;
+- customer/object-scoped access when customer channels exist;
+- scope propagation through caches, queues, events, jobs and AI Tool calls;
+- tenant-safe logs/vector indexes;
+- separation of internal/platform data from brand business data.
 
-Required negative case:
-
-```text
-User from Tenant A
-→ attempts to read or modify Tenant B
-→ access denied or resource hidden
-```
-
-Cross-tenant access is risk level `5`.
+Required negative cases include Brand A → Brand B, Client A → Client B and Customer A → Customer B access attempts. These are risk level `5` and must be denied/hidden according to the API contract.
 
 ## 8. Secrets management
 
@@ -407,7 +398,43 @@ Related domains include:
 
 Specific page paths will be added when the documentation format is finalized.
 
-## 21. Document boundary
+## 21. Multi-brand and control-plane security baseline — 2026-08-16
+
+Authorization must distinguish at minimum:
+
+```text
+SBM User
+→ Franchise/Brand User
+→ Client/User
+→ Customer/User when applicable
+```
+
+`franchise` remains the current canonical brand scope in the database. Every API, mobile/store/client application, agent and asynchronous job must propagate the effective brand/client/customer scope rather than trusting frontend visibility.
+
+Additional high-risk data/surfaces:
+
+- `pc-customer`: patient identity, health/prevision, appointments and QR confirmation are restricted data;
+- CG documents/plans/SII information: object-level authorization, encrypted transport, controlled storage and audit are mandatory;
+- KS camera/device integrations: authenticated device/client scope and explicit authorization are mandatory;
+- `sbm-control`, `sbm-security` and `sbm-ai-manager`: privileged control planes; deny-by-default, strong auth and full audit required;
+- `sbm-core`: jobs/events must carry authorization/tenant context and use idempotency/retry controls without escalating privilege;
+- `sbm-marketing`/`sbm-content`: social credentials, publication permissions and creative assets require separate secrets/access controls.
+
+Security workflow target remains:
+
+```text
+implementation
+→ QA
+→ security validation / security-agent
+→ approval when required
+→ commit/release
+```
+
+`sbm-security` is the planned UI/control plane for findings, scans, evidence and approvals; it does not replace scanners or the security-agent.
+
+SonarQube is treated as temporary QA/static-analysis infrastructure and is not required to run continuously in production.
+
+## 22. Document boundary
 
 This file defines transversal security architecture, controls, risks, testing expectations and roadmap.
 

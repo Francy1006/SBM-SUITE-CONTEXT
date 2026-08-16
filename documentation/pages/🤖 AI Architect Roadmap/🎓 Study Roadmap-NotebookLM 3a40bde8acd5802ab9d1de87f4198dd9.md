@@ -127,7 +127,7 @@ Toda área debe aplicarse en al menos uno de estos componentes:
 | `sbm-db` | PostgreSQL + Flyway | Datos, migraciones y arquitectura |
 | `sbm-ai-assistant` | FastAPI + Qdrant + LLM | RAG, agentes y tools |
 | `sbm-comercial` | React + TypeScript | Portal comercial |
-| `dp-store` | React + TypeScript | E-commerce |
+| `ks-store` | React + TypeScript | E-commerce |
 | `sbm-digital-api` | NestJS | BFF y canales digitales |
 | Infraestructura | Docker, Jenkins, Azure, K3s | DevOps y Platform Engineering |
 
@@ -1245,7 +1245,7 @@ Construir una tienda propia con API propia y servicios desacoplados.
 
 ## Proyecto aplicado
 
-### `dp-store`
+### `ks-store`
 
 ```
 React Store
@@ -1686,7 +1686,7 @@ No evalúes solo cantidad de horas: evalúa resultados verificables.
 4. observabilidad;
 5. forecasting;
 6. MLOps;
-7. `dp-store`.
+7. `ks-store`.
 
 ## Largo plazo
 

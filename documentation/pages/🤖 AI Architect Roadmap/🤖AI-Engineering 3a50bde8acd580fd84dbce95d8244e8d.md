@@ -888,3 +888,11 @@ Una capacidad de IA se considera implementada cuando:
 8. tiene observabilidad;
 9. tiene controles de seguridad;
 10. puede demostrarse en el portafolio.
+
+---
+
+# 23. Named agent/application model — 2026-08-16
+
+`sbm-ai-assistant` remains the reasoning/tool/agent orchestrator. Planned named agents include `sbm-agent` (orchestrator), `dev-agent`, `qa-agent`, `security-agent`, `backlog-agent`, `ks-agent`, `pc-agent`, `cg-agent`, `marketing-agent` and `content-agent`.
+
+Domain applications keep persistent state and UI ownership: `sbm-ai-manager`, `sbm-security`, `sbm-marketing`, `sbm-content`, `sbm-control`. Agents act through authorized APIs/tools and never acquire direct database authority.

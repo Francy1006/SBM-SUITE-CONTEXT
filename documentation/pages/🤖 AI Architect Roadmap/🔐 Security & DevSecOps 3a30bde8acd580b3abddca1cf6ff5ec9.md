@@ -39,7 +39,7 @@ La estrategia cubre:
 - `sbm-db`;
 - `sbm-comercial`;
 - `sbm-digital-api`;
-- `dp-store`;
+- `ks-store`;
 - Redis;
 - Celery;
 - Kafka;
@@ -1049,3 +1049,9 @@ Monitored
 ```
 
 La seguridad de SBM Suite debe demostrarse mediante controles reales, reportes, pruebas y trazabilidad; no solo mediante declaraciones de diseño.
+
+---
+
+# 41. Multi-brand/application security baseline — 2026-08-16
+
+Authorization expands through SBM User → Franchise/Brand User → Client/User → Customer/User when applicable. PC patient/health data is restricted; CG documents/plans and KS device/camera access require object-level controls. `sbm-security` is the planned security control plane. SonarQube remains QA infrastructure and is not required as a permanent production service.

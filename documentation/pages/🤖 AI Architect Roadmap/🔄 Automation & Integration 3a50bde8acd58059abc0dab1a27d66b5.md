@@ -38,7 +38,7 @@ La estrategia cubre:
 - `sbm-manager`;
 - `sbm-comercial`;
 - `sbm-digital-api`;
-- `dp-store`;
+- `ks-store`;
 - Azure DevOps;
 - Jira;
 - Notion;
@@ -1219,3 +1219,9 @@ Human Approval
 ```
 
 SBM Suite debe evolucionar hacia una plataforma conectada y automatizada, capaz de coordinar procesos internos, servicios externos y agentes IA con seguridad, trazabilidad y control.
+
+---
+
+# 44. sbm-core and sbm-util boundary — 2026-08-16
+
+`sbm-core` owns cron/schedulers, durable flags/state, Celery workers, Redis, retries/idempotency and Kafka only when event-stream semantics justify it. `sbm-util` owns deterministic reusable integrations such as email, external APIs, file utilities and authoritative exchange-rate ingestion. Financial/accounting formulas belong to `sbm-calculation`, not `sbm-core`.

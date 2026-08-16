@@ -1,5 +1,7 @@
 # 🛠Development-Roadmap
 
+> **Nota de arquitectura 2026-08-16:** `sbm-comercial` y `sbm-digital-api` se conservan solo como conceptos históricos del roadmap. No son proyectos aprobados para crear actualmente; el diseño vigente prioriza APIs de marca + stores/mobile/client channels directos.
+>
 > Roadmap técnico y funcional de evolución de SBM Suite.
 > 
 > 
@@ -729,7 +731,7 @@ Observar la plataforma completa desde aplicaciones hasta agentes IA.
 
 ---
 
-# 13. Fase 10 — `dp-store` y configuración digital por marca
+# 13. Fase 10 — `ks-store` y configuración digital por marca
 
 ## Objetivo
 
@@ -790,7 +792,7 @@ Crear una capa Node.js/NestJS justificada como BFF y Digital Experience API.
 ## Consumidores
 
 - `sbm-comercial`;
-- `dp-store`;
+- `ks-store`;
 - futuras tiendas;
 - aplicaciones móviles;
 - redes sociales;
@@ -1167,7 +1169,7 @@ Analytics
 
 ## Mediano plazo
 
-1. `dp-store`.
+1. `ks-store`.
 2. configuración digital por marca;
 3. `sbm-digital-api`;
 4. comercio omnicanal;
@@ -1203,3 +1205,25 @@ Una fase se considera completada cuando:
 8. genera evidencia para el portafolio;
 9. no deja dependencias críticas ocultas;
 10. su operación y mantenimiento están claros.
+
+---
+
+# 25. Production-brand implementation track — 2026-08-16
+
+Immediate architecture track:
+
+1. stabilize DP as reusable historical reference;
+2. complete shared data/model objectives in SBM-DB without assuming unimplemented schema changes;
+3. create `ks-api`, `pc-api`, `cg-api`;
+4. create `sbm-core`, `sbm-calculation`, `sbm-util`;
+5. create required stores/mobile/client channels;
+6. create control planes and specialized agents;
+7. harden production topology, storage, security and observability.
+
+Kiseki rental/contracts/technical service/spares remain long-term and must not block the immediate sale/import scope.
+
+---
+
+## Legacy digital roadmap concepts
+
+`sbm-comercial` and `sbm-digital-api` remain historical roadmap concepts, not current approved project-creation objectives. The current target favors direct brand APIs plus brand stores/client/mobile channels. Reactivate a transversal commercial portal/BFF only if a concrete cross-brand requirement justifies it.

@@ -124,7 +124,7 @@
 | Android Studio | Mobile IDE | ⭐⭐⭐⭐☆ | ⭐⭐⭐⭐⭐ | Advanced |
 | Android SDK | Native Android Platform | ⭐⭐⭐⭐☆ | ⭐⭐⭐⭐⭐ | Advanced |
 | sbm-mobile | Internal SBM Mobile Application | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Urgent |
-| dp-mobile | Client Mobile Application by Brand | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Urgent |
+| ks-mobile | Client Mobile Application by Brand | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Urgent |
 | React Native  | Cross-Platform Mobile Framework  | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Urgent |
 | Expo Go | Mobile Development Preview App | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Urgent |
 
@@ -974,3 +974,9 @@ A technology should be implemented when it satisfies at least one of these condi
 5. Crea evidencia verificable para el portafolio.
 
 Las tecnologías marcadas como **Research** u **Optional** no bloquean el roadmap principal y deben implementarse solo después de estabilizar el núcleo de la plataforma.
+
+---
+
+# SBM polyglot target — 2026-08-16
+
+The target suite intentionally remains polyglot where responsibility justifies it: Vue 3 (`SBM-MANAGER`), React stores, React Native mobile, Python/FastAPI/Django brand/AI services as appropriate, Java Spring Boot candidate/target for `sbm-util`, and .NET/Blazor candidate for `sbm-ai-manager`. Technology diversity is acceptable only when services remain API-decoupled and do not duplicate business ownership.

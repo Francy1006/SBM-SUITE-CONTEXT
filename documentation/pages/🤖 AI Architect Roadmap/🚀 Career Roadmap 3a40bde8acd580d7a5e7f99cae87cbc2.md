@@ -174,7 +174,7 @@ Senior engineer who can design and integrate AI into real systems
 | `sbm-api` | Arquitectura empresarial interna | ⭐⭐⭐⭐⭐ |
 | `sbm-manager` | Frontend administrativo | ⭐⭐⭐⭐☆ |
 | `sbm-comercial` | React y producto comercial | ⭐⭐⭐⭐☆ |
-| `dp-store` | E-commerce, pagos y SEO | ⭐⭐⭐⭐⭐ |
+| `ks-store` | E-commerce, pagos y SEO | ⭐⭐⭐⭐⭐ |
 | Plataforma K3s | Kubernetes y observabilidad | ⭐⭐⭐⭐⭐ |
 | Demand Forecasting | ML y MLOps | ⭐⭐⭐⭐⭐ |
 

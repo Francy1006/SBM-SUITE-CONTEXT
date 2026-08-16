@@ -126,6 +126,12 @@ Do not commit or package secrets, tokens, credentials, `.env` files, raw vectors
 
 The workflows remain manually initiated. Objective branch preparation/finalization and post-finalization branch cleanup are automated by explicit transversal scripts, but are never executed implicitly by the agent. Documentation creation, deletion, rename, and structural moves require explicit manual contract updates.
 
+## Target multi-brand portfolio
+
+The current repository governs an expanding suite. Ditaly Pasta/DP remains the historical real-data reference implementation. KS, PC and CG are production-target brands. Planned shared projects include `sbm-core`, `sbm-calculation`, `sbm-util`, `sbm-ai-manager`, `sbm-security`, `sbm-marketing`, `sbm-content`, `sbm-control` and `sbm-mobile`; planned brand channels are listed in `PROJECT_CONTEXT.md` and `SUITE_CONTEXT.md`.
+
+Planned repositories are documentation/backlog targets only until onboarding creates a real repository and canonical Project Registry entry. Database changes listed in global objectives remain pending until implemented and evidenced in SBM-DB through Flyway/DBML/PostgreSQL.
+
 ## Related documentation
 
 - `PROJECT_CONTEXT.md`

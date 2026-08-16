@@ -38,7 +38,7 @@ El estándar QA debe cubrir:
 - `sbm-db`;
 - `sbm-comercial`;
 - `sbm-digital-api`;
-- `dp-store`;
+- `ks-store`;
 - integraciones externas;
 - Redis y Celery;
 - Kafka;
@@ -461,7 +461,7 @@ sbm-ai-assistant → sbm-api
 sbm-ai-assistant → dp-api
 sbm-digital-api → sbm-api
 sbm-digital-api → APIs cliente
-dp-store → dp-api
+ks-store → dp-api
 ```
 
 ## Herramientas

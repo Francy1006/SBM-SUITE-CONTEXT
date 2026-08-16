@@ -1,6 +1,6 @@
 # SUITE_CONTEXT.md
 
-> **Last updated:** 2026-08-07
+> **Last updated:** 2026-08-16
 >
 > **Purpose**
 >
@@ -51,10 +51,13 @@ Current business scope includes products, materials, services, catalogs, pricing
 
 | Brand | Platform | Description | Status |
 |---|---|---|---|
-| SBM | SBM Suite | Platform, infrastructure, internal services and shared capabilities | active |
-| Ditaly Pasta | Client ERP | Brand-specific operational and commercial platform | active |
+| SBM | SBM Suite | Platform, infrastructure, shared services and control planes | active |
+| Ditaly Pasta / DP | Client ERP reference | Closed business; one year real historical data retained as development/reference implementation | historical-reference |
+| Kiseki Tech / KS | Brand platform | Technology import/sale; current production target | planned-onboarding |
+| PortalConvenios.cl / PC | Brand platform | Health/wellness operations and referral services; current production target | planned-onboarding |
+| Consorcio y Gestión / CG | Brand platform | Permit/procedure/document workflows; current production target | planned-onboarding |
 
-`SBM` is treated as its own brand for technical, platform and infrastructure records.
+`SBM` is treated as its own technical/platform brand. Planned brands do not imply existing repositories or schemas.
 
 ## 4. Project map
 
@@ -71,22 +74,28 @@ Canonical repository paths currently evidenced here include `SBM-SUITE/dp/DP-API
 
 ## 5. Applications and services
 
-| Brand | Project | Application or service | Type | Description | Language | Framework | Version | Runtime | Owner |
-|---|---|---|---|---|---|---|---|---|---|
-| SBM | SBM-MANAGER | Enterprise web frontend | web frontend | Web interface consuming DP-API and SBM-API | JavaScript | Vue.js 3 | N/A | container | SBM-MANAGER |
-| Ditaly Pasta | DP-API | Client-facing API | API | Business operations for authorized client users | Python | Django REST Framework | N/A | container | DP-API |
-| SBM | SBM-API | Internal platform API | API | Critical, contractual and administrative platform operations | Python | Django REST Framework | N/A | container | SBM-API |
-| SBM | sbm-ai-assistant | AI orchestrator | API / AI service | Intent routing, RAG, embeddings and explicit Tools | Python | FastAPI | N/A | container | sbm-ai-assistant |
-| SBM | sbm-ai-assistant | Qdrant | vector database | Semantic indexes for documents, contexts and documentation | Rust service | Qdrant | N/A | container | sbm-ai-assistant |
-| SBM | QA infrastructure | SonarQube | quality service | Static analysis and quality gates | Java service | SonarQube | N/A | container | QA workflow |
+### Existing/current repositories
+
+| Brand | Project | Application or service | Type | Description | Runtime state |
+|---|---|---|---|---|---|
+| SBM | SBM-MANAGER | Enterprise web frontend | web frontend | Management UI consuming brand APIs and SBM-API | active |
+| DP | DP-API | Historical/reference brand API | API | Real-data reference implementation; not a current production brand | active-reference |
+| SBM | SBM-API | Shared platform API | API | Authentication, users, token, franchise, roles, permissions, restrictions and internal services | active |
+| SBM | SBM-DB | Data/migration authority | database repository | PostgreSQL/DBML/Flyway authority; not runtime gateway | active |
+| SBM | sbm-ai-assistant | AI orchestrator | AI/API service | RAG, Tools, agents and context/documentation processing | active |
+| SBM | QA infrastructure | SonarQube | QA service | Static analysis/quality gates on demand | QA-only |
+
+### Planned applications
+
+See `## 23. Target multi-brand application portfolio — 2026-08-16` for the complete planned shared/brand project inventory.
 
 ## 6. Technology inventory
 
 | Brand | Project | Category | Technology | Version | Purpose | Status |
 |---|---|---|---|---|---|---|
 | SBM | SBM-MANAGER | web frontend | Vue.js 3 | N/A | Enterprise web interface | active |
-| Ditaly Pasta | DP-API | backend | Python | N/A | API implementation | active |
-| Ditaly Pasta | DP-API | backend framework | Django REST Framework | N/A | REST API | active |
+| Ditaly Pasta | DP-API | backend | Python | N/A | Historical/reference API implementation | active-reference |
+| Ditaly Pasta | DP-API | backend framework | Django REST Framework | N/A | Historical/reference REST API | active-reference |
 | SBM | SBM-API | backend | Python | N/A | Internal API implementation | active |
 | SBM | SBM-API | backend framework | Django REST Framework | N/A | Internal REST API | active |
 | SBM | sbm-ai-assistant | backend | Python | N/A | AI orchestration | active |
@@ -95,7 +104,7 @@ Canonical repository paths currently evidenced here include `SBM-SUITE/dp/DP-API
 | SBM | SBM-DB | database | PostgreSQL | N/A | Business and platform persistence | active |
 | SBM | SBM-DB | migrations | Flyway | N/A | Versioned business-schema migrations | active |
 | SBM | Shared infrastructure | containers | Docker Compose | N/A | Local orchestration | active |
-| SBM | QA infrastructure | static analysis | SonarQube | N/A | Quality gates | active |
+| SBM | QA infrastructure | static analysis | SonarQube | N/A | Quality gates on demand | QA-only |
 
 ## 7. Runtime architecture
 
@@ -230,7 +239,7 @@ Relevant schemas currently include:
 
 | Database | Schema | Owner project | Brand | Purpose | Migration owner | Status |
 |---|---|---|---|---|---|---|
-| PostgreSQL | ditaly_pasta | SBM-DB | Ditaly Pasta | Brand operational and commercial data | Flyway | active |
+| PostgreSQL | ditaly_pasta | SBM-DB | Ditaly Pasta | Historical/reference operational and commercial data | Flyway | active-reference |
 | PostgreSQL | sbm_business | SBM-DB | SBM | Shared platform and business references | Flyway | active |
 | PostgreSQL | public | SBM-DB | SBM | Shared technical objects where applicable | Flyway | active |
 
@@ -246,7 +255,7 @@ Rules:
 
 | Brand | API | Owner project | Base path | Audience | Authentication | Description | Status |
 |---|---|---|---|---|---|---|---|
-| Ditaly Pasta | DP-API | DP-API | `/api` | Authorized client users | Required | Client-facing business operations | active |
+| Ditaly Pasta | DP-API | DP-API | `/api` | Authorized reference/dev users | Required | Historical/reference business operations | active-reference |
 | SBM | SBM-API | SBM-API | `/api` | Internal SBM users and services | Required | Internal platform administration | active |
 | SBM | sbm-ai-assistant | sbm-ai-assistant | `/` | Approved channels and internal integrations | Endpoint-specific | AI orchestration and context services | active |
 
@@ -297,23 +306,31 @@ Rules:
 
 ## 12. Integrations and data flows
 
-| Source | Target | Contract | Purpose | Status |
-|---|---|---|---|---|
-| SBM-MANAGER | DP-API | REST API | Client business operations | active |
-| SBM-MANAGER | SBM-API | REST API | Internal platform operations | active |
-| sbm-ai-assistant | DP-API | Explicit Tool / REST API | AI-assisted client operations | planned |
-| sbm-ai-assistant | SBM-API | Explicit Tool / REST API | AI-assisted internal operations | planned |
-| DP-API | PostgreSQL | ORM / approved data access | Business persistence | active |
-| SBM-API | PostgreSQL | ORM / approved data access | Platform persistence | active |
-| sbm-ai-assistant | Qdrant | Vector API | Semantic retrieval | active |
-| sbm-ai-assistant | Confluence | REST API | Documentation ingestion | active |
-| sbm-ai-assistant | Slack | Events API | Assistant interface | active |
-| Context workflow | ChatGPT | ZIP + SYS_PROMPT | Reviewed context generation | active |
-| Documentation workflow | ChatGPT | ZIP + SYS_PROMPT | Reviewed documentation generation | planned |
+```text
+Public/store/mobile/client/customer channels
+→ responsible brand API
 
-Current `SBM-MANAGER-002` evidence confirms that Service, Catalog and Provider client-owned frontend flows use `dpApi`; franchise lookup remains on `sbmApi` as an internal/platform operation.
+SBM-MANAGER / sbm-mobile
+→ brand APIs for brand-owned operations
+→ SBM-API for shared platform/identity operations
 
-Cross-project communication must use explicit APIs or contracts. Direct repository imports and uncontrolled shared writes are prohibited.
+Brand APIs
+→ SBM-DB-owned schemas through application persistence
+→ sbm-calculation for reusable financial calculations
+→ sbm-core for durable async workflows
+→ sbm-util for deterministic external integrations
+
+sbm-ai-assistant
+→ explicit Tools/agents
+→ canonical APIs/services
+→ never direct PostgreSQL writes
+
+sbm-control / sbm-security / sbm-ai-manager
+→ privileged control-plane APIs
+→ observe/manage their bounded domains, not business ownership
+```
+
+Future KS/PC/CG repositories must not be treated as canonical integrations until onboarding creates and registers them. Cross-brand analytics must use approved APIs/events/read models rather than SBM-DB as a runtime query gateway.
 
 ## 13. Infrastructure and containers
 
@@ -321,14 +338,21 @@ Cross-project communication must use explicit APIs or contracts. Direct reposito
 |---|---|---:|---:|---|---|
 | SBM-MANAGER | app / sbm_manager | 8080 | 8080 | sbm-network | active |
 | DP-API | dp-core | 8000 | 8081 | sbm-network | active |
-| SBM-API | sbm-core | 8000 | 8082 | sbm-network | active |
+| SBM-API | `sbm-core` (legacy runtime name; rename pending) | 8000 | 8082 | sbm-network | active |
 | sbm-ai-assistant | backend | 8000 | 8000 | sbm-network | active |
 | Qdrant | qdrant | 6333 | 6333 | sbm-network | active |
 | PostgreSQL | postgres | 5432 | 5432 | sbm-network | active |
 | Flyway | flyway | N/A | N/A | sbm-network | active |
-| SonarQube | sonarqube | N/A | N/A | independent/shared as configured | active |
+| SonarQube | sonarqube | N/A | N/A | independent/shared as configured | QA-only/on-demand |
 
 Do not assume current names, ports or versions without checking the project Compose files.
+
+Runtime naming constraint:
+
+- the current SBM-API runtime/service is documented as `sbm-core`;
+- the new asynchronous platform project is also named `sbm-core`;
+- `SBM-API-002` must rename the legacy SBM-API runtime/container/service before onboarding the new project to avoid Docker/DNS/service-name collision.
+
 
 ## 14. Shared configuration
 
@@ -557,7 +581,96 @@ Relevant documentation domains include:
 
 Specific paths must be recorded in project objectives and context references when the documentation tree is finalized.
 
-## 23. Document boundary
+## 23. Target multi-brand application portfolio — 2026-08-16
+
+### Brand state
+
+| Brand | State | Role |
+|---|---|---|
+| DP / Ditaly Pasta | historical-reference | Real-data development/reference implementation; closed business |
+| KS / Kiseki Tech | production-target | Technology import/sale; rental deferred |
+| PC / PortalConvenios.cl | production-target | Health/wellness operations and referrals |
+| CG / Consorcio y Gestión | production-target | Permits, sanitary resolutions, premises enablement and procedure workflows |
+
+### Shared platform projects
+
+| Project | State | Responsibility |
+|---|---|---|
+| SBM-MANAGER | existing | Enterprise management frontend |
+| SBM-API | existing | Auth/users/tokens/franchise/roles/permissions/restrictions/platform |
+| SBM-DB | existing | Flyway/DBML/PostgreSQL authority; no runtime data gateway |
+| sbm-ai-assistant | existing | RAG, Tools and agent orchestration |
+| sbm-core | planned | Scheduler/cron, state flags DB, Celery/Redis, retries/idempotency, optional Kafka |
+| sbm-calculation | planned | Financial/accounting calculation engine, tax/currency/commission/provision formulas |
+| sbm-util | planned | Spring Boot deterministic integrations/utilities, email/files/external APIs/exchange-rate ingestion |
+| sbm-ai-manager | planned | Agent management/control plane |
+| sbm-security | planned | Security findings/scans/evidence/approval control plane |
+| sbm-marketing | planned | Meta/social/campaign data and marketing-agent workflows |
+| sbm-content | planned | Content assets/generation and Photoshop/Blender/content-agent workflows |
+| sbm-control | planned | Suite operations control plane: status/logs/jobs/context/QA/security/deploys/backups |
+| sbm-mobile | planned | React Native channel for SBM User |
+
+### Brand projects/channels
+
+| Brand | API | Store | Brand-user mobile | Client app | Customer app |
+|---|---|---|---|---|---|
+| DP | DP-API (reference) | N/A current | N/A current | N/A current | N/A current |
+| KS | ks-api | ks-store | ks-mobile | ks-client | store/public channels as required |
+| PC | pc-api | pc-store | pc-mobile | pc-client | pc-customer |
+| CG | cg-api | cg-store | cg-mobile | cg-client | store/public channels as required |
+
+All planned project paths remain non-canonical until onboarding creates the repositories and registry entries.
+
+## 24. Runtime responsibility boundaries
+
+```text
+Public/brand channels
+→ responsible brand API
+→ business persistence owned structurally by SBM-DB/Flyway
+
+Shared auth/platform
+→ SBM-API
+
+Async jobs/events
+→ sbm-core
+
+Financial/accounting calculations
+→ sbm-calculation
+
+Deterministic external integrations
+→ sbm-util
+
+Agent reasoning/orchestration
+→ sbm-ai-assistant
+
+Operational visibility/control
+→ sbm-control / sbm-security / sbm-ai-manager
+```
+
+SBM-DB never becomes the query proxy for brand databases. Cross-brand analytics must be built through approved APIs/events or a dedicated read model.
+
+## 25. Canonical item/commercial model target
+
+```text
+Product      purchased to sell
+Material     purchased for operational consumption
+Service      contracted/performed non-stock service
+Equipment    retained/fixed asset (planned)
+        ↓
+Package      mandatory association for every item type; Service uses logical package
+        ↓
+Catalog      configurable BOM/recipe/composition with quantities/dosage
+        ↓
+Ticket       sold/reported/scheduled commercial unit
+        ↓
+Price        base amount → rules/FX/tax → net/gross
+```
+
+Ditaly validates recipe/dosage and franchise/internal movement patterns; KS extends the model to per-acquisition import cost composition; PC extends Ticket to scheduled/confirmed service settlement; CG extends Service/Catalog to staged document/procedure workflows.
+
+Kiseki rental/contract/technical-service/spares is a future Equipment evolution and not current sale scope.
+
+## 26. Document boundary
 
 This document defines the suite as a technical system.
 

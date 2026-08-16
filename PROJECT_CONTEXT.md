@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md
 
-> **Last updated:** 2026-08-07
+> **Last updated:** 2026-08-16
 >
 > **Purpose**
 >
@@ -24,26 +24,50 @@ The current design separates:
 
 ## 2. Suite purpose
 
-SBM Suite groups business APIs, internal platform APIs, data ownership, frontend applications, AI orchestration, QA evidence and operational documentation under shared governance rules.
+SBM Suite groups shared platform services, brand APIs, business channels, data ownership, AI/agent orchestration, asynchronous processing, deterministic integrations, security, observability, QA and operational documentation under shared governance rules.
 
-Primary responsibilities:
+Current implemented/reference responsibilities:
 
 ```text
 SBM-MANAGER
-→ enterprise web frontend consuming DP-API and SBM-API
+→ enterprise web frontend
 
 DP-API
-→ client-facing business API
+→ Ditaly Pasta historical/reference brand API and current reusable business baseline
 
 SBM-API
-→ internal platform API
+→ shared identity, authorization and internal platform API
+
+SBM-DB
+→ PostgreSQL/DBML/Flyway authority; not a runtime query gateway
 
 sbm-ai-assistant
-→ AI orchestration, embeddings, Qdrant, RAG, context and documentation processing
+→ AI orchestration, agents, RAG, context/documentation processing
 
 SBM-SUITE/context
-→ global project, suite, business, QA, security, data and decision contexts
+→ global governance, objectives, QA, security, data, decisions and documentation
 ```
+
+Target production expansion:
+
+```text
+Brand APIs       → ks-api / pc-api / cg-api
+Async platform   → sbm-core
+Calculation      → sbm-calculation
+Deterministic integrations → sbm-util
+Agent UI         → sbm-ai-manager
+Security UI      → sbm-security
+Marketing        → sbm-marketing
+Content          → sbm-content
+Operations UI    → sbm-control
+SBM mobile       → sbm-mobile
+Stores           → ks-store / pc-store / cg-store
+Brand-user mobile→ ks-mobile / pc-mobile / cg-mobile
+Client channels  → ks-client / pc-client / cg-client
+Customer channel → pc-customer
+```
+
+Ditaly Pasta is closed operationally but retains one year of real historical data and remains the reference implementation used to stabilize reusable business logic before adapting/cloning it for active brands. Kiseki Tech, PortalConvenios.cl and Consorcio y Gestión are the current production-target brands.
 
 ## 3. Active objectives
 
@@ -65,19 +89,55 @@ Rules:
 | ID | Project | Objective | Status | Priority | Target date | Branch | Documentation |
 |---|---|---|---|---:|---|---|---|
 | SBM-MANAGER-003 | SBM-MANAGER | Corregir y completar QA de SBM-MANAGER. | pending | 5 | N/A | BUGFIX-completes-manager-qa | N/A |
-| OBJ-DOC-001 | SBM-SUITE | Implement the manual documentation deploy and upgrade workflow with dedicated RAG and Qdrant collection | pending | 4 | N/A | FEATURE-adds-documentation-workflow | `context/documentation/pages/AI Architect Roadmap/`, `context/documentation/pages/Roadmap/`, `context/documentation/pages/SBM-Suite/` |
+| SBM-MANAGER-004 | SBM-MANAGER | Extender la UI genérica para Equipment, Package obligatorio, composición/dosificación de Catalog y Price multimoneda sin duplicar lógica backend. | pending | 5 | N/A | FEATURE-expands-item-management | N/A |
+| SBM-MANAGER-005 | SBM-MANAGER | Habilitar módulo de documentos y planos para CG con editor drag-and-drop, versionado/exportación e integración OCR/IA mediante servicios autorizados. | pending | 5 | N/A | FEATURE-enables-plan-editor | N/A |
+| SBM-API-001 | SBM-API | Consolidar identidad/autorización multinivel para SBM User, Franchise/Brand User, Client User y Customer User cuando aplique, preservando franchise como alcance canónico de marca y roles/permisos/restricciones backend. | pending | 5 | N/A | FEATURE-expands-identity-model | N/A |
+| SBM-API-002 | SBM-API | Renombrar el runtime/container legacy `sbm-core` usado actualmente por SBM-API para liberar el nombre del futuro proyecto `sbm-core` y evitar colisión de servicio/red. | pending | 5 | N/A | BUGFIX-renames-sbm-api-runtime | N/A |
+| OBJ-DOC-001 | SBM-SUITE | Implement the manual documentation deploy and upgrade workflow with dedicated RAG and Qdrant collection | pending | 5 | N/A | FEATURE-adds-documentation-workflow | N/A |
 | SBM-DB-002 | SBM-DB | Actualizar SBM-DB al contrato lifecycle actual de Context, incluyendo objectives[], execution_mode, preservación literal de objetivos y paths relativos. | pending | 5 | N/A | FEATURE-updates-context-lifecycle | N/A |
+| SBM-DB-003 | SBM-DB | Definir e implementar la topología de datos multimarcas para SBM, DP histórico, KS, PC y CG con aislamiento lógico/credenciales, preservando SBM-DB como autoridad Flyway y no como gateway de consultas. | pending | 5 | N/A | FEATURE-defines-multibrand-data | N/A |
+| SBM-DB-004 | SBM-DB | Agregar Equipment como dominio y formalizar Package obligatorio para Product, Material, Service, Equipment, Catalog y Ticket; Service usa un Package lógico no físico. | pending | 5 | N/A | FEATURE-adds-equipment-package | N/A |
+| SBM-DB-005 | SBM-DB | Modelar Catalog como composición/BOM configurable con componentes Product, Material, Service y Equipment, cantidades/dosificación/unidades, manteniendo Ticket como unidad vendida/reportada. | pending | 5 | N/A | FEATURE-adds-catalog-components | N/A |
+| SBM-DB-006 | SBM-DB | Extender Price para base_net_amount, net_amount, gross, IVA, impuestos adicionales, moneda y tipo de cambio versionado, incluyendo USD observado y futuras monedas/UF. | pending | 5 | N/A | FEATURE-adds-multicurrency-pricing | N/A |
+| SBM-DB-007 | SBM-DB | Modelar trazabilidad de adquisición y movimiento: orden de compra, factura, IVA crédito, guía de despacho, traslado interno, venta a cliente/franquiciado, provisión y costo real. | pending | 5 | N/A | FEATURE-adds-procurement-trace | N/A |
+| SBM-DB-008 | SBM-DB | Modelar costos de importación KS por compra/unidad: FOB, naviera, embarcador, aduana, desconsolidación, seguros, fletes, bodega, grúas, garantía, reposición y otros servicios instanciados por adquisición. | pending | 5 | N/A | FEATURE-adds-ks-import-costs | N/A |
+| SBM-DB-009 | SBM-DB | Modelar PC para operativos y derivaciones: Client/Customer, agendamiento, QR, estados, comisión configurable, conciliación y suscripción mensual por máximo entre valor fijo y pacientes tratados. | pending | 5 | N/A | FEATURE-adds-pc-service-model | N/A |
+| SBM-DB-010 | SBM-DB | Modelar CG para trámites, documentos, planos, etapas, dependencias, calendarización y proveedores externos, manteniendo datos/documentos sensibles con clasificación explícita. | pending | 5 | N/A | FEATURE-adds-cg-workflow-model | N/A |
+| DP-ARCH-001 | DP-API | Consolidar DP-API como implementación histórica de referencia reutilizable para nuevas brand APIs, preservando data real de Ditaly Pasta y separando lógica genérica de particularidades de marca. | pending | 5 | N/A | FEATURE-prepares-brand-template | N/A |
 | OBJ-CTX-002 | SBM-SUITE | Habilitar un sistema automatizado para ejecutar flujos transversales sobre uno o varios proyectos. | pending | 5 | N/A | FEATURE-automates-cross-project-flows | N/A |
 | OBJ-CTX-003 | SBM-SUITE | Separar QA y Context mediante una estructura específica por proyecto. | pending | 5 | N/A | FEATURE-separates-qa-context | N/A |
-| OBJ-CTX-004 | SBM-SUITE | Habilitar un nuevo proyecto para procesamiento asíncrono, incluyendo PostgreSQL, Celery, Redis, Kafka y los componentes de infraestructura relacionados. | pending | 5 | N/A | FEATURE-enables-async-platform | N/A |
-| OBJ-CTX-005 | SBM-SUITE | Habilitar un proyecto UTIL para centralizar servicios y utilidades reutilizables y desacoplarlos de proyectos específicos, incluyendo generación de ZIP y procesamiento de contextos. | pending | 5 | N/A | FEATURE-enables-shared-utils | N/A |
-| OBJ-CTX-006 | SBM-SUITE | Habilitar un agente de backlog que convierta objetivos en issues y épicas y gestione su sincronización con Jira vía API. El nombre definitivo del agente se revisará al activar el objetivo. | pending | 5 | N/A | FEATURE-enables-backlog-agent | N/A |
-| OBJ-CTX-007 | SBM-SUITE | Habilitar un agente QA para gestionar y automatizar procesos de validación de calidad de los proyectos. | pending | 5 | N/A | FEATURE-enables-qa-agent | N/A |
-| OBJ-CTX-008 | SBM-SUITE | Habilitar un entorno y flujo de seguridad ejecutado después de QA y antes del commit. | pending | 5 | N/A | FEATURE-enables-security-flow | N/A |
-| OBJ-CTX-009 | SBM-SUITE | Habilitar un agente de seguridad para ejecutar y gestionar las validaciones del flujo de seguridad. | pending | 5 | N/A | FEATURE-enables-security-agent | N/A |
-| OBJ-CTX-010 | SBM-SUITE | Habilitar una aplicación para visualizar y gestionar agentes, definiendo la tecnología y lenguaje apropiados al activar el objetivo. | pending | 5 | N/A | FEATURE-enables-agent-management | N/A |
-| OBJ-CTX-011 | SBM-SUITE | Completar `INIT_CONTEXT.md` para soportar creación/onboarding de nuevos proyectos SBM. | pending | 5 | N/A | FEATURE-completes-project-onboarding | N/A |
-| OBJ-CTX-012 | SBM-SUITE | Separar el flujo del agente en `SBM_AGENT_INIT.md`, dejando `INIT_CONTEXT.md` como punto de entrada y orquestación. | pending | 5 | N/A | FEATURE-separates-agent-init-flow | N/A |
+| OBJ-CTX-004 | SBM-SUITE | Crear sbm-core para scheduler/cron, PostgreSQL de flags/estado, Celery, Redis, retries/idempotency y Kafka solo donde el patrón event-driven lo justifique; sin lógica financiera de negocio. | pending | 5 | N/A | FEATURE-enables-sbm-core | N/A |
+| OBJ-CTX-005 | SBM-SUITE | Crear sbm-util como servicio reutilizable y desacoplado, preferentemente Java Spring Boot, para email, utilidades de archivos, APIs externas, conectores determinísticos y tipos de cambio oficiales consumidos por otros servicios/agentes. | pending | 5 | N/A | FEATURE-enables-sbm-util | N/A |
+| OBJ-CTX-006 | SBM-SUITE | Habilitar un backlog-agent que convierta objetivos en issues/épicas y gestione Jira vía API. | pending | 5 | N/A | FEATURE-enables-backlog-agent | N/A |
+| OBJ-CTX-007 | SBM-SUITE | Habilitar qa-agent para gestionar y automatizar procesos de validación de calidad. | pending | 5 | N/A | FEATURE-enables-qa-agent | N/A |
+| OBJ-CTX-008 | SBM-SUITE | Habilitar un entorno y flujo de seguridad ejecutado después de QA y antes del commit/release. | pending | 5 | N/A | FEATURE-enables-security-flow | N/A |
+| OBJ-CTX-009 | SBM-SUITE | Habilitar security-agent para ejecutar y gestionar validaciones del flujo de seguridad. | pending | 5 | N/A | FEATURE-enables-security-agent | N/A |
+| OBJ-CTX-010 | SBM-SUITE | Crear sbm-ai-manager como frontend/control plane para registrar, visualizar, configurar y operar agentes; tecnología .NET/Blazor queda como candidata a validar al activar. | pending | 5 | N/A | FEATURE-enables-ai-manager | N/A |
+| OBJ-CTX-011 | SBM-SUITE | Completar INIT_CONTEXT.md para soportar creación/onboarding de nuevos proyectos SBM. | pending | 5 | N/A | FEATURE-completes-project-onboarding | N/A |
+| OBJ-CTX-012 | SBM-SUITE | Separar el flujo del agente en SBM_AGENT_INIT.md, dejando INIT_CONTEXT.md como punto de entrada y orquestación. | pending | 5 | N/A | FEATURE-separates-agent-init-flow | N/A |
+| OBJ-CTX-015 | SBM-SUITE | Crear ks-api reutilizando la base validada de DP-API para venta/importación KS: Product/Material/Service/Catalog/Ticket, inventario, costos de importación, pricing multimoneda y trazabilidad; arriendo queda fuera del alcance inmediato. | pending | 5 | N/A | FEATURE-enables-ks-api | N/A |
+| OBJ-CTX-016 | SBM-SUITE | Crear pc-api para operativos y derivaciones: agendamiento, Client/Customer, QR, confirmación, comisión, conciliación y suscripción mensual. | pending | 5 | N/A | FEATURE-enables-pc-api | N/A |
+| OBJ-CTX-017 | SBM-SUITE | Crear cg-api para trámites, documentos, etapas, dependencias, calendarización, proveedores y planos. | pending | 5 | N/A | FEATURE-enables-cg-api | N/A |
+| OBJ-CTX-018 | SBM-SUITE | Crear sbm-calculation como motor financiero/contable compartido para fórmulas, precios, monedas/tipos de cambio, impuestos, comisiones, provisiones, costos y conciliaciones. | pending | 5 | N/A | FEATURE-enables-sbm-calculation | N/A |
+| OBJ-CTX-019 | SBM-SUITE | Crear sbm-security como frontend/control plane de findings, scans, vulnerabilidades, evidencias, aprobaciones e integración con security-agent. | pending | 5 | N/A | FEATURE-enables-sbm-security | N/A |
+| OBJ-CTX-020 | SBM-SUITE | Crear sbm-marketing para datos/campañas/redes sociales, Meta API, métricas y operación de marketing-agent. | pending | 5 | N/A | FEATURE-enables-sbm-marketing | N/A |
+| OBJ-CTX-021 | SBM-SUITE | Crear sbm-content para assets y workflows de generación/edición de contenido con content-agent e integraciones como Photoshop y Blender. | pending | 5 | N/A | FEATURE-enables-sbm-content | N/A |
+| OBJ-CTX-022 | SBM-SUITE | Crear sbm-control como control plane global de SBM Suite: health/status, logs, métricas/reportes, cron/schedulers, workers/colas, Context/Objectives/Documentation, QA, Security, deploys, alertas y backups. | pending | 5 | N/A | FEATURE-enables-sbm-control | N/A |
+| OBJ-CTX-023 | SBM-SUITE | Crear sbm-mobile en React Native para SBM User y operaciones administrativas aprobadas. | pending | 5 | N/A | FEATURE-enables-sbm-mobile | N/A |
+| OBJ-CTX-024 | SBM-SUITE | Crear ks-store en React como vitrina/commerce pública de Tickets KS bajo dominio propio. | pending | 5 | N/A | FEATURE-enables-ks-store | N/A |
+| OBJ-CTX-025 | SBM-SUITE | Crear pc-store en React como canal público de servicios/Tickets PC bajo dominio propio cuando corresponda. | pending | 5 | N/A | FEATURE-enables-pc-store | N/A |
+| OBJ-CTX-026 | SBM-SUITE | Crear cg-store en React como canal público de servicios/Tickets CG bajo dominio propio cuando corresponda. | pending | 5 | N/A | FEATURE-enables-cg-store | N/A |
+| OBJ-CTX-027 | SBM-SUITE | Crear ks-mobile en React Native para KS/Franchise User. | pending | 5 | N/A | FEATURE-enables-ks-mobile | N/A |
+| OBJ-CTX-028 | SBM-SUITE | Crear pc-mobile en React Native para PC/Franchise User. | pending | 5 | N/A | FEATURE-enables-pc-mobile | N/A |
+| OBJ-CTX-029 | SBM-SUITE | Crear cg-mobile en React Native para CG/Franchise User. | pending | 5 | N/A | FEATURE-enables-cg-mobile | N/A |
+| OBJ-CTX-030 | SBM-SUITE | Crear ks-client para Client User KS, inicialmente control de inventario/equipos y derivación/visualización de cámara u otras capacidades autorizadas. | pending | 5 | N/A | FEATURE-enables-ks-client | N/A |
+| OBJ-CTX-031 | SBM-SUITE | Crear pc-client para Client User PC, incluyendo gestión de operativos/derivaciones, agenda, QR/confirmaciones y conciliación operativa. | pending | 5 | N/A | FEATURE-enables-pc-client | N/A |
+| OBJ-CTX-032 | SBM-SUITE | Crear pc-customer para PC Customer: ficha, QR, agendamiento, confirmación y seguimiento del servicio con tratamiento reforzado de datos personales/salud. | pending | 5 | N/A | FEATURE-enables-pc-customer | N/A |
+| OBJ-CTX-033 | SBM-SUITE | Crear cg-client para seguimiento de etapas de tramitación, dependencias, documentos faltantes, información general y FAQ. | pending | 5 | N/A | FEATURE-enables-cg-client | N/A |
+| OBJ-CTX-034 | SBM-SUITE | Expandir sbm-ai-assistant con sbm-agent como orquestador, dev-agent y agentes de marca ks-agent/pc-agent/cg-agent; integrar marketing-agent/content-agent y preservar objetivos específicos de backlog/QA/security agents. | pending | 5 | N/A | FEATURE-expands-ai-agents | N/A |
+| OBJ-CTX-035 | SBM-SUITE | Habilitar almacenamiento de objetos/documentos transversal para archivos, planos, assets, evidencias y contenido, con aislamiento, versionado y políticas de acceso. | pending | 5 | N/A | FEATURE-enables-object-storage | N/A |
+| OBJ-CTX-036 | SBM-SUITE | Definir despliegue productivo compartido para KS/PC/CG con gateway/reverse proxy, TLS, backups y separación de servicios públicos/internos; SonarQube permanece QA temporal, no runtime productivo permanente. | pending | 5 | N/A | FEATURE-defines-prod-topology | N/A |
+| OBJ-CTX-037 | SBM-SUITE | Corregir objective-git-finalize para gestionar publicación/upstream de la branch objetivo y estados Git válidos antes de commit/merge transversal. | pending | 5 | N/A | BUGFIX-fixes-git-finalizer | N/A |
 
 Rules:
 
@@ -85,31 +145,61 @@ Rules:
 - status is always `pending`;
 - objectives move to `Active objectives` when implementation begins;
 - completed objectives never remain here;
+- project-creation objectives remain owned by `SBM-SUITE` until the new repository has its own canonical context;
+- database evolution is recorded as SBM-DB objectives and does not imply that the corresponding schema/migration already exists;
 - every project objective change must update this section and the project summary.
 
 ## 5. Projects and ownership
 
+### Current repositories
+
 | Project | Ownership | Main responsibilities | Source of truth |
 |---|---|---|---|
-| DP-API | Client-facing business operations | Products, materials, services, catalogs, tickets, providers, pricing, branches and other client domains | Project code, project contexts and canonical APIs |
-| SBM-MANAGER | Enterprise web frontend | Vue 3 management UI, frontend orchestration, reusable CRUD behavior and explicit DP-API / SBM-API consumption | Project code, project contexts and frontend API clients |
-| SBM-API | Internal platform operations | Internal administration, franchise, fiscal, inventory, calculation, configuration and platform services | Project code and project contexts |
-| SBM-DB | Physical database and migration authority | PostgreSQL schemas, DBML, Flyway migrations, constraints, views and structural seeds | DBML, Flyway, PostgreSQL runtime and project contexts |
-| sbm-ai-assistant | AI and knowledge orchestration | Embeddings, Qdrant, RAG, Slack, context export/upgrade and future documentation workflows | AI repository and indexed Git Markdown |
-| SBM-SUITE/context | Global governance | Cross-project context, architecture, business, QA, security, data, decisions and workflow contracts | Git Markdown |
+| DP-API | Historical/reference brand business API | Ditaly Pasta real-data reference implementation for Product, Material, Service, Catalog, Ticket, Provider, Price, inventory and reusable brand logic | Project code, project contexts and canonical APIs |
+| SBM-MANAGER | Enterprise web frontend | Vue 3 management UI and explicit brand API / SBM-API consumption | Project code, project contexts and frontend API clients |
+| SBM-API | Shared platform operations | Authentication, tokens, users, franchise scope, roles, permissions, restrictions and internal platform services | Project code and project contexts |
+| SBM-DB | Physical database and migration authority | PostgreSQL schemas, DBML, Flyway migrations, constraints, views and structural seeds; never a runtime query gateway | DBML, Flyway, PostgreSQL runtime and project contexts |
+| sbm-ai-assistant | AI/agent and knowledge orchestration | RAG, Tools, agents, embeddings, Qdrant, Slack, Context/Documentation processing | AI repository and indexed Git Markdown |
+| SBM-SUITE/context | Global governance | Cross-project Context, Architecture, Business, QA, Security, Data, Decisions and Documentation | Git Markdown |
 
-Canonical project roots include `SBM-SUITE/dp/DP-API/`, `SBM-SUITE/sbm/SBM-API/`, `SBM-SUITE/sbm/SBM-DB/`, `SBM-SUITE/sbm/SBM-MANAGER/` and `SBM-SUITE/sbm/sbm-ai-assistant/`. Their canonical runtime roots are `/suite/dp/DP-API`, `/suite/sbm/SBM-API`, `/suite/sbm/SBM-DB`, `/suite/sbm/SBM-MANAGER` and `/suite/sbm/sbm-ai-assistant`.
+### Planned project portfolio
+
+| Project | Planned responsibility |
+|---|---|
+| ks-api | Kiseki Tech sale/import business API |
+| pc-api | PortalConvenios service, scheduling, referral and settlement API |
+| cg-api | Consorcio y Gestión procedure/document/workflow API |
+| sbm-core | Async workflows, scheduler/cron, Celery/Redis, optional Kafka, process flags/state DB |
+| sbm-calculation | Shared financial/accounting calculation engine |
+| sbm-util | Polyglot deterministic utilities/integrations; Spring Boot candidate/target |
+| sbm-ai-manager | Agent control plane/frontend |
+| sbm-security | Security process control plane/frontend |
+| sbm-marketing | Social/marketing data, campaigns, Meta API and marketing workflows |
+| sbm-content | Content/asset workflows and creative-tool integrations |
+| sbm-control | Global operational control plane for suite status/logs/jobs/context/QA/security/deploys |
+| sbm-mobile | React Native mobile for SBM User |
+| ks-store / pc-store / cg-store | React public brand stores/vitrines |
+| ks-mobile / pc-mobile / cg-mobile | React Native mobile apps for each brand/franchise user |
+| ks-client / pc-client / cg-client | Client-facing applications for brand clients |
+| pc-customer | Customer/patient application for PC QR, scheduling and confirmation |
+
+Only current repositories have canonical filesystem/runtime roots. Planned names are architectural targets and must not be treated as existing repositories until onboarding is completed.
 
 ## 6. Project objective summaries
 
-| Project | Purpose | Active objective | Pending objectives | Branch | Main context | QA context | Documentation |
-|---|---|---|---|---|---|---|---|
-| DP-API | Client-facing business API | test fix | Dedicated Service app; Material consumer migration; duplicate Product endpoint retirement | `BUGFIX-test-fix` | `dp/DP-API/context/PROJECT_CONTEXT.md` | `dp/DP-API/context/QA_CONTEXT.md` | `context/documentation/pages/QA & Testing/`, `context/documentation/pages/Development Roadmap/` |
-| SBM-MANAGER | Enterprise web frontend | Integrar SBM-MANAGER completamente a SBM Suite, incluyendo contextos, lifecycle scripts, QA/SonarQube, registro en sbm-ai-assistant, sincronización global y actualización del diagrama canónico de arquitectura en SUITE_CONTEXT.md. | Corregir y completar QA de SBM-MANAGER. | `FEATURE-integrates-sbm-manager` | `sbm/SBM-MANAGER/context/PROJECT_CONTEXT.md` | `sbm/SBM-MANAGER/context/QA_CONTEXT.md` | `context/documentation/pages/🤖 AI Architect Roadmap/🏢 SBM-Suite 3a50bde8acd580d0a068d6abc3542603.md` |
-| SBM-DB | PostgreSQL schema and migration authority | habilitación de sbm-db | Actualizar SBM-DB al contrato lifecycle actual de Context, incluyendo objectives[], execution_mode, preservación literal de objetivos y paths relativos. | `FEATURE-enables-sbm-db` | `sbm/SBM-DB/context/PROJECT_CONTEXT.md` | `sbm/SBM-DB/context/QA_CONTEXT.md` | `context/documentation/pages/🤖 AI Architect Roadmap/🏢 SBM-Suite 3a50bde8acd580d0a068d6abc3542603.md` |
-| SBM-API | Internal platform API | Not defined | Not defined | N/A | `sbm/SBM-API/context/PROJECT_CONTEXT.md` | `sbm/SBM-API/context/QA_CONTEXT.md` | To be mapped |
-| sbm-ai-assistant | AI orchestration and RAG | Support expanded context governance and project-tree evidence | Add documentation export, upgrade and dedicated collection | `FEATURE-expands-context-governance` | `sbm/sbm-ai-assistant/context/PROJECT_CONTEXT.md` | `sbm/sbm-ai-assistant/context/QA_CONTEXT.md` | `context/documentation/pages/AI Engineering/`, `context/documentation/pages/SBM-Suite/` |
-| SBM-SUITE | Global governance and orchestration | Habilitar QA transversal en `SBM-SUITE/context` para ejecutar, centralizar y gestionar validaciones QA de los proyectos de la suite desde el contexto global, manteniendo los scripts QA específicos por proyecto y una orquestación común desde `context`. | Implement documentation workflow<br>Habilitar un sistema automatizado para ejecutar flujos transversales sobre uno o varios proyectos.<br>Separar QA y Context mediante una estructura específica por proyecto.<br>Habilitar un nuevo proyecto para procesamiento asíncrono, incluyendo PostgreSQL, Celery, Redis, Kafka y los componentes de infraestructura relacionados.<br>Habilitar un proyecto UTIL para centralizar servicios y utilidades reutilizables y desacoplarlos de proyectos específicos, incluyendo generación de ZIP y procesamiento de contextos.<br>Habilitar un agente de backlog que convierta objetivos en issues y épicas y gestione su sincronización con Jira vía API. El nombre definitivo del agente se revisará al activar el objetivo.<br>Habilitar un agente QA para gestionar y automatizar procesos de validación de calidad de los proyectos.<br>Habilitar un entorno y flujo de seguridad ejecutado después de QA y antes del commit.<br>Habilitar un agente de seguridad para ejecutar y gestionar las validaciones del flujo de seguridad.<br>Habilitar una aplicación para visualizar y gestionar agentes, definiendo la tecnología y lenguaje apropiados al activar el objetivo.<br>Completar `INIT_CONTEXT.md` para soportar creación/onboarding de nuevos proyectos SBM.<br>Separar el flujo del agente en `SBM_AGENT_INIT.md`, dejando `INIT_CONTEXT.md` como punto de entrada y orquestación. | `FEATURE-enables-transversal-qa` | `context/PROJECT_CONTEXT.md` | `context/QA_CONTEXT.md` | `context/documentation/` |
+| Project/group | Current role | Active objective | Pending direction |
+|---|---|---|---|
+| DP-API | Historical/reference brand API | N/A in global table | Stabilize reusable brand baseline while preserving Ditaly historical data |
+| SBM-MANAGER | Enterprise management frontend | `SBM-MANAGER-001` | QA completion, generic item/package/catalog UI, CG plans/documents module |
+| SBM-DB | Flyway/DBML/PostgreSQL authority | `SBM-DB-001` | Lifecycle update plus multibrand, Equipment/Package, Catalog BOM, pricing/FX and KS/PC/CG data evolution |
+| SBM-API | Shared identity/platform API | N/A | Multilevel SBM/Franchise/Client/Customer authorization model; rename legacy SBM-API runtime `sbm-core` before onboarding the new project |
+| sbm-ai-assistant | AI/agent/RAG orchestration | N/A in global table | sbm-agent, dev-agent, brand agents and existing backlog/QA/security agent roadmap |
+| SBM-SUITE/context | Global governance/orchestration | N/A | Project creation, core/util/calculation/control/security/marketing/content, channels, storage and production topology |
+| KS | Production-target brand | N/A | `ks-api`, `ks-store`, `ks-mobile`, `ks-client`, `ks-agent` |
+| PC | Production-target brand | N/A | `pc-api`, `pc-store`, `pc-mobile`, `pc-client`, `pc-customer`, `pc-agent` |
+| CG | Production-target brand | N/A | `cg-api`, `cg-store`, `cg-mobile`, `cg-client`, `cg-agent` |
+
+Ditaly Pasta is not a current production target; it remains the real-data reference used to harden generic behavior before adaptation to active brands.
 
 ## 7. Global architecture
 
@@ -369,54 +459,42 @@ Rules:
 
 Verified current capabilities include:
 
-- `SBM-SUITE/context/scripts/` is the canonical orchestration location for Context deploy, Context upgrade, Documentation deploy, Documentation upgrade and Project Tree generation;
-- Context remains project-scoped: `context-deploy.sh` receives `project_name`, validates it through Project Registry and resolves the canonical project path from the registry contract;
-- Documentation remains global: `documentation-deploy.sh` and `documentation-upgrade.sh` accept no project argument and reconcile global Context → Documentation;
-- Documentation reconciliation derives lifecycle status only from canonical objective-table rows, ignores narrative lifecycle words, rejects conflicting canonical duplicates and leaves no stale deploy package after a synchronized no-op;
-- Project Tree generation is canonical at `SBM-SUITE/context/scripts/project-tree.sh`;
-- lifecycle dispatch is explicit for `planning-activation`, `objective-activation`, `implementation-progress` and `implementation-closure`, using exact literal equality with no fall-through;
-- `implementation-progress` validates an existing objective, preserves its active or pending state and forbids completion history and closure semantics;
-- `implementation-closure` is the only route authorized to perform `active → completed` and use `patches/completed-objectives.json`;
-- closure QA has canonical states `passed`, `failed` and `not-applicable`; the last is tooling-derived only from absence of repository-relative `scripts/qa-check.sh`, never from missing evidence or user/LLM choice;
-- suite-scoped `implementation-progress` can now consume verified transversal without-Sonar summary/queue evidence plus Context QA evidence and normalize it into the exported context package;
-- `qa-all.sh` isolates each child QA process from the repository-list stdin and treats a repository without a usable no-Sonar entrypoint as a transversal failure;
-- `qa-project.sh` treats explicit split test/coverage entrypoints as no-Sonar by contract instead of rejecting them based on incidental SonarQube text;
-- current `OBJ-CTX-014` evidence reports the without-Sonar transversal queue passed for DP-API, SBM-MANAGER, SBM-DB, SBM-API and sbm-ai-assistant, while Context QA also passed with exit code 0;
-- implementation-closure for `SBM-SUITE/context` still derives QA applicability structurally from repository-relative `scripts/qa-check.sh`; its absence remains distinct from the optional QA evidence recorded during implementation progress;
-- contract version, lifecycle phases, canonical project paths and supported patches are validated before export and upgrade;
-- deterministic and idempotent context indexing exists in `sbm_contexts`;
-- RAG-based context retrieval exists;
-- context packages contain bounded evidence and complete authorized source snapshots for safe section replacement;
-- manifest, path, UTF-8, ZIP-member and SHA-256 validation exist;
-- timestamped backup, atomic replacement and rollback support exist;
-- completed objectives use a single global historical register outside the operational development context;
-- current Project Tree evidence shows the lifecycle shell scripts centralized under `context/scripts/` while project-specific QA, coverage, SonarQube and database scripts remain in their owning projects.
-- `SBM-MANAGER-002` implementation progress now evidences Service, Catalog and Provider client-owned frontend flows on `dpApi`, while franchise/internal platform lookup remains on `sbmApi`; current QA reports 45/45 tests passed, 70.14% coverage and SonarQube server-side Quality Gate PASSED.
+- Context/Documentation lifecycle orchestration is centralized in `SBM-SUITE/context/scripts/`;
+- transversal QA orchestration is implemented and `OBJ-CTX-014` is completed;
+- the supplied 2026-08-16 `without-sonar` queue passed DP-API, SBM-MANAGER, SBM-DB, SBM-API and sbm-ai-assistant; Context QA also passed;
+- DP-API remains the only implemented brand API in the current repository set and is now classified as historical/reference because Ditaly Pasta is closed;
+- SBM-API, SBM-DB, SBM-MANAGER and sbm-ai-assistant remain current shared projects;
+- KS/PC/CG APIs, channels and new SBM services listed in pending objectives are planned only and have no canonical repository/runtime path yet;
+- database/domain changes for Equipment, Package, Catalog composition, multibrand topology, pricing/FX and KS/PC/CG models are objectives only until implemented in SBM-DB;
+- `sbm-core`, `sbm-calculation` and `sbm-util` boundaries are architecturally defined but not yet implemented;
+- `sbm-control`, `sbm-security`, `sbm-ai-manager`, `sbm-marketing` and `sbm-content` are planned applications;
+- Context remains Git-first; Qdrant is an index and Documentation reconciliation remains a separate workflow.
 
-Current evidence limitations and pending validation:
+Current limitations/pending validation:
 
-- Sonar-enabled transversal execution is not validated by the current `without-sonar` evidence and still requires explicit SonarQube readiness before execution;
-- tenant isolation, cross-project contract validation and other deeper transversal quality gates remain outside the current orchestration evidence;
-- project-specific QA contexts and closure evidence remain independently governed by each owning project;
-- Git-to-Notion synchronization and asynchronous database-flag orchestration remain future work.
+- Sonar-enabled transversal execution still requires explicit SonarQube readiness; SonarQube is not a permanent production runtime requirement;
+- tenant/client/customer isolation, cross-project contracts and new brand flows need implementation-specific QA before production;
+- Git-to-Notion synchronization, full async automation and production topology remain future work;
+- the Git finalizer upstream/publication behavior identified during `OBJ-CTX-014` finalization remains a pending system fix.
 
 ## 13. Validated decisions
 
-1. Git Markdown is the primary source of truth during the manual stage.
-2. Qdrant is a semantic index, not an authoritative store.
-4. Context and documentation use separate Qdrant collections.
-5. QA execution is performed by `qa-check.sh`; QA interpretation occurs in the context workflow.
-6. Project objective changes synchronize to the global project context.
-7. Project QA changes synchronize to the global QA context.
-8. Context and documentation upgrades use separate deploy and upgrade workflows.
-9. ChatGPT generates section-level context patches rather than complete context documents.
-10. Documentation upgrade initially modifies only existing authorized pages.
-10. Branch names are assigned before development using `FEATURE`, `BUGFIX` or `HOTFIX` and a maximum four-word slug.
-11. Commit metadata is returned by the upgrade command to support one final commit.
-12. Future asynchronous processing may use database configuration flags.
-13. Active and pending objectives are stored separately in project and global contexts.
-14. Completed objectives are removed from operational contexts and stored only in `context/COMPLETED_OBJECTIVES.md`.
-15. Documentation runs only after implementation, QA validation and final context closure.
+1. Git Markdown is the primary source of truth during the manual stage; Qdrant remains a semantic index.
+2. Context and Documentation workflows/collections remain separate.
+3. Active/pending objectives remain operational state; completed objectives live only in `COMPLETED_OBJECTIVES.md`.
+4. SBM-DB/Flyway owns physical business schema evolution and is not a runtime query gateway.
+5. Brand-facing operations belong to the responsible brand API; SBM-API owns shared identity/platform operations.
+6. Ditaly Pasta is historical/reference; KS, PC and CG are current production-target brands.
+7. The authorization/business hierarchy is SBM User → Franchise/Brand User → Client/User → Customer/User when applicable; `franchise` remains the current DB brand scope name.
+8. Product, Material, Service, planned Equipment, Catalog and Ticket remain distinct domains; Package is mandatory for item domains including logical Service packages.
+9. Catalog is the configurable BOM/recipe/acquisition composition; Ticket is the sold/reported/scheduled commercial unit.
+10. `sbm-core` owns async orchestration; `sbm-calculation` owns business calculations; `sbm-util` owns deterministic reusable integrations.
+11. `sbm-ai-assistant` owns agent reasoning/orchestration and acts through explicit Tools/APIs.
+12. `sbm-ai-manager`, `sbm-security` and `sbm-control` are separate control planes.
+13. Brand `*-mobile` apps serve Franchise/Brand Users; `*-client` apps serve Client Users; customer-specific apps are created only when required (`pc-customer`).
+14. Kafka is optional and justified by event-stream semantics; it is not mandatory merely because Celery/Redis exist.
+15. SonarQube is QA/static-analysis infrastructure and does not require permanent production uptime.
+16. Kiseki sale/import is current scope; rental/contracts/technical service/spares are long-term scope.
 
 ## 14. Accepted risks and constraints
 
@@ -459,16 +537,19 @@ Current evidence limitations and pending validation:
 
 ## 16. Pending work
 
-1. Validate SBM-MANAGER project-to-global synchronization and QA lifecycle with fresh evidence.
-2. Validate SBM-DB canonical registry, migration QA and project-to-global lifecycle with fresh evidence.
-3. Complete validated project-to-global synchronization coverage for the remaining projects.
-4. Create and populate `SECURITY_CONTEXT.md` with validated evidence.
-4. Create and populate `DATA_CONTEXT.md` with validated evidence.
-5. Create and populate `DECISIONS_CONTEXT.md` with validated evidence.
-7. Create and validate `sbm_documentation`.
-8. Map all documentation pages to relevant contexts.
-9. Add later Git-to-Notion synchronization.
-10. Add later asynchronous database-flag orchestration.
+1. Finish currently active SBM-MANAGER and SBM-DB lifecycle objectives before activating unrelated pending work when feasible.
+2. Stabilize DP-API as the reusable historical reference implementation without treating Ditaly Pasta as a current production brand.
+3. Create and onboard the production-target brand APIs `ks-api`, `pc-api` and `cg-api`.
+4. Implement `sbm-core`, `sbm-calculation` and `sbm-util` with explicit responsibility boundaries.
+5. Expand the identity model through SBM User → Franchise/Brand User → Client/User → Customer/User where the business flow requires it.
+6. Execute SBM-DB objectives for Equipment, Package, Catalog composition, pricing/FX, procurement/accounting traceability and brand-specific data models; do not infer these changes as implemented before Flyway/DBML evidence exists.
+7. Create the control planes `sbm-ai-manager`, `sbm-security` and `sbm-control`.
+8. Create `sbm-marketing` and `sbm-content` with their agent/tool integrations.
+9. Create brand stores/mobile/client/customer channels according to the pending objective inventory.
+10. Add transversal object storage for documents, plans, assets and evidence.
+11. Define production topology for KS/PC/CG; keep SonarQube as temporary QA infrastructure rather than permanent production runtime.
+12. Correct the pending `objective-git-finalize` upstream/publication behavior.
+13. Continue Documentation/RAG/Notion and cross-project automation roadmap after the immediate production foundations are stable.
 
 ## 17. Required behavior
 

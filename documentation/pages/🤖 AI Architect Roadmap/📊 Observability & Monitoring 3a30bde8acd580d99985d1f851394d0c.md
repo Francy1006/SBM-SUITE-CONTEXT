@@ -40,7 +40,7 @@ La estrategia cubre:
 - `sbm-db`;
 - `sbm-comercial`;
 - `sbm-digital-api`;
-- `dp-store`;
+- `ks-store`;
 - PostgreSQL;
 - Redis;
 - Celery;
@@ -1108,3 +1108,9 @@ Automated Alerts
 ```
 
 SBM Suite debe evolucionar hacia una plataforma donde cada servicio, integración, agente y proceso pueda observarse de extremo a extremo, permitiendo detectar fallas, entender impacto y responder rápidamente.
+
+---
+
+# 46. sbm-control operating model — 2026-08-16
+
+`sbm-control` is the planned global operations control plane for application/service health, logs, reports/metrics, cron/schedulers, workers/queues, Kafka/Redis/Celery state, Context/Objectives/Documentation, QA, Security, deployments, alerts and DB/backups. It observes/orchestrates approved operations but does not own underlying business logic.

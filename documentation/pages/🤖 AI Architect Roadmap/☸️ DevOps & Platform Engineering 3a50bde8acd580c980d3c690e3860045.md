@@ -309,3 +309,9 @@ Este objetivo permanece active y representa una ejecución en curso. Su activaci
 ## 15. Document boundary
 
 This page defines the current DevOps, QA evidence and context/documentation workflow operating model supported by supplied evidence. The `2026-08-07` configured QA run includes server-side Quality Gate `OK`, but this page does not certify production readiness, cloud or Kubernetes deployment, tenant isolation, object-level authorization, database compatibility, migration execution or Notion synchronization.
+
+---
+
+## 16. New platform responsibilities — 2026-08-16
+
+`sbm-core` becomes the planned async/runtime workflow platform; `sbm-control` becomes the operational control plane; `sbm-security` becomes the security-process UI. Kafka must not be deployed by default when Celery/Redis task semantics are sufficient. SonarQube remains an explicit QA/static-analysis dependency, not permanent production runtime.
