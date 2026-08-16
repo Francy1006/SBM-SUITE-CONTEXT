@@ -85,7 +85,7 @@ while IFS=$'\t' read -r project relative_path; do
 
   echo "Cola QA: ${relative_path} (${MODE})"
   set +e
-  "${QA_DIR}/qa-project.sh" "${args[@]}"
+  "${QA_DIR}/qa-project.sh" "${args[@]}" </dev/null
   status=$?
   set -e
 
@@ -96,19 +96,15 @@ while IFS=$'\t' read -r project relative_path; do
     queue_status="passed"
     executed=$((executed + 1))
   elif [[ "${status}" == "3" ]]; then
-    result="not-applicable"
-    queue_status="skipped"
     evidence="N/A"
-    skipped=$((skipped + 1))
-    # A repository with canonical qa-check.sh but no split no-Sonar entrypoint is
-    # a configuration defect for the without-sonar suite run.
     if [[ "${MODE}" == "without-sonar" ]]; then
-      suite_root="$(cd "${CONTEXT_ROOT}/.." && pwd)"
-      if [[ -x "${suite_root}/${relative_path}/scripts/qa-check.sh" ]]; then
-        result="not-configured"
-        queue_status="failed"
-        failed=1
-      fi
+      result="not-configured"
+      queue_status="failed"
+      failed=1
+    else
+      result="not-applicable"
+      queue_status="skipped"
+      skipped=$((skipped + 1))
     fi
   else
     result="failed (${status})"

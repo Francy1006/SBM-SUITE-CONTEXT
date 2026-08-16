@@ -424,7 +424,7 @@ Current verified direction:
 
 - SBM-MANAGER is the canonical Vue 3 web frontend consuming DP-API and SBM-API through explicit frontend clients.
 - SBM-MANAGER context, QA and lifecycle scaffolding is present; current implementation-progress QA reports 45/45 tests passed, 70.14% coverage and server-side SonarQube Quality Gate PASSED while SBM-MANAGER-002 remains active.
-- SBM-DB is the canonical PostgreSQL/Flyway authority; project context, QA/lifecycle scaffolding and canonical routing are defined, while fresh QA and complete migration-chain validation remain pending.
+- SBM-DB is the canonical PostgreSQL/Flyway authority; project context, QA/lifecycle scaffolding and canonical routing are defined, and the current transversal without-Sonar queue records its project QA entrypoint as passed.
 - Product is the accepted DP-API reference vertical.
 - Material is separated into its own domain app.
 - Service is a planned backend domain.
@@ -434,6 +434,9 @@ Current verified direction:
 - Section-level patch output and complete input-only source snapshots are implemented.
 - Global Project, Suite, Business, QA, Security, Data and Decisions contexts exist.
 - `project-tree.txt` is generated and packaged as structural evidence.
+- `SBM-SUITE/context/QA` provides centralized Context QA, per-project QA dispatch and all-project queue orchestration while preserving project-owned QA entrypoints.
+- the current `OBJ-CTX-014` implementation-progress evidence records all five project repositories passed in `without-sonar` mode and Context QA passed; this evidence does not close the objective.
+- `implementation-progress` for `sbm-suite-context` validates transversal summary/queue evidence and normalizes verified QA evidence into the generated context package.
 - Documentation lifecycle and `sbm_documentation` remain separate follow-up work.
 
 Validated workflow state:
@@ -466,6 +469,8 @@ Run all lifecycle orchestration from the root of `SBM-SUITE/context`.
 → request GET /contexts/contract before exchange-directory cleanup
 → generate project-tree.txt through ./scripts/project-tree.sh
 → collect Git evidence and canonical QA evidence from the registry-resolved project root
+→ for sbm-suite-context implementation-progress, optionally validate QA/output/qa-all-without-sonar-results.md with its queue and include Context QA evidence when present
+→ normalize verified progress QA into qa-results.md and the inner context-package manifest without applying closure semantics
 → call POST /contexts/export
 → package bounded evidence and complete authorized source snapshots
 → generate context-package.zip, context-export-response.json and parameterized SYS_PROMPT.md

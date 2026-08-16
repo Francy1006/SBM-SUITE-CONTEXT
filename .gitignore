@@ -1,8 +1,6 @@
 input/*
 !input/.gitkeep
 
-scripts/__pycache__
-
 output/*
 !output/.gitkeep
 
@@ -18,15 +16,15 @@ documentation/output/*
 documentation/backup/*
 !documentation/backup/.gitkeep
 
-project-tree.txt
+QA/output/*
+!QA/output/.gitkeep
 
+**/__pycache__/
+*.py[cod]
+
+project-tree.txt
 
 .env.dev
 .env.prod
 
 .venv
-
-scripts/tests/__pycache__
-
-QA/output/*
-!QA/output/.gitkeep

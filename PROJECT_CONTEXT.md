@@ -78,7 +78,6 @@ Rules:
 | OBJ-CTX-010 | SBM-SUITE | Habilitar una aplicación para visualizar y gestionar agentes, definiendo la tecnología y lenguaje apropiados al activar el objetivo. | pending | 5 | N/A | FEATURE-enables-agent-management | N/A |
 | OBJ-CTX-011 | SBM-SUITE | Completar `INIT_CONTEXT.md` para soportar creación/onboarding de nuevos proyectos SBM. | pending | 5 | N/A | FEATURE-completes-project-onboarding | N/A |
 | OBJ-CTX-012 | SBM-SUITE | Separar el flujo del agente en `SBM_AGENT_INIT.md`, dejando `INIT_CONTEXT.md` como punto de entrada y orquestación. | pending | 5 | N/A | FEATURE-separates-agent-init-flow | N/A |
-| OBJ-CTX-014 | SBM-SUITE | Habilitar QA transversal en `SBM-SUITE/context` para ejecutar, centralizar y gestionar validaciones QA de los proyectos de la suite desde el contexto global, manteniendo los scripts QA específicos por proyecto y una orquestación común desde `context`. | pending | 5 | N/A | FEATURE-enables-transversal-qa | N/A |
 
 Rules:
 
@@ -110,7 +109,7 @@ Canonical project roots include `SBM-SUITE/dp/DP-API/`, `SBM-SUITE/sbm/SBM-API/`
 | SBM-DB | PostgreSQL schema and migration authority | habilitación de sbm-db | Actualizar SBM-DB al contrato lifecycle actual de Context, incluyendo objectives[], execution_mode, preservación literal de objetivos y paths relativos. | `FEATURE-enables-sbm-db` | `sbm/SBM-DB/context/PROJECT_CONTEXT.md` | `sbm/SBM-DB/context/QA_CONTEXT.md` | `context/documentation/pages/🤖 AI Architect Roadmap/🏢 SBM-Suite 3a50bde8acd580d0a068d6abc3542603.md` |
 | SBM-API | Internal platform API | Not defined | Not defined | N/A | `sbm/SBM-API/context/PROJECT_CONTEXT.md` | `sbm/SBM-API/context/QA_CONTEXT.md` | To be mapped |
 | sbm-ai-assistant | AI orchestration and RAG | Support expanded context governance and project-tree evidence | Add documentation export, upgrade and dedicated collection | `FEATURE-expands-context-governance` | `sbm/sbm-ai-assistant/context/PROJECT_CONTEXT.md` | `sbm/sbm-ai-assistant/context/QA_CONTEXT.md` | `context/documentation/pages/AI Engineering/`, `context/documentation/pages/SBM-Suite/` |
-| SBM-SUITE | Global governance and orchestration | Implement expanded context governance | Implement documentation workflow<br>Habilitar un sistema automatizado para ejecutar flujos transversales sobre uno o varios proyectos.<br>Separar QA y Context mediante una estructura específica por proyecto.<br>Habilitar un nuevo proyecto para procesamiento asíncrono, incluyendo PostgreSQL, Celery, Redis, Kafka y los componentes de infraestructura relacionados.<br>Habilitar un proyecto UTIL para centralizar servicios y utilidades reutilizables y desacoplarlos de proyectos específicos, incluyendo generación de ZIP y procesamiento de contextos.<br>Habilitar un agente de backlog que convierta objetivos en issues y épicas y gestione su sincronización con Jira vía API. El nombre definitivo del agente se revisará al activar el objetivo.<br>Habilitar un agente QA para gestionar y automatizar procesos de validación de calidad de los proyectos.<br>Habilitar un entorno y flujo de seguridad ejecutado después de QA y antes del commit.<br>Habilitar un agente de seguridad para ejecutar y gestionar las validaciones del flujo de seguridad.<br>Habilitar una aplicación para visualizar y gestionar agentes, definiendo la tecnología y lenguaje apropiados al activar el objetivo.<br>Completar `INIT_CONTEXT.md` para soportar creación/onboarding de nuevos proyectos SBM.<br>Separar el flujo del agente en `SBM_AGENT_INIT.md`, dejando `INIT_CONTEXT.md` como punto de entrada y orquestación.<br>Habilitar QA transversal en `SBM-SUITE/context` para ejecutar, centralizar y gestionar validaciones QA de los proyectos de la suite desde el contexto global, manteniendo los scripts QA específicos por proyecto y una orquestación común desde `context`. | `FEATURE-expands-context-governance` | `context/PROJECT_CONTEXT.md` | `context/QA_CONTEXT.md` | `context/documentation/` |
+| SBM-SUITE | Global governance and orchestration | Habilitar QA transversal en `SBM-SUITE/context` para ejecutar, centralizar y gestionar validaciones QA de los proyectos de la suite desde el contexto global, manteniendo los scripts QA específicos por proyecto y una orquestación común desde `context`. | Implement documentation workflow<br>Habilitar un sistema automatizado para ejecutar flujos transversales sobre uno o varios proyectos.<br>Separar QA y Context mediante una estructura específica por proyecto.<br>Habilitar un nuevo proyecto para procesamiento asíncrono, incluyendo PostgreSQL, Celery, Redis, Kafka y los componentes de infraestructura relacionados.<br>Habilitar un proyecto UTIL para centralizar servicios y utilidades reutilizables y desacoplarlos de proyectos específicos, incluyendo generación de ZIP y procesamiento de contextos.<br>Habilitar un agente de backlog que convierta objetivos en issues y épicas y gestione su sincronización con Jira vía API. El nombre definitivo del agente se revisará al activar el objetivo.<br>Habilitar un agente QA para gestionar y automatizar procesos de validación de calidad de los proyectos.<br>Habilitar un entorno y flujo de seguridad ejecutado después de QA y antes del commit.<br>Habilitar un agente de seguridad para ejecutar y gestionar las validaciones del flujo de seguridad.<br>Habilitar una aplicación para visualizar y gestionar agentes, definiendo la tecnología y lenguaje apropiados al activar el objetivo.<br>Completar `INIT_CONTEXT.md` para soportar creación/onboarding de nuevos proyectos SBM.<br>Separar el flujo del agente en `SBM_AGENT_INIT.md`, dejando `INIT_CONTEXT.md` como punto de entrada y orquestación. | `FEATURE-enables-transversal-qa` | `context/PROJECT_CONTEXT.md` | `context/QA_CONTEXT.md` | `context/documentation/` |
 
 ## 7. Global architecture
 
@@ -169,6 +168,7 @@ Current shared infrastructure includes:
 | Docker Compose | Local runtime orchestration | Each project and suite infrastructure |
 | Git | Primary source of truth and version history | All projects |
 | SonarQube | Static analysis and quality evidence | QA workflow |
+| Transversal QA orchestration | Centralized Context and project QA execution, queueing and evidence aggregation | SBM-SUITE/context |
 
 Qdrant collections:
 
@@ -273,7 +273,10 @@ implementation-progress
 → records only evidence-supported current state
 → preserves the objective as active or pending
 → forbids completed-objective history, active → completed and closure confirmation
-→ does not require suite-scoped QA while SBM-SUITE/context/scripts/qa-check.sh does not exist
+→ for sbm-suite-context, resolves optional transversal evidence from QA/output/qa-all-without-sonar-results.md and QA/output/qa-all-without-sonar-queue.tsv
+→ includes QA/output/context-qa-results.md when present and requires consistent successful evidence before recording passed
+→ normalizes qa-results.md and manifest QA metadata inside the generated context package without turning progress into closure
+→ does not apply implementation-closure QA gating during implementation-progress
 ```
 
 ### Implementation closure
@@ -375,7 +378,11 @@ Verified current capabilities include:
 - `implementation-progress` validates an existing objective, preserves its active or pending state and forbids completion history and closure semantics;
 - `implementation-closure` is the only route authorized to perform `active → completed` and use `patches/completed-objectives.json`;
 - closure QA has canonical states `passed`, `failed` and `not-applicable`; the last is tooling-derived only from absence of repository-relative `scripts/qa-check.sh`, never from missing evidence or user/LLM choice;
-- suite-scoped `SBM-SUITE/context` currently resolves to `not-applicable` because no transversal `scripts/qa-check.sh` exists; missing suite QA does not block implementation progress, and adding the script will automatically make QA applicable;
+- suite-scoped `implementation-progress` can now consume verified transversal without-Sonar summary/queue evidence plus Context QA evidence and normalize it into the exported context package;
+- `qa-all.sh` isolates each child QA process from the repository-list stdin and treats a repository without a usable no-Sonar entrypoint as a transversal failure;
+- `qa-project.sh` treats explicit split test/coverage entrypoints as no-Sonar by contract instead of rejecting them based on incidental SonarQube text;
+- current `OBJ-CTX-014` evidence reports the without-Sonar transversal queue passed for DP-API, SBM-MANAGER, SBM-DB, SBM-API and sbm-ai-assistant, while Context QA also passed with exit code 0;
+- implementation-closure for `SBM-SUITE/context` still derives QA applicability structurally from repository-relative `scripts/qa-check.sh`; its absence remains distinct from the optional QA evidence recorded during implementation progress;
 - contract version, lifecycle phases, canonical project paths and supported patches are validated before export and upgrade;
 - deterministic and idempotent context indexing exists in `sbm_contexts`;
 - RAG-based context retrieval exists;
@@ -388,8 +395,9 @@ Verified current capabilities include:
 
 Current evidence limitations and pending validation:
 
-- transversal QA for `SBM-SUITE/context` remains a separate pending capability; while `scripts/qa-check.sh` is absent, closure QA is canonically and structurally `not-applicable`;
-- project-specific QA validation for other suite projects remains independent of this suite-scoped closure;
+- Sonar-enabled transversal execution is not validated by the current `without-sonar` evidence and still requires explicit SonarQube readiness before execution;
+- tenant isolation, cross-project contract validation and other deeper transversal quality gates remain outside the current orchestration evidence;
+- project-specific QA contexts and closure evidence remain independently governed by each owning project;
 - Git-to-Notion synchronization and asynchronous database-flag orchestration remain future work.
 
 ## 13. Validated decisions

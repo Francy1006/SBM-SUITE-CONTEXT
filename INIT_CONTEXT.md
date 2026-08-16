@@ -952,15 +952,15 @@ argument as authoritative. In particular, `implementation-progress` must never
 enter any closure step, even when the selected objective is active, QA evidence
 exists or implementation appears complete.
 
-6. For closure, determine QA applicability structurally from the selected repository root: `<project-repository>/scripts/qa-check.sh`.
-   - If that repository-relative file does not exist, the canonical QA state is `not-applicable`; the generated manifest and `qa-results.md` must record that decision and its reason explicitly.
-   - If that file exists, QA is applicable. Missing, empty, invalid or failed execution evidence must block closure and must never be converted to `not-applicable`.
-   - This rule currently yields `not-applicable` for `SBM-SUITE/context`, but it will automatically require executed QA once the transversal script exists.
-   - QA classification is made by the lifecycle tooling, never by the user or the LLM. It applies only to the exact `implementation-closure` route; `implementation-progress` has no closure QA requirement.
+6. For closure, determine QA applicability through the lifecycle tooling, never by user or LLM classification.
+   - For normal project repositories, applicability remains structural from `<project-repository>/scripts/qa-check.sh`: absence is canonical `not-applicable`; presence requires valid executed evidence and any missing, empty, invalid or failed evidence blocks closure.
+   - For `SBM-SUITE/context` (`registry_project_name=sbm-suite-context`), before falling back to structural `scripts/qa-check.sh` applicability, reuse the current verified transversal evidence when both `QA/output/qa-all-without-sonar-results.md` and `QA/output/qa-all-without-sonar-queue.tsv` are present. Include `QA/output/context-qa-results.md` when present. Successful evidence makes closure QA `passed`; failed evidence blocks closure.
+   - Existing valid transversal evidence may be reused by the same closure flow; do not require a new QA execution merely because `SBM-SUITE/context/scripts/qa-check.sh` is absent.
+   - This classification applies only to exact `implementation-closure`. `implementation-progress` remains a separate lifecycle route.
 7. When QA applies, closure requires a QA execution that validates the current project state. This requirement applies even when the selected objective introduced no source-code changes.
 8. Historical QA evidence generated before the current objective creation/activation must be treated as baseline only and must not satisfy objective closure.
-9. If valid QA evidence for the current closure flow is not already supplied, do not terminate or return to the menu. Continue the same closure workflow through `SBM-SUITE/context/QA/`; never require a manual `cd` into the project repository.
-10. Inspect the selected project's executable `scripts/qa-check.sh`:
+9. If valid QA evidence for the current closure flow is already available, reuse it and continue directly to the closure preview/confirmation. If evidence is missing or invalid, do not terminate or return to the menu; continue the same closure workflow through `SBM-SUITE/context/QA/` and never require a manual `cd` into the project repository.
+10. For a normal project that requires a fresh QA execution, inspect the selected project's executable `scripts/qa-check.sh`:
    - if it references SonarQube/SonarScanner, ask exactly `Confirme que SonarQube está habilitado y disponible. Responda "sí" para continuar.` and do not advance until explicit confirmation;
    - after confirmation render `./QA/qa-project.sh "<project>" --with-sonar --sonarqube-ready` from `SBM-SUITE/context/` and request `QA/output/<resolved-repository-slug>-with-sonar-qa-results.md`;
    - if it does not reference Sonar, render `./QA/qa-project.sh "<project>" --without-sonar` from `SBM-SUITE/context/` and request `QA/output/<resolved-repository-slug>-without-sonar-qa-results.md`.

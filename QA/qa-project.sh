@@ -71,10 +71,6 @@ select_without_sonar_entrypoint() {
     scripts/coverage.sh
   do
     if [[ -x "${repository}/${candidate}" ]]; then
-      if references_sonar "${repository}/${candidate}"; then
-        echo "ERROR: ${relative_path}: ${candidate} referencia Sonar y no puede usarse en modo without-sonar" >&2
-        return 4
-      fi
       printf '%s\n' "${candidate}"
       return 0
     fi

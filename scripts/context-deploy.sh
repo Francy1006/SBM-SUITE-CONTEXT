@@ -354,6 +354,7 @@ python3 "${LIFECYCLE_VALIDATOR}" \
 
 QA_RESULTS=""
 QA_MANIFEST_JSON=""
+PAYLOAD_QA_MANIFEST_JSON=""
 if [[ "${LIFECYCLE_ROUTE}" == "implementation-closure" ]]; then
   [[ -f "${QA_LIFECYCLE_HELPER}" ]] || {
     echo "ERROR: No existe ${QA_LIFECYCLE_HELPER}" >&2
@@ -380,6 +381,36 @@ from pathlib import Path
 
 payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 print(json.dumps(payload["qa"], ensure_ascii=False, separators=(",", ":")))
+PY
+  )"
+  PAYLOAD_QA_MANIFEST_JSON="${QA_MANIFEST_JSON}"
+elif [[ "${LIFECYCLE_ROUTE}" == "implementation-progress" && "${PROJECT_NAME}" == "sbm-suite-context" ]]; then
+  [[ -f "${QA_LIFECYCLE_HELPER}" ]] || {
+    echo "ERROR: No existe ${QA_LIFECYCLE_HELPER}" >&2
+    exit 1
+  }
+  python3 "${QA_LIFECYCLE_HELPER}" evaluate-progress \
+    --project-name "${PROJECT_NAME}" \
+    --project-root "${PROJECT_ROOT}" \
+    --output "${QA_DECISION_FILE}"
+  QA_RESULTS="$(
+    python3 - "${QA_DECISION_FILE}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+print(json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["qa_results"], end="")
+PY
+  )"
+  QA_MANIFEST_JSON="$(
+    python3 - "${QA_DECISION_FILE}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+qa = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["qa"]
+if qa is not None:
+    print(json.dumps(qa, ensure_ascii=False, separators=(",", ":")))
 PY
   )"
 elif [[ -f "${QA_RESULTS_FILE}" ]]; then
@@ -467,7 +498,7 @@ PAYLOAD="$(
   CHANGED_FILES="${CHANGED_FILES}" \
   GIT_DIFF="${GIT_DIFF}" \
   QA_RESULTS="${QA_RESULTS}" \
-  QA_MANIFEST_JSON="${QA_MANIFEST_JSON}" \
+  QA_MANIFEST_JSON="${PAYLOAD_QA_MANIFEST_JSON}" \
   python3 <<'PY'
 import json
 import os
@@ -536,7 +567,7 @@ print("Objetivos: " + ", ".join(
 print("Paquete: output/context-deploy-package.zip")
 PY
 
-if [[ "${LIFECYCLE_ROUTE}" == "implementation-closure" ]]; then
+if [[ -n "${QA_MANIFEST_JSON}" ]]; then
   python3 "${QA_LIFECYCLE_HELPER}" normalize-export \
     --decision "${QA_DECISION_FILE}" \
     --context-package "${CONTEXT_PACKAGE_FILE}" \

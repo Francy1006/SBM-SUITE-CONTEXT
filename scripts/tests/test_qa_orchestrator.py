@@ -199,5 +199,77 @@ class QAOrchestratorTests(unittest.TestCase):
             self.assertNotIn("full:SBM-MANAGER", executions)
 
 
+    def test_without_sonar_entrypoint_may_contain_sonar_text(self):
+        with tempfile.TemporaryDirectory() as d:
+            env = QAEnvironment(Path(d))
+            coverage = env.suite / "SBM/SBM-MANAGER/scripts/coverage.sh"
+            coverage.write_text(
+                "#!/usr/bin/env bash\n"
+                "set -e\n"
+                "echo 'QA sin SonarQube'\n"
+                "printf 'coverage:SBM-MANAGER\\n' >> qa-executions.log\n",
+                encoding="utf-8",
+            )
+            coverage.chmod(0o755)
+
+            r = _run(
+                str(env.context / "QA/qa-project.sh"),
+                "SBM-MANAGER",
+                "--without-sonar",
+                cwd=env.context,
+                check=False,
+            )
+
+            self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_all_isolates_child_stdin_and_processes_remaining_repositories(self):
+        with tempfile.TemporaryDirectory() as d:
+            env = QAEnvironment(Path(d))
+            coverage = env.suite / "DP/DP-API/scripts/coverage.sh"
+            coverage.write_text(
+                "#!/usr/bin/env bash\n"
+                "set -e\n"
+                "IFS= read -r _ || true\n"
+                "printf 'coverage:DP-API\\n' >> qa-executions.log\n",
+                encoding="utf-8",
+            )
+            coverage.chmod(0o755)
+
+            _run(
+                str(env.context / "QA/qa-all.sh"),
+                "--without-sonar",
+                cwd=env.context,
+                check=False,
+            )
+
+            summary = (
+                env.context / "QA/output/qa-all-without-sonar-results.md"
+            ).read_text(encoding="utf-8")
+
+            self.assertIn("DP-API", summary)
+            self.assertIn("SBM-DB", summary)
+
+
+    def test_all_without_sonar_fails_when_repository_has_no_qa_entrypoint(self):
+        with tempfile.TemporaryDirectory() as d:
+            env = QAEnvironment(Path(d))
+
+            r = _run(
+                str(env.context / "QA/qa-all.sh"),
+                "--without-sonar",
+                cwd=env.context,
+                check=False,
+            )
+
+            self.assertNotEqual(r.returncode, 0)
+
+            summary = (
+                env.context / "QA/output/qa-all-without-sonar-results.md"
+            ).read_text(encoding="utf-8")
+
+            self.assertIn("SBM-API", summary)
+            self.assertIn("not-configured", summary)
+
+
 if __name__ == "__main__":
     unittest.main()

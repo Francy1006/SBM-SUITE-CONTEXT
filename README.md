@@ -68,6 +68,8 @@ No standalone installation is required for the Markdown contracts. All manual Co
 
 Objective creation uses `planning-activation`. Activating an objective that already exists as pending uses `objective-activation` with the complete objective payload expressing desired `status=active`; that transition preserves ID, description, priority, target date and branch and never inserts a second objective.
 
+During `implementation-progress` for `sbm-suite-context`, `context-deploy` can validate the transversal without-Sonar summary and queue, include Context QA evidence when present, and normalize that evidence into the generated context package without changing the objective lifecycle state.
+
 During `implementation-closure`, QA applicability is derived structurally from the selected repository's `scripts/qa-check.sh`: absence produces canonical `not-applicable` evidence, while presence requires validated successful execution evidence.
 
 ## Usage

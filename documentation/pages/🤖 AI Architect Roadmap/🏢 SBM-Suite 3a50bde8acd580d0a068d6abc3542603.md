@@ -889,7 +889,7 @@ Este objetivo permanece **active**. Su presencia aquí no representa cierre ni i
 | OBJ-CTX-010 | Habilitar una aplicación para visualizar y gestionar agentes, definiendo la tecnología y lenguaje apropiados al activar el objetivo. | pending | 5 | N/A | FEATURE-enables-agent-management |
 | OBJ-CTX-011 | Completar `INIT_CONTEXT.md` para soportar creación/onboarding de nuevos proyectos SBM. | pending | 5 | N/A | FEATURE-completes-project-onboarding |
 | OBJ-CTX-012 | Separar el flujo del agente en `SBM_AGENT_INIT.md`, dejando `INIT_CONTEXT.md` como punto de entrada y orquestación. | pending | 5 | N/A | FEATURE-separates-agent-init-flow |
-| OBJ-CTX-014 | Habilitar QA transversal en `SBM-SUITE/context` para ejecutar, centralizar y gestionar validaciones QA de los proyectos de la suite desde el contexto global, manteniendo los scripts QA específicos por proyecto y una orquestación común desde `context`. | pending | 5 | N/A | FEATURE-enables-transversal-qa |
+| OBJ-CTX-014 | Habilitar QA transversal en `SBM-SUITE/context` para ejecutar, centralizar y gestionar validaciones QA de los proyectos de la suite desde el contexto global, manteniendo los scripts QA específicos por proyecto y una orquestación común desde `context`. | active | 5 | N/A | FEATURE-enables-transversal-qa |
 
 Los objetivos anteriores conservan literalmente su estado operativo actual de Context. Los objetivos `active` y `pending` son planificación y no acreditan implementación completada.
 

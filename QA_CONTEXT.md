@@ -82,7 +82,7 @@ A gate may be bypassed only through a documented accepted exception.
 | SBM-MANAGER | `SBM-SUITE/sbm/SBM-MANAGER/context/QA_CONTEXT.md` | 45 | 45 | 0 | 70.14% | Quality Gate PASSED | 2026-08-14 | 3 | `qa-results.md`: 45 tests passed; coverage 70.14%; SonarScanner exit code 0; server-side Quality Gate PASSED |
 | SBM-DB | `SBM-SUITE/sbm/SBM-DB/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | Quality Gate PASSED | 2026-08-08 | 4 | `qa-results.md`: Flyway validated 33 sbm_business, 55 ditaly_pasta, 5 cross and 2 analytics migrations; SonarScanner exit code 0; Quality Gate PASSED |
 | SBM-AI-ASSISTANT | `SBM-SUITE/sbm/sbm-ai-assistant/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | N/A | N/A | 3 | Project QA context pending |
-| SBM-SUITE | `SBM-SUITE/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | not-applicable | 2026-08-13 | 0 | `qa-results.md`: QA structurally not applicable because `scripts/qa-check.sh` does not exist for `sbm-suite-context` |
+| SBM-SUITE | `SBM-SUITE/context/QA_CONTEXT.md` | N/A | N/A | N/A | N/A | not used | 2026-08-16 | 0 | `qa-results.md`: transversal `without-sonar` queue passed for DP-API, SBM-MANAGER, SBM-DB, SBM-API and sbm-ai-assistant; Context QA passed with exit code 0 |
 
 Risk scale:
 
@@ -364,16 +364,29 @@ Current suite QA state:
 
 ```text
 Status: PARTIALLY VALIDATED
-Reason: DP-API and SBM-MANAGER supplied successful current test, coverage, SonarScanner execution and server-side Quality Gate evidence; other projects and transversal gates remain incomplete.
+Reason: OBJ-CTX-014 closure evidence verifies successful transversal without-Sonar execution across all five project repositories plus successful Context QA. Sonar-enabled transversal execution and deeper cross-project quality gates remain outside this evidence.
 ```
 
-Closure applicability for the Context orchestration repository:
+Verified `OBJ-CTX-014` implementation-closure evidence:
 
 ```text
 Project: sbm-suite-context
-QA status: not-applicable
-Structural reason: scripts/qa-check.sh does not currently exist at the selected repository root
-Effect: closure tooling emits explicit deterministic evidence; adding that path automatically makes QA applicable
+QA status: passed
+QA applicable: true
+QA workflow: scripts/qa-check.sh
+Mode: without-sonar
+DP-API: passed
+SBM-MANAGER: passed
+SBM-DB: passed
+SBM-API: passed
+sbm-ai-assistant: passed
+Queue exit codes: 0 for every repository
+Context QA overall status: passed
+Context QA exit code: 0
+SonarQube: not used
+Evidence file: qa-results.md
+Evidence SHA-256: fb5df8d0bbf410b33cccad963596813560ae6a4beb73e83f3266277cab8f6b7b
+Reason: transversal QA executed with verified summary and queue evidence
 ```
 
 Verified DP-API closure evidence:
