@@ -10,6 +10,7 @@ from pathlib import Path
 
 CONTEXT_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_SOURCE = CONTEXT_ROOT / "scripts" / "objective-branches.sh"
+REPOSITORY_SOURCE = CONTEXT_ROOT / "scripts" / "suite-repositories.py"
 
 
 def _run(*args: str, cwd: Path, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -25,42 +26,36 @@ def _run(*args: str, cwd: Path, check: bool = True) -> subprocess.CompletedProce
 
 class BranchEnvironment:
     repositories = ("context", "DP/DP-API", "SBM/SBM-API")
-    registered_repositories = ("context", "dp/DP-API", "sbm/SBM-API")
 
     def __init__(self, root: Path):
         self.root = root
         self.suite_root = root / "SBM-SUITE"
         self.context_root = self.suite_root / "context"
         self.script = self.context_root / "scripts" / "objective-branches.sh"
+        self.helper = self.context_root / "scripts" / "suite-repositories.py"
         self.remotes = root / "remotes"
         self.remotes.mkdir(parents=True)
 
-        self._write_project_context(self.registered_repositories)
+        self._write_project_context()
         self.script.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(SCRIPT_SOURCE, self.script)
+        shutil.copy2(REPOSITORY_SOURCE, self.helper)
         self.script.chmod(0o755)
+        self.helper.chmod(0o755)
 
         for repository in self.repositories:
             self._initialize_repository(repository)
 
-    def _write_project_context(self, repositories: tuple[str, ...]) -> None:
-        rows = []
-        for index, repository in enumerate(repositories, start=1):
-            main_context = f"{repository}/context/PROJECT_CONTEXT.md"
-            if repository == "context":
-                main_context = "context/PROJECT_CONTEXT.md"
-            rows.append(
-                f"| P{index} | purpose | active | pending | `FEATURE-old` | "
-                f"`{main_context}` | N/A | N/A |"
-            )
+    def _write_project_context(self) -> None:
         content = (
             "# PROJECT_CONTEXT.md\n\n"
             "## 6. Project objective summaries\n\n"
-            "| Project | Purpose | Active objective | Pending objectives | Branch | "
-            "Main context | QA context | Documentation |\n"
-            "|---|---|---|---|---|---|---|---|\n"
-            + "\n".join(rows)
-            + "\n\n## 7. Boundary\n"
+            "| Project/group | Current role | Active objective | Pending direction |\n"
+            "|---|---|---|---|\n"
+            "| DP-API | historical API | N/A | stabilize |\n"
+            "| SBM-API | shared API | N/A | authorization |\n"
+            "| __BASE-FRANCHISE-API | planned | N/A | create after DP |\n\n"
+            "## 7. Boundary\n"
         )
         path = self.context_root / "PROJECT_CONTEXT.md"
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -165,38 +160,16 @@ class ObjectiveBranchesTests(unittest.TestCase):
                 ["main", "main", "main"],
             )
 
-    def test_missing_or_invalid_registered_repository_aborts_globally(self) -> None:
-        for invalid_kind in ("missing", "not-git"):
-            with self.subTest(invalid_kind=invalid_kind):
-                with tempfile.TemporaryDirectory() as directory:
-                    env = BranchEnvironment(Path(directory))
-                    registered = (*env.registered_repositories, "sbm/BROKEN")
-                    env._write_project_context(registered)
-                    _run("git", "add", "PROJECT_CONTEXT.md", cwd=env.context_root)
-                    _run(
-                        "git",
-                        "commit",
-                        "-m",
-                        "register broken repository",
-                        cwd=env.context_root,
-                    )
-                    _run("git", "push", "origin", "main", cwd=env.context_root)
-                    if invalid_kind == "not-git":
-                        (env.suite_root / "sbm/BROKEN").mkdir(parents=True)
+    def test_non_git_directories_are_ignored(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            env = BranchEnvironment(Path(directory))
+            (env.suite_root / "SBM/__BASE-FRANCHISE-API").mkdir(parents=True)
 
-                    result = env.execute("prepare", "FEATURE-must-abort")
+            result = env.execute("prepare", "FEATURE-ignore-planned")
 
-                    self.assertNotEqual(result.returncode, 0)
-                    expected = (
-                        "directorio inexistente"
-                        if invalid_kind == "missing"
-                        else "no es un repositorio Git válido"
-                    )
-                    self.assertIn(f"sbm/BROKEN: {expected}", result.stderr)
-                    self.assertEqual(
-                        [env.branch(repository) for repository in env.repositories],
-                        ["main", "main", "main"],
-                    )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            for repository in env.repositories:
+                self.assertEqual(env.branch(repository), "FEATURE-ignore-planned")
 
     def test_verify_reports_any_repository_on_the_wrong_branch(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -274,7 +247,6 @@ class ObjectiveBranchesTests(unittest.TestCase):
             "If this Documentation run continues `objective-activation`, immediately render",
             contract,
         )
-
 
 
 if __name__ == "__main__":

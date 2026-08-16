@@ -34,10 +34,10 @@ git check-ref-format --branch "${OBJECTIVE_BRANCH}" >/dev/null 2>&1 || {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTEXT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
-PROJECT_CONTEXT_FILE="${CONTEXT_ROOT}/PROJECT_CONTEXT.md"
+REPOSITORY_HELPER="${SCRIPT_DIR}/suite-repositories.py"
 
-[[ -f "${PROJECT_CONTEXT_FILE}" ]] || {
-  echo "ERROR: No existe context/PROJECT_CONTEXT.md" >&2
+[[ -x "${REPOSITORY_HELPER}" || -f "${REPOSITORY_HELPER}" ]] || {
+  echo "ERROR: No existe scripts/suite-repositories.py" >&2
   exit 1
 }
 
@@ -45,111 +45,7 @@ REPOSITORY_LIST="$(mktemp)"
 BRANCH_PLAN="$(mktemp)"
 trap 'rm -f "${REPOSITORY_LIST}" "${BRANCH_PLAN}"' EXIT
 
-python3 - "${PROJECT_CONTEXT_FILE}" "${SUITE_ROOT}" > "${REPOSITORY_LIST}" <<'PY'
-from pathlib import Path, PurePosixPath
-import os
-import re
-import sys
-
-source = Path(sys.argv[1]).read_text(encoding="utf-8")
-suite_root = Path(sys.argv[2]).resolve(strict=True)
-match = re.search(
-    r"^## 6\. Project objective summaries\s*$"
-    r"(.*?)(?=^##\s+|\Z)",
-    source,
-    flags=re.MULTILINE | re.DOTALL,
-)
-if match is None:
-    raise SystemExit(
-        "ERROR: PROJECT_CONTEXT.md no contiene Project objective summaries"
-    )
-
-table_lines = [
-    line.strip()
-    for line in match.group(1).splitlines()
-    if line.strip().startswith("|") and line.strip().endswith("|")
-]
-if len(table_lines) < 2:
-    raise SystemExit("ERROR: Project objective summaries no contiene una tabla")
-
-def cells(line: str) -> list[str]:
-    return [value.strip() for value in line[1:-1].split("|")]
-
-headers = cells(table_lines[0])
-try:
-    main_context_index = headers.index("Main context")
-except ValueError as exc:
-    raise SystemExit(
-        "ERROR: Project objective summaries no contiene Main context"
-    ) from exc
-
-registered_repositories: list[str] = []
-for line in table_lines[2:]:
-    values = cells(line)
-    if len(values) != len(headers):
-        raise SystemExit("ERROR: Project objective summaries contiene una fila inválida")
-    main_context = values[main_context_index].strip("`")
-    suffix = "/context/PROJECT_CONTEXT.md"
-    if main_context == "context/PROJECT_CONTEXT.md":
-        repository = "context"
-    elif main_context.endswith(suffix):
-        repository = main_context[: -len(suffix)]
-    else:
-        raise SystemExit(
-            "ERROR: Main context no resuelve un repositorio canónico: "
-            + main_context
-        )
-
-    path = PurePosixPath(repository)
-    if (
-        path.is_absolute()
-        or ".." in path.parts
-        or str(path) != repository
-        or not path.parts
-    ):
-        raise SystemExit(
-            "ERROR: Repositorio no canónico en Project objective summaries: "
-            + repository
-        )
-    if repository not in registered_repositories:
-        registered_repositories.append(repository)
-
-physical_repositories: list[str] = []
-for current_root, directory_names, file_names in os.walk(suite_root):
-    if ".git" not in directory_names and ".git" not in file_names:
-        continue
-    repository = Path(current_root).relative_to(suite_root).as_posix()
-    if repository == ".":
-        raise SystemExit("ERROR: SBM-SUITE no debe ser un repositorio Git raíz")
-    physical_repositories.append(repository)
-    directory_names[:] = []
-
-physical_by_casefold: dict[str, list[str]] = {}
-for repository in physical_repositories:
-    physical_by_casefold.setdefault(repository.casefold(), []).append(repository)
-
-for key, matches in physical_by_casefold.items():
-    if len(matches) > 1:
-        raise SystemExit(
-            "ERROR: Repositorios Git ambiguos por casing: " + ", ".join(matches)
-        )
-
-repositories: list[str] = []
-for registered in registered_repositories:
-    matches = physical_by_casefold.get(registered.casefold(), [])
-    resolved = matches[0] if matches else registered
-    if resolved not in repositories:
-        repositories.append(resolved)
-
-for repository in physical_repositories:
-    if repository not in repositories:
-        repositories.append(repository)
-
-if not repositories:
-    raise SystemExit("ERROR: No se resolvieron repositorios SBM registrados")
-
-print("\n".join(repositories))
-PY
+python3 "${REPOSITORY_HELPER}" list-paths > "${REPOSITORY_LIST}"
 
 preflight_repository() {
   local relative_path="$1"
