@@ -39,7 +39,7 @@ Application repositories consume the schema but do not own business-schema migra
 
 | Data domain | Source of truth | Operational owner | Schema owner | Access path |
 |---|---|---|---|---|
-| Brand business data | PostgreSQL | Brand API (`DP-API` reference; `ks-api`/`pc-api`/`cg-api` planned) | SBM-DB | Responsible brand API |
+| Brand business data | PostgreSQL | Brand API (`DP-API` reference; `KS-API`/`PC-API`/`CG-API` planned) | SBM-DB | Responsible brand API |
 | Internal platform data | PostgreSQL | SBM-API | SBM-DB | SBM-API |
 | Physical schema and migrations | Flyway / DBML | SBM-DB | SBM-DB | Flyway |
 | Global contexts | Git Markdown | SBM-SUITE | SBM-SUITE | Context workflow |
@@ -59,7 +59,8 @@ Application repositories consume the schema but do not own business-schema migra
 | PostgreSQL | TBD | future KS domain | KS | Brand operational/commercial data | SBM-DB/Flyway | planned |
 | PostgreSQL | TBD | future PC domain | PC | Service/scheduling/client/customer data | SBM-DB/Flyway | planned |
 | PostgreSQL | TBD | future CG domain | CG | Procedure/document/workflow data | SBM-DB/Flyway | planned |
-| PostgreSQL | TBD | sbm-core | SBM | Async process flags/job/workflow state | sbm-core schema contract + approved migration ownership | planned |
+| PostgreSQL | TBD | SBM-CORE | SBM | Async process flags/job/workflow state | SBM-CORE schema contract + approved migration ownership | planned |
+| PostgreSQL | TBD | SBM-SECURITY-API | SBM | Security runs/findings/evidence/policies/approvals/audit | SBM-SECURITY-API migrations/schema contract | planned |
 | PostgreSQL | N/A | SonarQube infrastructure | SBM | QA/static-analysis persistence only | SonarQube stack | QA-only |
 | Qdrant | `sbm_docs` | SBM-AI-ASSISTANT | SBM | Confluence documentation vectors | SBM-AI-ASSISTANT | active |
 | Qdrant | `sbm_contexts` | SBM-AI-ASSISTANT | SBM | Global/project context vectors | SBM-AI-ASSISTANT | active |
@@ -79,8 +80,8 @@ Exact KS/PC/CG physical database/schema names are intentionally `TBD` until the 
 | Catalog | Brand API | existing concept + planned composition | BOM/recipe/acquisition composition | 0 |
 | CatalogComponent | Brand API | planned | Typed component reference with quantity/dosage/unit/cost semantics | 0 |
 | Ticket | Brand API | existing concept + generalized semantics | Sold/reported/scheduled commercial unit | depends |
-| Price | Brand API / sbm-calculation | existing + planned extension | Versioned monetary state, tax, currency and FX reference | 0 |
-| ExchangeRate | sbm-util / calculation consumers | planned | Authoritative observed rate and source/time metadata | 0 |
+| Price | Brand API / SBM-CALCULATION | existing + planned extension | Versioned monetary state, tax, currency and FX reference | 0 |
+| ExchangeRate | SBM-UTIL / calculation consumers | planned | Authoritative observed rate and source/time metadata | 0 |
 | Provider | Brand API | existing | Supplier/service provider | 1 |
 | Branch | Brand API | existing | Physical/operational location | 1 |
 | Agreement | Brand API | existing | Commercial/contractual conditions | 1 |
@@ -88,11 +89,12 @@ Exact KS/PC/CG physical database/schema names are intentionally `TBD` until the 
 | Client | Brand API | existing/brand evolution | Direct customer organization/person of a brand | 1 |
 | Customer | Brand API | planned generic; required PC | Downstream beneficiary/end customer | 1 |
 | User/Role/Permission/Restriction | SBM-API + scoped brand auth | existing/evolving | Authentication/authorization structures | 1 |
-| Schedule/Referral/QR | pc-api | planned | PC event/referral and confirmation lifecycle | 1 |
-| Document/Plan/WorkflowStage | cg-api | planned | CG procedure files/plans/dependencies/stages | 1 |
-| AsyncJob/ProcessFlag | sbm-core | planned | Durable async execution state | 0/1 |
+| Schedule/Referral/QR | PC-API | planned | PC event/referral and confirmation lifecycle | 1 |
+| Document/Plan/WorkflowStage | CG-API | planned | CG procedure files/plans/dependencies/stages | 1 |
+| AsyncJob/ProcessFlag | SBM-CORE | planned | Durable async execution state | 0/1 |
+| SecurityRun/Finding/Evidence/Approval | SBM-SECURITY-API | planned | Security execution, tool result, risk, evidence and human/agent gate decision | 1 |
 | Context/Documentation | SBM-SUITE | existing | Governed Git knowledge | 0/1 |
-| Vector chunk | sbm-ai-assistant | existing | Rebuildable embedded fragment | depends on source |
+| Vector chunk | SBM-AI-ASSISTANT | existing | Rebuildable embedded fragment | depends on source |
 
 `planned` rows do not assert current PostgreSQL tables.
 
@@ -160,7 +162,7 @@ Async flow target:
 
 ```text
 API/event/schedule
-→ sbm-core
+→ SBM-CORE
 → durable state/queue/worker
 → authorized service/API
 ```
@@ -169,7 +171,7 @@ Financial calculation target:
 
 ```text
 Brand API
-→ sbm-calculation
+→ SBM-CALCULATION
 → deterministic result
 → brand-owned persistence/transaction
 ```
@@ -178,7 +180,7 @@ External deterministic integration target:
 
 ```text
 Authorized service/agent
-→ sbm-util
+→ SBM-UTIL
 → email / external API / exchange-rate provider / file utility
 ```
 
@@ -186,7 +188,7 @@ AI-assisted operation:
 
 ```text
 Authorized caller
-→ sbm-ai-assistant
+→ SBM-AI-ASSISTANT
 → Tool/agent
 → responsible API/service
 → no direct PostgreSQL write
@@ -425,7 +427,7 @@ Data observability must not expose secrets or unrestricted personal data.
 15. Execute the approved SBM-DB objectives for multibrand isolation, Equipment/Package, Catalog BOM, pricing/FX and acquisition/accounting traceability.
 16. Define PC restricted-data retention/access rules before production.
 17. Define CG document/plan storage metadata and object-storage linkage.
-18. Define sbm-core job/flag persistence independently from business calculation data.
+18. Define SBM-CORE job/flag persistence independently from business calculation data.
 
 ## 17. Related documentation
 
@@ -461,7 +463,7 @@ No schema listed below is considered implemented until its SBM-DB objective is d
 - Add isolated KS, PC and CG logical data domains with independent credentials/authorization boundaries.
 - Prefer one manageable PostgreSQL service initially with explicit logical isolation; do not introduce one database container per brand solely for application separation.
 - Cross-brand/transversal reads must use approved APIs, events or a dedicated analytics/read model; SBM-DB does not query brands as an application service.
-- `sbm-core` owns its own operational state/flag/job persistence when created.
+- `SBM-CORE` owns its own operational state/flag/job persistence when created.
 
 ### Planned core entities/relations
 
@@ -476,7 +478,7 @@ No schema listed below is considered implemented until its SBM-DB objective is d
 | Customer | planned generic | Downstream customer/beneficiary; PC requires person/org variants |
 | Schedule/Referral/QR confirmation | planned PC | PC operational event/referral lifecycle |
 | Document/Plan/WorkflowStage | planned CG | Procedure documentation, plans, dependencies and stage/calendar state |
-| AsyncJob/ProcessFlag | planned sbm-core | Durable workflow state, retries, scheduler and worker coordination |
+| AsyncJob/ProcessFlag | planned SBM-CORE | Durable workflow state, retries, scheduler and worker coordination |
 
 ### Sensitive brand-specific data
 
@@ -486,7 +488,20 @@ No schema listed below is considered implemented until its SBM-DB objective is d
 
 ### Price/currency target
 
-Price evolution must preserve `base_net_amount`, calculated `net_amount`, VAT, additional taxes/retentions, `gross_amount`, currency and exchange-rate reference/history. `sbm-util` may ingest authoritative external rates; `sbm-calculation` owns deterministic calculation rules; brand APIs remain the business operation boundary.
+Price evolution must preserve `base_net_amount`, calculated `net_amount`, VAT, additional taxes/retentions, `gross_amount`, currency and exchange-rate reference/history. `SBM-UTIL` may ingest authoritative external rates; `SBM-CALCULATION` owns deterministic calculation rules; brand APIs remain the business operation boundary.
+
+### `__BASE-FRANCHISE-API` data contract
+
+`SBM-DB-011` must define the reusable data contract only after DP-API + SBM-API stabilization. Shared models/migrations must be compatible with `__BASE-FRANCHISE-API`; franchise-specific structures remain explicit extensions/configuration and must not leak DP-only assumptions into the base. Derived APIs retain independent business configuration while shared schema evolution is propagated through controlled BASE lineage and validated migrations.
+
+
+### Base-project lineage metadata
+
+Derived project onboarding records at least `base_project`, `base_version_or_commit`, `last_inherited_version_or_commit`, `inheritance_status`, `explicit_divergences` and `last_sync_at`. This lineage belongs to project/context governance and must not be inferred from repository similarity.
+
+### Security operational data boundary
+
+`SBM-SECURITY-API` owns its PostgreSQL operational domain for Security runs, pentests/scans, tool executions, findings, evidence references, policies, mitigation/prevention plans, approvals/rejections and audit history. `SBM-CORE` may persist scheduling/job state only and must not own Security findings or Security policy.
 
 ## 19. Document boundary
 

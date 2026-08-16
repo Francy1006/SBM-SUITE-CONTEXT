@@ -34,7 +34,7 @@ Construir una capa digital transversal que permita:
 
 La estrategia cubre:
 
-- `ks-store`;
+- `KS-STORE`;
 - `sbm-comercial`;
 - `sbm-digital-api`;
 - sitios corporativos;
@@ -230,8 +230,8 @@ Cada marca puede activar de forma independiente:
 
 ## Backend de negocio
 
-- `dp-api`;
-- `sbm-api`;
+- `DP-API`;
+- `SBM-API`;
 - futuras APIs cliente.
 
 ## Multimedia
@@ -716,7 +716,7 @@ Canal comercial y de soporte.
 ## Integración
 
 - WhatsApp Business Platform;
-- `sbm-ai-assistant`;
+- `SBM-AI-ASSISTANT`;
 - `sbm-digital-api`;
 - agentes;
 - n8n.
@@ -778,7 +778,7 @@ Digital Channel
       ↓
 OpenClaw
       ↓
-sbm-ai-assistant
+SBM-AI-ASSISTANT
       ↓
 Tools / APIs / Agents
 ```
@@ -1328,7 +1328,7 @@ social.message.received
 7. Tag Manager;
 8. Lighthouse.
 
-## Etapa 2 — `ks-store`
+## Etapa 2 — `KS-STORE`
 
 1. catálogo;
 2. SEO;
@@ -1373,7 +1373,7 @@ social.message.received
 ## Urgente
 
 1. definir configuración digital por marca;
-2. preparar SEO de `ks-store`;
+2. preparar SEO de `KS-STORE`;
 3. implementar Cloudinary;
 4. implementar Analytics;
 5. implementar Search Console;
@@ -1463,10 +1463,10 @@ SBM Suite debe evolucionar hacia una plataforma digital omnicanal donde cada mar
 
 # 60. Mobile/client channel naming — 2026-08-16
 
-- `sbm-mobile`: SBM User.
-- `ks-mobile`, `pc-mobile`, `cg-mobile`: Brand/Franchise User.
-- `ks-client`, `pc-client`, `cg-client`: Client User.
-- `pc-customer`: PC Customer/patient.
-- `ks-store`, `pc-store`, `cg-store`: public/end-customer web channels.
+- `SBM-MOBILE`: SBM User.
+- `KS-MOBILE`, `PC-MOBILE`, `CG-MOBILE`: Brand/Franchise User.
+- `KS-CLIENT`, `PC-CLIENT`, `CG-CLIENT`: Client User.
+- `PC-CUSTOMER`: PC Customer/patient.
+- `KS-STORE`, `PC-STORE`, `CG-STORE`: public/end-customer web channels.
 
 Mobile targets use React Native; exact features remain brand-specific and permission-scoped.

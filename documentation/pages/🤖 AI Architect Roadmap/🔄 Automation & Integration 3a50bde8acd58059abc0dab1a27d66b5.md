@@ -32,13 +32,13 @@ Construir una capa de automatización e integración que permita:
 
 La estrategia cubre:
 
-- `sbm-api`;
-- `dp-api`;
-- `sbm-ai-assistant`;
-- `sbm-manager`;
+- `SBM-API`;
+- `DP-API`;
+- `SBM-AI-ASSISTANT`;
+- `SBM-MANAGER`;
 - `sbm-comercial`;
 - `sbm-digital-api`;
-- `ks-store`;
+- `KS-STORE`;
 - Azure DevOps;
 - Jira;
 - Notion;
@@ -126,10 +126,10 @@ Integration Layer
             ▼
 SBM Services
             │
-            ├── sbm-api
-            ├── dp-api
+            ├── SBM-API
+            ├── DP-API
             ├── sbm-digital-api
-            ├── sbm-ai-assistant
+            ├── SBM-AI-ASSISTANT
             └── Future Client APIs
 ```
 
@@ -151,7 +151,7 @@ SBM Services
 
 ---
 
-# 6. Integración entre `sbm-api` y `dp-api`
+# 6. Integración entre `SBM-API` y `DP-API`
 
 ## Objetivo
 
@@ -159,8 +159,8 @@ Separar responsabilidades sin perder coordinación entre servicios.
 
 ## Principio
 
-- `sbm-api`: procesos internos y transversales;
-- `dp-api`: API cliente de Ditaly Pasta;
+- `SBM-API`: procesos internos y transversales;
+- `DP-API`: API cliente de Ditaly Pasta;
 - no compartir lógica de negocio mediante duplicación;
 - no escribir directamente en bases ajenas;
 - integrar mediante contratos claros.
@@ -170,9 +170,9 @@ Separar responsabilidades sin perder coordinación entre servicios.
 ### Lectura
 
 ```
-sbm-manager
+SBM-MANAGER
     ↓
-dp-api
+DP-API
     ↓
 Consulta autorizada
     ↓
@@ -182,11 +182,11 @@ Respuesta
 ### Operación asíncrona
 
 ```
-dp-api
+DP-API
    ↓
 Task or Event
    ↓
-sbm-api
+SBM-API
    ↓
 Process
    ↓
@@ -427,7 +427,7 @@ Conectar agentes con herramientas y recursos de manera estandarizada.
 
 ## Rol
 
-Gateway multicanal opcional para `sbm-ai-assistant`.
+Gateway multicanal opcional para `SBM-AI-ASSISTANT`.
 
 ## Canales potenciales
 
@@ -443,14 +443,14 @@ Channels
    ↓
 OpenClaw
    ↓
-sbm-ai-assistant
+SBM-AI-ASSISTANT
    ↓
 Tools / APIs / MCP / Agents
 ```
 
 ## Principios
 
-- no reemplaza `sbm-ai-assistant`;
+- no reemplaza `SBM-AI-ASSISTANT`;
 - no accede directamente a bases de datos;
 - no controla infraestructura;
 - solo consume capacidades autorizadas;
@@ -468,7 +468,7 @@ Tools / APIs / MCP / Agents
 
 ## Estado actual
 
-Slack ya funciona como interfaz principal de `sbm-ai-assistant`.
+Slack ya funciona como interfaz principal de `SBM-AI-ASSISTANT`.
 
 ## Casos
 
@@ -539,7 +539,7 @@ Gestión de tareas de negocio y operación.
 
 - Jira API;
 - n8n;
-- `sbm-ai-assistant`;
+- `SBM-AI-ASSISTANT`;
 - webhooks.
 
 ---
@@ -572,7 +572,7 @@ Visión, roadmap y documentación general.
 
 ## Estado actual
 
-Fuente documental conectada a `sbm-ai-assistant`.
+Fuente documental conectada a `SBM-AI-ASSISTANT`.
 
 ## Casos
 
@@ -1087,7 +1087,7 @@ Cada integración debe medir:
 
 1. inventariar APIs;
 2. definir contratos;
-3. conectar `sbm-ai-assistant`;
+3. conectar `SBM-AI-ASSISTANT`;
 4. implementar autenticación servicio a servicio;
 5. agregar correlation IDs;
 6. agregar idempotencia.
@@ -1135,8 +1135,8 @@ Cada integración debe medir:
 
 ## Urgente
 
-1. contratos entre `sbm-api` y `dp-api`;
-2. integración de `sbm-ai-assistant`;
+1. contratos entre `SBM-API` y `DP-API`;
+2. integración de `SBM-AI-ASSISTANT`;
 3. autenticación;
 4. idempotencia;
 5. correlation IDs;
@@ -1222,6 +1222,6 @@ SBM Suite debe evolucionar hacia una plataforma conectada y automatizada, capaz 
 
 ---
 
-# 44. sbm-core and sbm-util boundary — 2026-08-16
+# 44. SBM-CORE and SBM-UTIL boundary — 2026-08-16
 
-`sbm-core` owns cron/schedulers, durable flags/state, Celery workers, Redis, retries/idempotency and Kafka only when event-stream semantics justify it. `sbm-util` owns deterministic reusable integrations such as email, external APIs, file utilities and authoritative exchange-rate ingestion. Financial/accounting formulas belong to `sbm-calculation`, not `sbm-core`.
+`SBM-CORE` owns cron/schedulers, durable flags/state, Celery workers, Redis, retries/idempotency and Kafka only when event-stream semantics justify it. `SBM-UTIL` owns deterministic reusable integrations such as email, external APIs, file utilities and authoritative exchange-rate ingestion. Financial/accounting formulas belong to `SBM-CALCULATION`, not `SBM-CORE`.

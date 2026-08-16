@@ -38,11 +38,11 @@
 
 | Nombre | Proveedor | Prioridad | Valor de mercado | Status | Evidencia aplicada | Costo / valor |
 | --- | --- | --- | --- | --- | --- | --- |
-| Build a Generative AI Chat App | Microsoft Applied Skills | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐☆ | Urgent | Integrar Microsoft Foundry en `sbm-ai-assistant` | **Gratis** · valor/costo excelente |
+| Build a Generative AI Chat App | Microsoft Applied Skills | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐☆ | Urgent | Integrar Microsoft Foundry en `SBM-AI-ASSISTANT` | **Gratis** · valor/costo excelente |
 | Develop an Agent with Integrated Tools | Microsoft Applied Skills | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Planned | SBM API Integration Agent con tool propia | **Gratis** · valor/costo excelente |
 | Get Started Developing Agents in Microsoft Foundry | Microsoft Applied Skills | ⭐⭐⭐⭐☆ | ⭐⭐⭐⭐☆ | Planned | Agente básico desplegado en Foundry | **Gratis** · rápida |
 | Create an AI Agent | Microsoft Applied Skills | ⭐⭐⭐⭐☆ | ⭐⭐⭐⭐☆ | Research | Agente con knowledge, tools y orquestación | **Gratis** · verificar disponibilidad vigente |
-| Secure AI Solutions in the Cloud | Microsoft Applied Skills | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Planned | Guardrails, permisos y seguridad de `sbm-ai-assistant` | **Gratis** · muy alineada |
+| Secure AI Solutions in the Cloud | Microsoft Applied Skills | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Planned | Guardrails, permisos y seguridad de `SBM-AI-ASSISTANT` | **Gratis** · muy alineada |
 | Azure AI Apps and Agents Developer Associate | Microsoft | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Planned | Solución completa con Python, Foundry y agentes | **Pagada** · precio regional al agendar |
 | Azure AI Cloud Developer Associate | Microsoft | ⭐⭐⭐⭐☆ | ⭐⭐⭐⭐⭐ | Research | Backend IA escalable sobre Azure | **Pagada** · precio regional |
 | Generative AI with Large Language Models | DeepLearning.AI + AWS | ⭐⭐⭐⭐☆ | ⭐⭐⭐⭐☆ | Planned | Informe técnico aplicado a RAG y agentes | Curso auditable gratis; certificado normalmente pagado |
@@ -96,7 +96,7 @@
 | Nombre | Proveedor | Prioridad | Valor de mercado | Status | Evidencia aplicada | Costo / valor |
 | --- | --- | --- | --- | --- | --- | --- |
 | Azure AI Fundamentals — AI-901 | Microsoft | ⭐⭐⭐⭐☆ | ⭐⭐⭐⭐☆ | Planned | Mapa de servicios Azure AI aplicado | **Pagada** · precio regional |
-| Azure AI Apps and Agents Developer Associate | Microsoft | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Planned | `sbm-ai-assistant` con Foundry, agentes y Python | **Pagada** · prioridad máxima pagada |
+| Azure AI Apps and Agents Developer Associate | Microsoft | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Planned | `SBM-AI-ASSISTANT` con Foundry, agentes y Python | **Pagada** · prioridad máxima pagada |
 | Azure AI Cloud Developer Associate | Microsoft | ⭐⭐⭐⭐☆ | ⭐⭐⭐⭐⭐ | Research | Backend y ciclo de vida de solución IA | **Pagada** |
 | Azure Fundamentals — AZ-900 | Microsoft | ⭐⭐⭐☆☆ | ⭐⭐⭐⭐☆ | Optional | Arquitectura híbrida documentada | **Pagada** · rápida, pero introductoria |
 | Azure Developer Associate | Microsoft | ⭐⭐⭐☆☆ | ⭐⭐⭐⭐⭐ | Planned | API y pipeline desplegados en Azure | **Pagada** |
@@ -349,7 +349,7 @@ Antes de pagar un examen:
 
 | Nombre | Tipo | Prioridad | Status | Fecha objetivo | Costo estimado | Evidencia |
 | --- | --- | --- | --- | --- | --- | --- |
-| Build a Generative AI Chat App | AI / Azure | ⭐⭐⭐⭐⭐ | Urgent | TBD | Gratis | `sbm-ai-assistant` |
+| Build a Generative AI Chat App | AI / Azure | ⭐⭐⭐⭐⭐ | Urgent | TBD | Gratis | `SBM-AI-ASSISTANT` |
 | Develop an Agent with Integrated Tools | Agents / Azure | ⭐⭐⭐⭐⭐ | Planned | TBD | Gratis | SBM API Agent |
 | Secure AI Solutions in the Cloud | AI Security | ⭐⭐⭐⭐⭐ | Planned | TBD | Gratis | Security Layer |
 | Intro to Machine Learning | ML | ⭐⭐⭐⭐⭐ | Planned | TBD | Gratis | Forecasting |

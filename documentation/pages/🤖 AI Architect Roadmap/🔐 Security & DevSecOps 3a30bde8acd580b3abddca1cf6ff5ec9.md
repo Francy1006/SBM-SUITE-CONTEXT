@@ -32,14 +32,14 @@ Establecer un modelo DevSecOps para SBM Suite que permita:
 
 La estrategia cubre:
 
-- `sbm-manager`;
-- `sbm-api`;
-- `dp-api`;
-- `sbm-ai-assistant`;
-- `sbm-db`;
+- `SBM-MANAGER`;
+- `SBM-API`;
+- `DP-API`;
+- `SBM-AI-ASSISTANT`;
+- `SBM-DB`;
 - `sbm-comercial`;
 - `sbm-digital-api`;
-- `ks-store`;
+- `KS-STORE`;
 - Redis;
 - Celery;
 - Kafka;
@@ -687,7 +687,7 @@ OpenClaw se considera un gateway multicanal opcional.
 - logs;
 - no acceso directo a base de datos;
 - no acceso directo a infraestructura;
-- acceso solo mediante `sbm-ai-assistant`;
+- acceso solo mediante `SBM-AI-ASSISTANT`;
 - tools restringidas;
 - revisión de configuración.
 
@@ -1054,4 +1054,16 @@ La seguridad de SBM Suite debe demostrarse mediante controles reales, reportes, 
 
 # 41. Multi-brand/application security baseline — 2026-08-16
 
-Authorization expands through SBM User → Franchise/Brand User → Client/User → Customer/User when applicable. PC patient/health data is restricted; CG documents/plans and KS device/camera access require object-level controls. `sbm-security` is the planned security control plane. SonarQube remains QA infrastructure and is not required as a permanent production service.
+Authorization expands through SBM User → Franchise/Brand User → Client/User → Customer/User when applicable. PC patient/health data is restricted; CG documents/plans and KS device/camera access require object-level controls.
+
+Security is implemented as a governed cell: `Batman Agent` leads; `Joker Agent` performs authorized Red Team/pentesting; `Queen Agent` manages the security lab/tools; Alfred/Robin/Gotham/Darth Maul/Cerberus/Hercules cover requirements, integrity, drift, threat hunting, quarantine and sanitization. `Snape Agent` remains an independent `sbm-admin` auditor outside Batman's operational chain.
+
+```text
+Development → QA PASS → named Security agents → SBM-SECURITY-API (Go/Gin/PostgreSQL)
+→ local/docker/external tools → findings/evidence/mitigation/prevention/regression controls
+→ SBM-SECURITY human review → APPROVE release | REJECT Development
+```
+
+Initial tool coverage: `Semgrep ; Trivy ; Gitleaks ; OWASP ZAP ; Nuclei ; Nmap ; OSV-Scanner ; SSL Labs ; HTTP Observatory ; SecurityHeaders ; OSV API ; VirusTotal API`. Cadence supports hourly, daily, weekly, monthly and release-triggered checks. `SBM-CORE` schedules jobs/retries only and never owns Security policy/findings/evidence. SonarQube remains QA infrastructure and is not required as a permanent production service.
+
+Relevant objectives: `OBJ-CTX-008`, `OBJ-CTX-009`, `OBJ-CTX-019`, `OBJ-CTX-040`.

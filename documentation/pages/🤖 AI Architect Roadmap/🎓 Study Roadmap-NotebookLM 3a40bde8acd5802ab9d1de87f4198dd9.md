@@ -121,13 +121,13 @@ Toda área debe aplicarse en al menos uno de estos componentes:
 
 | Proyecto | Stack | Uso formativo |
 | --- | --- | --- |
-| `sbm-manager` | Vue.js | Administración interna |
-| `sbm-api` | Django REST | API interna y arquitectura empresarial |
-| `dp-api` | Django REST | API cliente y comercio |
-| `sbm-db` | PostgreSQL + Flyway | Datos, migraciones y arquitectura |
-| `sbm-ai-assistant` | FastAPI + Qdrant + LLM | RAG, agentes y tools |
+| `SBM-MANAGER` | Vue.js | Administración interna |
+| `SBM-API` | Django REST | API interna y arquitectura empresarial |
+| `DP-API` | Django REST | API cliente y comercio |
+| `SBM-DB` | PostgreSQL + Flyway | Datos, migraciones y arquitectura |
+| `SBM-AI-ASSISTANT` | FastAPI + Qdrant + LLM | RAG, agentes y tools |
 | `sbm-comercial` | React + TypeScript | Portal comercial |
-| `ks-store` | React + TypeScript | E-commerce |
+| `KS-STORE` | React + TypeScript | E-commerce |
 | `sbm-digital-api` | NestJS | BFF y canales digitales |
 | Infraestructura | Docker, Jenkins, Azure, K3s | DevOps y Platform Engineering |
 
@@ -235,7 +235,7 @@ Preparar el entorno y medir el punto inicial.
 
 ## Objetivo
 
-Estabilizar la separación entre `sbm-api` y `dp-api`.
+Estabilizar la separación entre `SBM-API` y `DP-API`.
 
 ## Conocimientos obligatorios
 
@@ -324,10 +324,10 @@ Construir una red de seguridad para todo el desarrollo posterior.
 
 Crear suites de prueba para:
 
-- `sbm-api`;
-- `dp-api`;
-- `sbm-ai-assistant`;
-- `sbm-manager`;
+- `SBM-API`;
+- `DP-API`;
+- `SBM-AI-ASSISTANT`;
+- `SBM-MANAGER`;
 - `sbm-comercial`.
 
 ## Entregables
@@ -454,7 +454,7 @@ Comprender y aplicar los bloques básicos de una aplicación generativa.
 
 ## Proyecto aplicado
 
-Refactor de `sbm-ai-assistant`:
+Refactor de `SBM-AI-ASSISTANT`:
 
 - settings centralizados;
 - prompts separados;
@@ -810,7 +810,7 @@ Aplicar IA en una plataforma enterprise.
 
 ## Proyecto aplicado
 
-Migrar o agregar un proveedor Azure a `sbm-ai-assistant`.
+Migrar o agregar un proveedor Azure a `SBM-AI-ASSISTANT`.
 
 ## Evidencia
 
@@ -1068,9 +1068,9 @@ Desplegar y operar SBM Suite en Kubernetes.
 
 Desplegar:
 
-- `sbm-api`;
-- `dp-api`;
-- `sbm-ai-assistant`;
+- `SBM-API`;
+- `DP-API`;
+- `SBM-AI-ASSISTANT`;
 - Redis;
 - Qdrant;
 - Prometheus;
@@ -1245,14 +1245,14 @@ Construir una tienda propia con API propia y servicios desacoplados.
 
 ## Proyecto aplicado
 
-### `ks-store`
+### `KS-STORE`
 
 ```
 React Store
     ↓
 sbm-digital-api
     ↓
-dp-api
+DP-API
     ↓
 PostgreSQL
 ```
@@ -1340,7 +1340,7 @@ Diseñar:
 
 | Etapa | Credencial | Proyecto asociado |
 | --- | --- | --- |
-| 1 | Microsoft Applied Skill de GenAI | `sbm-ai-assistant` |
+| 1 | Microsoft Applied Skill de GenAI | `SBM-AI-ASSISTANT` |
 | 2 | Microsoft Applied Skill de agentes | API Integration Agent |
 | 3 | Kaggle ML | Demand Forecasting |
 | 4 | Kaggle Time Series | Forecasting |
@@ -1660,11 +1660,11 @@ No evalúes solo cantidad de horas: evalúa resultados verificables.
 
 ## Urgente
 
-1. estabilizar `sbm-api` y `dp-api`;
+1. estabilizar `SBM-API` y `DP-API`;
 2. crear pruebas;
 3. implementar pipeline de seguridad;
 4. completar primera Applied Skill de Microsoft;
-5. integrar una tool real en `sbm-ai-assistant`;
+5. integrar una tool real en `SBM-AI-ASSISTANT`;
 6. implementar Intent Router;
 7. documentar la arquitectura.
 
@@ -1686,7 +1686,7 @@ No evalúes solo cantidad de horas: evalúa resultados verificables.
 4. observabilidad;
 5. forecasting;
 6. MLOps;
-7. `ks-store`.
+7. `KS-STORE`.
 
 ## Largo plazo
 

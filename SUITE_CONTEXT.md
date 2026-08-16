@@ -27,7 +27,7 @@ Internal platform operations
 → SBM-API
 
 AI orchestration
-→ sbm-ai-assistant
+→ SBM-AI-ASSISTANT
 ```
 
 Git Markdown is the current source of truth for contexts and documentation. Qdrant is a semantic index only.
@@ -67,7 +67,7 @@ Current business scope includes products, materials, services, catalogs, pricing
 | SBM-MANAGER | SBM | Enterprise web frontend for client and platform interaction | Frontend |
 | SBM-API | SBM | Internal platform API | Platform administration |
 | SBM-DB | SBM | PostgreSQL business schemas and Flyway migrations | Data layer |
-| sbm-ai-assistant | SBM | AI orchestration, RAG, embeddings and Tools | AI-assisted workflows |
+| SBM-AI-ASSISTANT | SBM | AI orchestration, RAG, embeddings and Tools | AI-assisted workflows |
 | SBM-SUITE/context | SBM | Global context and documentation contracts | Context governance |
 
 Canonical repository paths currently evidenced here include `SBM-SUITE/dp/DP-API/`, `SBM-SUITE/sbm/SBM-API/`, `SBM-SUITE/sbm/SBM-DB/`, `SBM-SUITE/sbm/SBM-MANAGER/` and `SBM-SUITE/sbm/sbm-ai-assistant/`. Canonical runtime roots preserve those brand segments as `/suite/dp/DP-API`, `/suite/sbm/SBM-API`, `/suite/sbm/SBM-DB`, `/suite/sbm/SBM-MANAGER` and `/suite/sbm/sbm-ai-assistant`.
@@ -82,7 +82,7 @@ Canonical repository paths currently evidenced here include `SBM-SUITE/dp/DP-API
 | DP | DP-API | Historical/reference brand API | API | Real-data reference implementation; not a current production brand | active-reference |
 | SBM | SBM-API | Shared platform API | API | Authentication, users, token, franchise, roles, permissions, restrictions and internal services | active |
 | SBM | SBM-DB | Data/migration authority | database repository | PostgreSQL/DBML/Flyway authority; not runtime gateway | active |
-| SBM | sbm-ai-assistant | AI orchestrator | AI/API service | RAG, Tools, agents and context/documentation processing | active |
+| SBM | SBM-AI-ASSISTANT | AI orchestrator | AI/API service | RAG, Tools, agents and context/documentation processing | active |
 | SBM | QA infrastructure | SonarQube | QA service | Static analysis/quality gates on demand | QA-only |
 
 ### Planned applications
@@ -98,9 +98,9 @@ See `## 23. Target multi-brand application portfolio — 2026-08-16` for the com
 | Ditaly Pasta | DP-API | backend framework | Django REST Framework | N/A | Historical/reference REST API | active-reference |
 | SBM | SBM-API | backend | Python | N/A | Internal API implementation | active |
 | SBM | SBM-API | backend framework | Django REST Framework | N/A | Internal REST API | active |
-| SBM | sbm-ai-assistant | backend | Python | N/A | AI orchestration | active |
-| SBM | sbm-ai-assistant | backend framework | FastAPI | N/A | AI API | active |
-| SBM | sbm-ai-assistant | vector database | Qdrant | N/A | Semantic retrieval | active |
+| SBM | SBM-AI-ASSISTANT | backend | Python | N/A | AI orchestration | active |
+| SBM | SBM-AI-ASSISTANT | backend framework | FastAPI | N/A | AI API | active |
+| SBM | SBM-AI-ASSISTANT | vector database | Qdrant | N/A | Semantic retrieval | active |
 | SBM | SBM-DB | database | PostgreSQL | N/A | Business and platform persistence | active |
 | SBM | SBM-DB | migrations | Flyway | N/A | Versioned business-schema migrations | active |
 | SBM | Shared infrastructure | containers | Docker Compose | N/A | Local orchestration | active |
@@ -200,7 +200,7 @@ AI-assisted flow:
 ```text
 User
 → Slack / approved channel
-→ sbm-ai-assistant
+→ SBM-AI-ASSISTANT
 → explicit Tool
 → DP-API or SBM-API
 → structured result
@@ -211,7 +211,7 @@ Context flow:
 ```text
 Project Git evidence
 → context-deploy.sh
-→ sbm-ai-assistant
+→ SBM-AI-ASSISTANT
 → Qdrant sbm_contexts
 → RAG package
 → ChatGPT
@@ -257,21 +257,21 @@ Rules:
 |---|---|---|---|---|---|---|---|
 | Ditaly Pasta | DP-API | DP-API | `/api` | Authorized reference/dev users | Required | Historical/reference business operations | active-reference |
 | SBM | SBM-API | SBM-API | `/api` | Internal SBM users and services | Required | Internal platform administration | active |
-| SBM | sbm-ai-assistant | sbm-ai-assistant | `/` | Approved channels and internal integrations | Endpoint-specific | AI orchestration and context services | active |
+| SBM | SBM-AI-ASSISTANT | SBM-AI-ASSISTANT | `/` | Approved channels and internal integrations | Endpoint-specific | AI orchestration and context services | active |
 
 ## 10. Endpoint contracts
 
 | Brand | API | Method | Path | Request body | Response | Authentication | Purpose | Status |
 |---|---|---|---|---|---|---|---|---|
-| SBM | sbm-ai-assistant | GET | `/health` | none | health status | N/A | Service health check | implemented |
-| SBM | sbm-ai-assistant | POST | `/contexts/export` | context export request | ZIP export metadata | Required by environment | Generate RAG context package | implemented |
-| SBM | sbm-ai-assistant | POST | `/contexts/upgrade` | context upgrade ZIP | upgrade result and commit message | Required by environment | Validate and apply context patches | implemented |
-| SBM | sbm-ai-assistant | POST | `/confluence/pages/{id}/ingest` | ingestion request | ingestion result | Required by environment | Ingest one Confluence page | implemented |
-| SBM | sbm-ai-assistant | POST | `/confluence/ingest` | ingestion request | ingestion result | Required by environment | Ingest Confluence content | implemented |
-| SBM | sbm-ai-assistant | POST | `/confluence/sync` | synchronization request | synchronization result | Required by environment | Synchronize Confluence content | implemented |
-| SBM | sbm-ai-assistant | POST | `/slack/test` | Slack test payload | test result | Required by environment | Validate Slack integration | implemented |
-| SBM | sbm-ai-assistant | POST | `/slack/rag` | Slack RAG query | assistant response | Slack validation | Execute RAG response | implemented |
-| SBM | sbm-ai-assistant | POST | `/slack/events` | Slack event body | acknowledgement / response | Slack signature | Receive Slack events | implemented |
+| SBM | SBM-AI-ASSISTANT | GET | `/health` | none | health status | N/A | Service health check | implemented |
+| SBM | SBM-AI-ASSISTANT | POST | `/contexts/export` | context export request | ZIP export metadata | Required by environment | Generate RAG context package | implemented |
+| SBM | SBM-AI-ASSISTANT | POST | `/contexts/upgrade` | context upgrade ZIP | upgrade result and commit message | Required by environment | Validate and apply context patches | implemented |
+| SBM | SBM-AI-ASSISTANT | POST | `/confluence/pages/{id}/ingest` | ingestion request | ingestion result | Required by environment | Ingest one Confluence page | implemented |
+| SBM | SBM-AI-ASSISTANT | POST | `/confluence/ingest` | ingestion request | ingestion result | Required by environment | Ingest Confluence content | implemented |
+| SBM | SBM-AI-ASSISTANT | POST | `/confluence/sync` | synchronization request | synchronization result | Required by environment | Synchronize Confluence content | implemented |
+| SBM | SBM-AI-ASSISTANT | POST | `/slack/test` | Slack test payload | test result | Required by environment | Validate Slack integration | implemented |
+| SBM | SBM-AI-ASSISTANT | POST | `/slack/rag` | Slack RAG query | assistant response | Slack validation | Execute RAG response | implemented |
+| SBM | SBM-AI-ASSISTANT | POST | `/slack/events` | Slack event body | acknowledgement / response | Slack signature | Receive Slack events | implemented |
 | Ditaly Pasta | DP-API | GET | `/api/products` | none | product collection | Required | List products | implemented |
 | Ditaly Pasta | DP-API | POST | `/api/products` | product payload | created product | Required | Create product | implemented |
 | Ditaly Pasta | DP-API | GET | `/api/products/{id}` | none | product detail | Required | Retrieve product | planned |
@@ -310,22 +310,22 @@ Rules:
 Public/store/mobile/client/customer channels
 → responsible brand API
 
-SBM-MANAGER / sbm-mobile
+SBM-MANAGER / SBM-MOBILE
 → brand APIs for brand-owned operations
 → SBM-API for shared platform/identity operations
 
 Brand APIs
 → SBM-DB-owned schemas through application persistence
-→ sbm-calculation for reusable financial calculations
-→ sbm-core for durable async workflows
-→ sbm-util for deterministic external integrations
+→ SBM-CALCULATION for reusable financial calculations
+→ SBM-CORE for durable async workflows
+→ SBM-UTIL for deterministic external integrations
 
-sbm-ai-assistant
+SBM-AI-ASSISTANT
 → explicit Tools/agents
 → canonical APIs/services
 → never direct PostgreSQL writes
 
-sbm-control / sbm-security / sbm-ai-manager
+SBM-CONTROL / SBM-SECURITY / SBM-AI-MANAGER
 → privileged control-plane APIs
 → observe/manage their bounded domains, not business ownership
 ```
@@ -338,8 +338,8 @@ Future KS/PC/CG repositories must not be treated as canonical integrations until
 |---|---|---:|---:|---|---|
 | SBM-MANAGER | app / sbm_manager | 8080 | 8080 | sbm-network | active |
 | DP-API | dp-core | 8000 | 8081 | sbm-network | active |
-| SBM-API | `sbm-core` (legacy runtime name; rename pending) | 8000 | 8082 | sbm-network | active |
-| sbm-ai-assistant | backend | 8000 | 8000 | sbm-network | active |
+| SBM-API | `SBM-CORE` (legacy runtime name; rename pending) | 8000 | 8082 | sbm-network | active |
+| SBM-AI-ASSISTANT | backend | 8000 | 8000 | sbm-network | active |
 | Qdrant | qdrant | 6333 | 6333 | sbm-network | active |
 | PostgreSQL | postgres | 5432 | 5432 | sbm-network | active |
 | Flyway | flyway | N/A | N/A | sbm-network | active |
@@ -350,7 +350,7 @@ Do not assume current names, ports or versions without checking the project Comp
 Runtime naming constraint:
 
 - the current SBM-API runtime/service is documented as `sbm-core`;
-- the new asynchronous platform project is also named `sbm-core`;
+- the new asynchronous platform project is also named `SBM-CORE`;
 - `SBM-API-002` must rename the legacy SBM-API runtime/container/service before onboarding the new project to avoid Docker/DNS/service-name collision.
 
 
@@ -376,9 +376,9 @@ Qdrant collections:
 
 | Collection | Owner | Content | Purpose |
 |---|---|---|---|
-| `sbm_docs` | sbm-ai-assistant | Confluence documentation | Assistant knowledge |
-| `sbm_contexts` | sbm-ai-assistant | Global and project contexts | Context RAG |
-| `sbm_documentation` | sbm-ai-assistant | Git documentation pages | Documentation RAG |
+| `sbm_docs` | SBM-AI-ASSISTANT | Confluence documentation | Assistant knowledge |
+| `sbm_contexts` | SBM-AI-ASSISTANT | Global and project contexts | Context RAG |
+| `sbm_documentation` | SBM-AI-ASSISTANT | Git documentation pages | Documentation RAG |
 
 Rules:
 
@@ -392,6 +392,26 @@ Rules:
 - documentation packages use documentation chunks and updated contexts only in the separate documentation workflow.
 
 Current context evidence includes Git diff, changed files, change summary, QA results, project tree, retrieved Qdrant chunks and full current snapshots for authorized targets. Contract version and canonical project mappings are validated before export and upgrade.
+
+Planned governance integrations:
+
+```text
+Documentation Markdown (Git source of truth)
+→ SBM-UTIL / Notion API
+→ Notion page projection
+
+Objectives (Context source of truth)
+→ SBM-UTIL / Jira API
+→ Project → Epic → Issue/Task backlog
+→ future Scrum Agent management
+
+SBM_AGENT.md
+→ minimal new-chat bootstrap
+→ consumes INIT_CONTEXT.md
+```
+
+Cross-project Context tooling is planned under `SBM-SUITE/context` to propagate shared Context files/contracts/scripts to registered projects without manual per-repository editing. Standard project onboarding registers repo/local path, Context, Documentation, QA, Security, Git lifecycle and optional `__BASE-*` lineage.
+
 
 ## 16. Deployment model
 
@@ -553,7 +573,7 @@ Current rules:
 - Creation, deletion, rename or structural change requires explicit manual contract updates.
 - Main pages are documents and must maintain subpage links.
 - A synchronized no-op must not leave a previous `documentation-package.zip` reusable as a current result.
-- Notion synchronization is downstream and planned for a later stage.
+- Notion synchronization is downstream: OBJ-CTX-042 publishes controlled Git/Markdown changes to Notion while Git remains the source of truth; bidirectional sync is deferred.
 - `SBM-SUITE/context/backup/` is the single backup root for Context and Documentation workflows.
 
 ## 22. Related documentation
@@ -596,30 +616,58 @@ Specific paths must be recorded in project objectives and context references whe
 
 | Project | State | Responsibility |
 |---|---|---|
+| __BASE-FRANCHISE-API | planned | Python/Django REST canonical base for brand APIs and controlled inheritance |
+| __BASE-STORE | planned | Reusable store/web base |
+| __BASE-MOBILE | planned | Reusable React Native brand-user mobile base |
+| __BASE-CLIENT | planned | Reusable client application base |
+| __BASE-CUSTOMER | planned | Reusable customer application base |
 | SBM-MANAGER | existing | Enterprise management frontend |
 | SBM-API | existing | Auth/users/tokens/franchise/roles/permissions/restrictions/platform |
 | SBM-DB | existing | Flyway/DBML/PostgreSQL authority; no runtime data gateway |
-| sbm-ai-assistant | existing | RAG, Tools and agent orchestration |
-| sbm-core | planned | Scheduler/cron, state flags DB, Celery/Redis, retries/idempotency, optional Kafka |
-| sbm-calculation | planned | Financial/accounting calculation engine, tax/currency/commission/provision formulas |
-| sbm-util | planned | Spring Boot deterministic integrations/utilities, email/files/external APIs/exchange-rate ingestion |
-| sbm-ai-manager | planned | Agent management/control plane |
-| sbm-security | planned | Security findings/scans/evidence/approval control plane |
-| sbm-marketing | planned | Meta/social/campaign data and marketing-agent workflows |
-| sbm-content | planned | Content assets/generation and Photoshop/Blender/content-agent workflows |
-| sbm-control | planned | Suite operations control plane: status/logs/jobs/context/QA/security/deploys/backups |
-| sbm-mobile | planned | React Native channel for SBM User |
+| SBM-AI-ASSISTANT | existing | RAG, Tools and agent orchestration |
+| SBM-CORE | planned | Scheduler/cron, state flags DB, Celery/Redis, retries/idempotency, optional Kafka |
+| SBM-CALCULATION | planned | Financial/accounting calculation engine, tax/currency/commission/provision formulas |
+| SBM-UTIL | planned | Spring Boot deterministic integrations/utilities, email/files/external APIs/exchange-rate ingestion |
+| SBM-AI-MANAGER | planned | Agent management/control plane |
+| SBM-SECURITY | planned | Human Security findings/scans/evidence/risk/approval control plane |
+| SBM-SECURITY-API | planned | Go/Gin/PostgreSQL isolated Security API for tool runs, pentests, findings, evidence, policy and approvals |
+| SBM-MARKETING | planned | Node.js/TypeScript/NestJS API for social data, SEO, campaigns, scheduling, production sessions, promotion payments, equipment rental and contracted marketing services |
+| SBM-CONTENT | planned | Python/FastAPI assets, production/generation/editing workflows and creative-tool integrations |
+| SBM-CONTROL | planned | Suite operations control plane: status/logs/jobs/context/QA/security/deploys/backups |
+| SBM-MOBILE | planned | React Native channel for SBM User |
 
 ### Brand projects/channels
 
 | Brand | API | Store | Brand-user mobile | Client app | Customer app |
 |---|---|---|---|---|---|
 | DP | DP-API (reference) | N/A current | N/A current | N/A current | N/A current |
-| KS | ks-api | ks-store | ks-mobile | ks-client | store/public channels as required |
-| PC | pc-api | pc-store | pc-mobile | pc-client | pc-customer |
-| CG | cg-api | cg-store | cg-mobile | cg-client | store/public channels as required |
+| KS | KS-API ← __BASE-FRANCHISE-API | KS-STORE ← __BASE-STORE | KS-MOBILE ← __BASE-MOBILE | KS-CLIENT ← __BASE-CLIENT | store/public channels as required |
+| PC | PC-API ← __BASE-FRANCHISE-API | PC-STORE ← __BASE-STORE | PC-MOBILE ← __BASE-MOBILE | PC-CLIENT ← __BASE-CLIENT | PC-CUSTOMER ← __BASE-CUSTOMER |
+| CG | CG-API ← __BASE-FRANCHISE-API | CG-STORE ← __BASE-STORE | CG-MOBILE ← __BASE-MOBILE | CG-CLIENT ← __BASE-CLIENT | store/public channels as required |
 
 All planned project paths remain non-canonical until onboarding creates the repositories and registry entries.
+
+### Canonical naming, reusable bases and selected technologies
+
+Canonical application/project display names are uppercase. Existing repository paths, Docker identifiers and backend registry IDs remain literal operational identifiers until an explicit migration changes them.
+
+```text
+DP-API + SBM-API
+→ stabilize and validate integration (DP-ARCH-001)
+→ generate __BASE-FRANCHISE-API from validated DP-API (BASE-FRANCHISE-001)
+→ parameterize common/optional franchise capabilities
+→ register DP-API as first controlled derived API
+→ create KS-API / PC-API / CG-API from __BASE-FRANCHISE-API
+
+__BASE-STORE         → KS-STORE / PC-STORE / CG-STORE
+__BASE-MOBILE        → KS-MOBILE / PC-MOBILE / CG-MOBILE
+__BASE-CLIENT        → KS-CLIENT / PC-CLIENT / CG-CLIENT
+__BASE-CUSTOMER      → PC-CUSTOMER and future customer channels
+```
+
+Derived projects record base project/version/commit, last inherited version, inheritance status, enabled/disabled optional modules and explicit divergences. Base changes are propagated through controlled diff/adaptation with agent review, QA, Security and rollback. Yeoman is an allowed candidate for initial scaffolding/generation only; ongoing BASE→derived synchronization is owned by SBM tooling and Git/agent validation, not Yeoman.
+
+Selected planned technologies: `SBM-CALCULATION` = Python/FastAPI/pandas/scikit-learn/statsmodels; `SBM-MARKETING` = Node.js/TypeScript/NestJS; `SBM-CONTENT` = Python/FastAPI; `SBM-SECURITY-API` = Go/Gin/PostgreSQL.
 
 ## 24. Runtime responsibility boundaries
 
@@ -632,20 +680,101 @@ Shared auth/platform
 → SBM-API
 
 Async jobs/events
-→ sbm-core
+→ SBM-CORE
+
+Security domain API / evidence / approvals
+→ SBM-SECURITY-API
 
 Financial/accounting calculations
-→ sbm-calculation
+→ SBM-CALCULATION
 
 Deterministic external integrations
-→ sbm-util
+→ SBM-UTIL
 
 Agent reasoning/orchestration
-→ sbm-ai-assistant
+→ SBM-AI-ASSISTANT
 
 Operational visibility/control
-→ sbm-control / sbm-security / sbm-ai-manager
+→ SBM-CONTROL / SBM-SECURITY / SBM-AI-MANAGER
 ```
+
+
+### Named-agent and Security runtime boundaries
+
+`SBM-AI-ASSISTANT` hosts governed named agents. `SBM Agent` and `Scrum Agent` coordinate activation/dependencies; deterministic APIs/services/jobs/cron remain preferred when reasoning is unnecessary. Security is led by `Batman Agent`; Development by `Tesla Agent` with independent `Edison Agent` review; `Igor Agent` owns technical QA/DevOps/SRE; `Armstrong Agent` coordinates deploy/release. `Snape Agent` remains an independent `sbm-admin` auditor outside Batman's operational Security chain.
+
+Canonical named-agent catalog:
+
+| N° | Agent | Gobierno | Responsabilidad | Apps / fuentes |
+|---:|---|---|---|---|
+| 1 | CEO Agent | Primordial | Dirección estratégica, decisiones y autorizaciones finales. | sbm-admin ; SBM-MANAGER ; reportes |
+| 2 | SBM Agent | Primordial | Orquesta y consolida procesos, dominios, agentes y marcas. | SBM-CORE ; Control API ; SBM-MANAGER ; sbm-admin |
+| 3 | CFO Agent | CEO | Evalúa finanzas, tecnología, riesgos y autorizaciones económicas. | sbm-admin ; Finanzas ; Procurement ; reportes |
+| 4 | Snape Agent | sbm-admin | Audita independientemente al CEO y escala desviaciones. | sbm-admin ; audit logs ; reportes ; Context/Documentation |
+| 5 | Jarvis Agent | CEO | Asiste al CEO con síntesis, métricas, decisiones y seguimiento. | sbm-admin ; Galileo/read-model ; reportes |
+| 6 | Spock Agent | CFO | Analiza trade-offs, riesgos y costo/beneficio para CFO. | Finanzas ; Sherlock ; Nostradamus ; sbm-admin |
+| 7 | Scrum Agent | SBM | Coordina procesos asíncronos, prioridades, dependencias y activaciones IA. | SBM-CORE ; Control API ; Jira ; SBM-MANAGER |
+| 8 | Sherlock Agent | SBM | Investiga tecnologías, amenazas, normativa, tendencias y evidencia nueva. | Web/search ; Knowledge Base ; Context ; Documentation |
+| 9 | Nostradamus Agent | SBM | Realiza forecasting y predicciones estadísticas transversales. | Galileo/read-model ; históricos ; SBM-CORE |
+| 10 | Darwin Agent | SBM | Entrena, evalúa, fine-tunea y mejora continuamente los agentes. | SBM-AI-ASSISTANT ; eval pipelines ; Sherlock ; Nostradamus |
+| 11 | Tesla Agent | CFO + CEO | Diseña e implementa desarrollos autorizados. | Git repos ; CI ; project APIs ; SBM-CORE |
+| 12 | Edison Agent | CFO | Desafía independientemente las decisiones tecnológicas de Tesla. | Git repos ; CI ; Sherlock ; Nostradamus |
+| 13 | Igor Agent | Tesla | QA técnico, DevOps/SRE, infraestructura y troubleshooting. | CI/CD ; tests ; cloud ; observabilidad |
+| 14 | Armstrong Agent | Tesla + Robin | Coordina deploy, release, readiness y rollback. | CI/CD ; cloud deploy ; repos ; releases |
+| 15 | Batman Agent | CEO + sbm-admin | Patrulla, anticipa ataques, encuentra fallos y exige mejoras. | SBM-SECURITY-API ; SBM-SECURITY ; logs ; SBM-CORE |
+| 16 | Alfred Agent | Batman | Gestiona requerimientos de seguridad y garantiza QA/CIA. | SBM-MANAGER ; QA ; repos ; SBM-SECURITY |
+| 17 | Robin Agent | Batman | Protege integridad funcional/data, backups y coherencia documental. | Context ; Documentation ; backups ; object storage |
+| 18 | Gotham Agent | Robin + Batman | Detecta diferencias entre SBM-SUITE real, Context y Documentation. | Context ; Documentation ; repos ; service inventory |
+| 19 | Joker Agent | Batman / Control API | Ejecuta Red Team y pentesting autorizado contra SBM-SUITE. | Security lab ; pentest tools ; SBM-SECURITY-API ; logs |
+| 20 | Queen Agent | Joker / Control API | Administra ambientes, herramientas y QA técnico de Joker. | Security lab ; CI/CD ; tools/APIs |
+| 21 | Darth Maul Agent | Batman | Threat hunting y atribución de atacantes reales. | SBM-SECURITY-API ; logs ; threat intel ; Joker outputs |
+| 22 | Cerberus Agent | Batman | Trata correo y adjuntos como hostiles y controla cuarentena. | SBM-UTIL mail ; sandbox ; SBM-SECURITY-API |
+| 23 | Hercules Agent | Cerberus + MacGyver | Normaliza contenido sanitizado a formatos seguros para agentes. | SBM-UTIL ; parsers ; object storage |
+| 24 | Murphy Agent | CFO + CEO | Gestiona riesgo transversal y escenarios adversos. | Risk register ; Operations ; Finance ; Security reports |
+| 25 | Abagnale Agent | CFO + Batman | Detecta fraude, falsificación, suplantación y patrones anómalos. | Payments ; identity logs ; finance data ; Galileo |
+| 26 | L Agent | Snape + sbm-admin | Auditoría investigativa, evidencias y reconstrucción de hechos. | audit logs ; Context ; Documentation ; reports |
+| 27 | Belfort Agent | CEO | Lidera estrategia de Marketing/Sales, campañas, tendencias y métricas. | SBM-MARKETING ; Google Analytics ; Search Console ; social APIs |
+| 28 | Stratton Agent | Belfort | Mano técnica de Marketing: ambientes, integraciones, QA y desarrollos. | SBM-MARKETING ; CI/CD ; social APIs ; integrations |
+| 29 | Donnie Agent | Belfort | Ejecuta canales, redes, chatbot y atención externa. | SBM-MARKETING ; social APIs ; chatbot ; messaging |
+| 30 | DaVinci Agent | Belfort | Produce contenido creativo, visual, frontend y campañas. | Blender ; Photoshop ; frontend repos ; asset storage |
+| 31 | Medici Agent | Belfort | QA creativo, estándares, patrones, consistencia y tendencias. | asset storage ; design systems ; Sherlock |
+| 32 | WallStreet Agent | CEO | Gestiona ventas, revenue, pipeline, conversión y forecast. | CRM/Sales ; sbm-admin ; Galileo |
+| 33 | Rockefeller Agent | CFO | Controla gastos, costos, consumo y cotizaciones. | Finance ; cloud billing ; Procurement ; sbm-admin |
+| 34 | Buffett Agent | CFO | Presupuestos, proyecciones, austeridad y optimización de costos. | Finance ; pricing/cost sources ; sbm-admin |
+| 35 | Burns Agent | CFO | Normativa contable/fiscal, monedas, UF/USD y estructuras. | SII ; Accounting ; FX/UF ; sbm-admin |
+| 36 | Smithers Agent | Burns | Operación contable, facturas, respaldos y faltantes. | Accounting ; SII ; Records |
+| 37 | Frink Agent | Burns | Tecnología, integraciones, ambientes y deploys contables. | Accounting integrations ; SBM-UTIL ; CI/CD ; Tesla |
+| 38 | Midas Agent | CFO | Tesorería: caja, pagos, cobranza, conciliación y liquidez. | Finance ; bank/payment APIs ; Accounting |
+| 39 | Galileo Agent | SBM + CEO | KPIs, analytics, calidad de datos y read-model multimarcas. | Data warehouse ; Analytics ; brand data |
+| 40 | MacGyver Agent | SBM + Tesla | Integraciones, conectores, email, archivos y APIs determinísticas. | SBM-UTIL ; external APIs ; mail/files |
+| 41 | Blackbeard Agent | CFO + Mario | Procurement, proveedores, OC, logística, aduana y supply chain. | Procurement ; supplier APIs/docs ; Logistics |
+| 42 | Gringotts Agent | Mario | Gestiona inventario, stock, bodegas, equipos y activos. | Inventory/Assets ; warehouse data ; SBM-MANAGER |
+| 43 | Hermione Agent | Robin | Records, documentos, assets, versionado, retención y archivo. | Object Storage ; Records ; Documentation |
+| 44 | Sparrow Agent | Blackbeard + CEO | Investiga mercados, proveedores, rutas, riesgos y costos de importación. | Procurement/import ; research ; freight/customs |
+| 45 | Barbossa Agent | Blackbeard + CEO | Gestiona importaciones, embarques, aduana, documentos y atrasos. | Import/Logistics ; customs/freight ; Procurement |
+| 46 | Mario Agent | SBM | Gestiona operaciones, atrasos, procesos, cotizaciones, KPIs y estimaciones. | Operations ; SBM-MANAGER ; operational read-model |
+| 47 | Luigi Agent | Mario | Genera diagramas, formatos, reportes y documentación operacional. | Operations ; diagram/report tools ; Documentation |
+| 48 | Harvey Agent | CEO | Legal: contratos, riesgos jurídicos y análisis legal. | Legal docs ; contracts ; sbm-admin ; Hermione |
+| 49 | Louis Agent | CEO | Compliance, controles, obligaciones y evidencia regulatoria. | Compliance ; audit logs ; regulatory sources ; sbm-admin |
+| 50 | DP Agent | Admin DP + SBM Manager | Vela exclusivamente por los intereses de DP. | SBM-MANAGER ; sbm-admin |
+| 51 | KS Agent | Admin KS + SBM Manager | Vela exclusivamente por los intereses de KS. | SBM-MANAGER ; sbm-admin |
+| 52 | PC Agent | Admin PC + SBM Manager | Vela exclusivamente por los intereses de PC. | SBM-MANAGER ; sbm-admin |
+| 53 | CG Agent | Admin CG + SBM Manager | Vela exclusivamente por los intereses de CG. | SBM-MANAGER ; sbm-admin |
+
+Agents are capabilities, not permanently running processes. `Scrum Agent` plus the control/orchestration APIs decide activation based on process, priority and dependencies.
+
+```text
+QA PASS
+→ authorized Security agents
+→ SBM-SECURITY-API (Go/Gin/PostgreSQL)
+→ SBM-CORE only for scheduling/job execution
+→ local/docker/external Security tools
+→ findings/evidence/risk/mitigation
+→ SBM-SECURITY human review
+→ APPROVE release | REJECT Development → QA → Security
+```
+
+Brand agents (`DP Agent`, `KS Agent`, `PC Agent`, `CG Agent`) protect only their brand interests and interact through SBM Manager / `sbm-admin`, not directly with specialist internal agents.
 
 SBM-DB never becomes the query proxy for brand databases. Cross-brand analytics must be built through approved APIs/events or a dedicated read model.
 

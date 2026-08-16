@@ -48,6 +48,11 @@ SBM-SUITE/
 
 Container project roots mirror the brand hierarchy under `/suite/<brand>/<project>`, including `/suite/sbm/SBM-MANAGER` for the web frontend and `/suite/sbm/SBM-DB` for PostgreSQL/Flyway ownership.
 
+
+### Canonical naming and planned governance
+
+Canonical application/project display names use uppercase; existing filesystem paths and backend registry identifiers remain unchanged unless a dedicated migration renames them. `OBJ-CTX-037` repairs first-push upstream handling; `OBJ-CTX-038` introduces Git Flow; `OBJ-CTX-039` governs controlled `__BASE-*` lineage; `OBJ-CTX-040` creates `SBM-SECURITY-API`; `OBJ-CTX-041` accepts workflow-prefixed upgrade ZIP suffixes; `OBJ-CTX-042` publishes Documentation to Notion; `OBJ-CTX-043` synchronizes Objectives to Jira; `OBJ-CTX-044` standardizes Agent↔API/Tool contracts. `DP-ARCH-001` must complete before `BASE-FRANCHISE-001` generates `__BASE-FRANCHISE-API` from the validated DP-API reference.
+
 ## Requirements
 
 - Git working tree access to the current suite.
@@ -128,9 +133,11 @@ The workflows remain manually initiated. Objective branch preparation/finalizati
 
 ## Target multi-brand portfolio
 
-The current repository governs an expanding suite. Ditaly Pasta/DP remains the historical real-data reference implementation. KS, PC and CG are production-target brands. Planned shared projects include `sbm-core`, `sbm-calculation`, `sbm-util`, `sbm-ai-manager`, `sbm-security`, `sbm-marketing`, `sbm-content`, `sbm-control` and `sbm-mobile`; planned brand channels are listed in `PROJECT_CONTEXT.md` and `SUITE_CONTEXT.md`.
+The current repository governs an expanding suite. Ditaly Pasta/DP remains the historical real-data reference implementation. KS, PC and CG are production-target brands. Planned shared projects include `SBM-CORE`, `SBM-CALCULATION`, `SBM-UTIL`, `SBM-AI-MANAGER`, `SBM-SECURITY`, `SBM-SECURITY-API`, `SBM-MARKETING`, `SBM-CONTENT`, `SBM-CONTROL` and `SBM-MOBILE`. Reusable bases are `__BASE-FRANCHISE-API`, `__BASE-STORE`, `__BASE-MOBILE`, `__BASE-CLIENT` and `__BASE-CUSTOMER`; derived brand channels are listed in `PROJECT_CONTEXT.md` and `SUITE_CONTEXT.md`.
 
 Planned repositories are documentation/backlog targets only until onboarding creates a real repository and canonical Project Registry entry. Database changes listed in global objectives remain pending until implemented and evidenced in SBM-DB through Flyway/DBML/PostgreSQL.
+
+Planned governance also includes `SBM_AGENT.md` as the minimal clean-chat bootstrap over `INIT_CONTEXT.md`, transversal Context/script propagation from `SBM-SUITE/context`, standardized project onboarding, Git→Notion Documentation publication and Context Objective→Jira backlog synchronization.
 
 ## Related documentation
 

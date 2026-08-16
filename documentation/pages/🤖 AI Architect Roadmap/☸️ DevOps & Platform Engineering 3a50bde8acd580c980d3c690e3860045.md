@@ -4,7 +4,7 @@
 >
 > **Purpose:**
 >
-> Define the validated DevOps and Platform Engineering operating model for SBM Suite, including the lifecycle-aware context, QA and final documentation workflows used by `dp-api`.
+> Define the validated DevOps and Platform Engineering operating model for SBM Suite, including the lifecycle-aware context, QA and final documentation workflows used by `DP-API`.
 >
 > **Source of truth:**
 >
@@ -14,7 +14,7 @@
 
 SBM Suite uses repository-based automation to manage explicit objective lifecycle phases, collect implementation and QA evidence, retrieve context and documentation from separate Qdrant collections, and apply reviewed upgrades through separate context and documentation workflows.
 
-For `dp-api`, the `DP-QA-001` closure establishes a pre-development context cycle, an implementation-progress cycle, a validated closure cycle and a final documentation cycle.
+For `DP-API`, the `DP-QA-001` closure establishes a pre-development context cycle, an implementation-progress cycle, a validated closure cycle and a final documentation cycle.
 
 ## 2. Scope
 
@@ -68,7 +68,7 @@ Current workflow behavior includes:
 - `objective-git-finalize.sh` verifies the completed objective and exact objective branch before any Git mutation, preflights all changed repositories and omits repositories with no changes;
 - final documentation deployment only after successful QA and context closure.
 
-The current documentation deployment completed for `dp-api`, indexed `28` documentation sources and `3390` chunks in `sbm_documentation`, and reported no errors.
+The current documentation deployment completed for `DP-API`, indexed `28` documentation sources and `3390` chunks in `sbm_documentation`, and reported no errors.
 
 Executed QA evidence generated on `2026-08-07` records `65` collected and passed tests, `0` failures, `88%` total configured pytest coverage, successful `coverage.xml` generation, SonarScanner exit code `0`, `ANALYSIS SUCCESSFUL`, `EXECUTION SUCCESS`, server-side Quality Gate `OK` and `40` indexed Python files.
 
@@ -112,11 +112,11 @@ Objective assignment
 
 | Component | Project | Responsibility | Technology | Runtime | Owner | Status |
 |---|---|---|---|---|---|---|
-| Context deploy | `DP-API` / `sbm-ai-assistant` | Validate the published contract and package explicitly phased context evidence | Bash, Python, FastAPI, Qdrant, ZIP | Docker | SBM Suite | active |
-| Context upgrade | `DP-API` / `sbm-ai-assistant` | Preflight and apply authorized lifecycle-aware context section updates | Bash, Python, FastAPI | Docker | SBM Suite | active |
+| Context deploy | `DP-API` / `SBM-AI-ASSISTANT` | Validate the published contract and package explicitly phased context evidence | Bash, Python, FastAPI, Qdrant, ZIP | Docker | SBM Suite | active |
+| Context upgrade | `DP-API` / `SBM-AI-ASSISTANT` | Preflight and apply authorized lifecycle-aware context section updates | Bash, Python, FastAPI | Docker | SBM Suite | active |
 | QA evidence workflow | `DP-API` | Run configured pytest, coverage and SonarScanner checks and persist bounded evidence | Bash, pytest, pytest-cov, SonarScanner | Docker | DP-API | active |
-| Documentation deploy | `DP-API` / `sbm-ai-assistant` | Index documentation and build a final-state documentation evidence package after closure | Bash, Python, FastAPI, Qdrant, ZIP | Docker | SBM Suite | active |
-| Documentation upgrade | `DP-API` / `sbm-ai-assistant` | Validate and replace complete authorized Markdown files | Bash, Python, FastAPI | Docker | SBM Suite | active |
+| Documentation deploy | `DP-API` / `SBM-AI-ASSISTANT` | Index documentation and build a final-state documentation evidence package after closure | Bash, Python, FastAPI, Qdrant, ZIP | Docker | SBM Suite | active |
+| Documentation upgrade | `DP-API` / `SBM-AI-ASSISTANT` | Validate and replace complete authorized Markdown files | Bash, Python, FastAPI | Docker | SBM Suite | active |
 | Context collection | Qdrant | Store active context chunks | `sbm_contexts` | Docker | SBM Suite | active |
 | Documentation collection | Qdrant | Store active documentation chunks | `sbm_documentation` | Docker | SBM Suite | active |
 
@@ -140,8 +140,8 @@ Objective assignment
 | Service | Project | Container | Internal port | Host port | Network | Health check | Status |
 |---|---|---|---:|---:|---|---|---|
 | DP-API | `DP-API` | api | N/A | N/A | Docker Compose network | Configured QA and application checks | active |
-| Documentation backend | `sbm-ai-assistant` | backend | N/A | N/A | Docker Compose network | Backend endpoint validation | active |
-| Qdrant | `sbm-ai-assistant` | qdrant | N/A | N/A | Docker Compose network | Collection access | active |
+| Documentation backend | `SBM-AI-ASSISTANT` | backend | N/A | N/A | Docker Compose network | Backend endpoint validation | active |
+| Qdrant | `SBM-AI-ASSISTANT` | qdrant | N/A | N/A | Docker Compose network | Collection access | active |
 | PostgreSQL | `SBM-DB` | postgres | 5432 | 5432 | SBM network | Container health check | active |
 
 Exact DP-API, backend and Qdrant ports are not established by the supplied package and remain `N/A` here.
@@ -236,7 +236,7 @@ Secret values, credentials and `.env` files remain outside documentation and gen
 
 Validated documentation deployment evidence:
 
-- project: `dp-api`;
+- project: `DP-API`;
 - workflow: `documentation-deploy`;
 - status: `completed`;
 - indexed documentation sources: `28`;
@@ -285,7 +285,7 @@ The documentation upgrade validator additionally requires exact metadata labels,
 
 Este objetivo permanece active y representa una ejecución en curso. Su activación no acredita todavía implementación completada, ejecución QA exitosa ni cambios de runtime.
 
-- Complete and validate `SBM-MANAGER` lifecycle integration across context and documentation workflows, QA/SonarQube evidence, and the canonical `sbm-ai-assistant` project contract before promoting it to current-state documentation.
+- Complete and validate `SBM-MANAGER` lifecycle integration across context and documentation workflows, QA/SonarQube evidence, and the canonical `SBM-AI-ASSISTANT` project contract before promoting it to current-state documentation.
 - Implement asynchronous workflow orchestration when approved.
 - Add downstream Notion synchronization without changing Git ownership.
 - Expand observability for indexing, retrieval, validation, backup and rollback.
@@ -314,4 +314,20 @@ This page defines the current DevOps, QA evidence and context/documentation work
 
 ## 16. New platform responsibilities — 2026-08-16
 
-`sbm-core` becomes the planned async/runtime workflow platform; `sbm-control` becomes the operational control plane; `sbm-security` becomes the security-process UI. Kafka must not be deployed by default when Celery/Redis task semantics are sufficient. SonarQube remains an explicit QA/static-analysis dependency, not permanent production runtime.
+`SBM-CORE` becomes the planned async/runtime workflow platform; `SBM-CONTROL` becomes the operational control plane; `SBM-SECURITY` becomes the human Security-process UI; `SBM-SECURITY-API` becomes the isolated Go/Gin/PostgreSQL Security backend. Kafka must not be deployed by default when Celery/Redis task semantics are sufficient. SonarQube remains an explicit QA/static-analysis dependency, not permanent production runtime.
+
+Current Git finalization remains guarded by `objective-git-finalize.sh`; `OBJ-CTX-037` must add first-publication handling with `git push --set-upstream origin <objective-branch>` when no upstream exists. `OBJ-CTX-038` then introduces Git Flow as the target transversal lifecycle (`main`, `develop`, `feature`, `bugfix`, `hotfix`, `release`) with Objective→branch association and QA/Security gates.
+
+`OBJ-CTX-041` removes manual download renaming: Context upgrade input must resolve exactly one `input/context-upgrade*.zip`, and Documentation upgrade input exactly one `documentation/input/documentation-upgrade*.zip`. Suffixes such as `context-upgrade(32).zip` are valid physical filenames; manifest/workflow validation remains canonical and ambiguous/multiple candidates remain blocked.
+
+`OBJ-CTX-039` introduces reusable bases:
+
+```text
+__BASE-FRANCHISE-API → DP-API / KS-API / PC-API / CG-API
+__BASE-STORE         → brand stores
+__BASE-MOBILE        → brand-user mobile apps
+__BASE-CLIENT        → client apps
+__BASE-CUSTOMER      → customer apps
+```
+
+Derived projects track base commit/version, last inherited version, sync status and explicit divergences. Base changes propagate via controlled diff/adaptation and pass implementation review, QA and Security before merge; ad-hoc copy is not synchronization.

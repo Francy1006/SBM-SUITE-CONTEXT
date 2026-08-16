@@ -833,7 +833,7 @@ Utilizar Azure como plataforma empresarial principal.
 - evaluación;
 - seguridad;
 - despliegue;
-- integración con `sbm-ai-assistant`.
+- integración con `SBM-AI-ASSISTANT`.
 
 ## Formación prioritaria
 

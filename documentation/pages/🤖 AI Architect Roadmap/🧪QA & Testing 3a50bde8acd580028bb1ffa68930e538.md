@@ -31,14 +31,14 @@ Crear un estándar de QA aplicable a todos los proyectos de SBM Suite para:
 
 El estándar QA debe cubrir:
 
-- `sbm-manager`;
-- `sbm-api`;
-- `dp-api`;
-- `sbm-ai-assistant`;
-- `sbm-db`;
+- `SBM-MANAGER`;
+- `SBM-API`;
+- `DP-API`;
+- `SBM-AI-ASSISTANT`;
+- `SBM-DB`;
 - `sbm-comercial`;
 - `sbm-digital-api`;
-- `ks-store`;
+- `KS-STORE`;
 - integraciones externas;
 - Redis y Celery;
 - Kafka;
@@ -147,7 +147,7 @@ El estándar QA debe cubrir:
 
 # 6. Estrategia por proyecto
 
-## `sbm-api`
+## `SBM-API`
 
 Debe incluir:
 
@@ -163,7 +163,7 @@ Debe incluir:
 - pruebas de concurrencia;
 - pruebas de integración con servicios externos.
 
-## `dp-api`
+## `DP-API`
 
 Debe incluir:
 
@@ -175,11 +175,11 @@ Debe incluir:
 - pruebas de proveedores;
 - pruebas de sucursales;
 - pruebas de permisos por cliente y marca;
-- pruebas de integración con `sbm-api`;
+- pruebas de integración con `SBM-API`;
 - pruebas de contratos OpenAPI;
 - pruebas de regresión.
 
-## `sbm-manager`
+## `SBM-MANAGER`
 
 Debe incluir:
 
@@ -206,7 +206,7 @@ Debe incluir:
 - pruebas de accesibilidad;
 - pruebas de SEO técnico cuando corresponda.
 
-## `sbm-ai-assistant`
+## `SBM-AI-ASSISTANT`
 
 Debe incluir:
 
@@ -224,7 +224,7 @@ Debe incluir:
 - pruebas de seguridad LLM;
 - pruebas de evaluación automática.
 
-## `sbm-db`
+## `SBM-DB`
 
 Debe incluir:
 
@@ -455,13 +455,13 @@ Evitar que cambios en un servicio rompan consumidores.
 ## Relaciones prioritarias
 
 ```
-sbm-manager → sbm-api
-sbm-manager → dp-api
-sbm-ai-assistant → sbm-api
-sbm-ai-assistant → dp-api
-sbm-digital-api → sbm-api
+SBM-MANAGER → SBM-API
+SBM-MANAGER → DP-API
+SBM-AI-ASSISTANT → SBM-API
+SBM-AI-ASSISTANT → DP-API
+sbm-digital-api → SBM-API
 sbm-digital-api → APIs cliente
-ks-store → dp-api
+KS-STORE → DP-API
 ```
 
 ## Herramientas
@@ -1110,9 +1110,9 @@ Cada repositorio debe documentar:
 
 ## Etapa 1 — Base inmediata
 
-1. configurar pytest en `sbm-api`;
-2. configurar pytest en `dp-api`;
-3. configurar Vitest en `sbm-manager`;
+1. configurar pytest en `SBM-API`;
+2. configurar pytest en `DP-API`;
+3. configurar Vitest en `SBM-MANAGER`;
 4. agregar cobertura;
 5. implementar factories;
 6. probar `product`;

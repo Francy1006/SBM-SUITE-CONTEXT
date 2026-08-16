@@ -373,7 +373,7 @@ Documentación empresarial y operativa.
 
 ## Integración actual
 
-`sbm-ai-assistant` consume contenido desde Confluence para RAG.
+`SBM-AI-ASSISTANT` consume contenido desde Confluence para RAG.
 
 ## Requisitos
 
@@ -624,7 +624,7 @@ Cada documento debe indicar:
 
 ```
 Domain: AI
-System: sbm-ai-assistant
+System: SBM-AI-ASSISTANT
 Owner: Technology
 Status: Active
 Version: 2.1

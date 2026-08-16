@@ -1351,4 +1351,9 @@ SBM Suite debe evolucionar hacia una Content Factory multimarcas capaz de produc
 
 # 49. Dedicated SBM applications — 2026-08-16
 
-`sbm-marketing` will own campaign/social data, Meta API ingestion, metrics and marketing workflows with `marketing-agent`. `sbm-content` will own assets and content-production workflows with `content-agent`, including controlled integrations with Photoshop, Blender and other creative tools. `sbm-ai-assistant` orchestrates reasoning; domain applications retain persistent state and permissions.
+| Project | Type | Selected technology | Responsibility |
+|---|---|---|---|
+| SBM-MARKETING | API | Node.js / TypeScript / NestJS | Social data, SEO, campaigns, calendars, photo/video sessions, promotion payments, equipment rentals, contracted services/providers and metrics |
+| SBM-CONTENT | API/service | Python / FastAPI | Asset production, generation, editing and creative-tool workflows |
+
+Named agents: `Belfort Agent` leads Marketing/Sales strategy; `Stratton Agent` manages MarTech/integrations/QA; `Donnie Agent` operates channels/chatbot/publications; `DaVinci Agent` generates creative work; `Medici Agent` performs independent creative QA/standards/trend review. `SBM-MARKETING` and `SBM-CONTENT` remain deterministic domain services; agents reason/orchestrate through authorized APIs rather than owning persistence directly.

@@ -169,12 +169,12 @@ Senior engineer who can design and integrate AI into real systems
 
 | Proyecto | Qué demuestra | Prioridad |
 | --- | --- | --- |
-| `sbm-ai-assistant` | RAG, agentes, tools, Slack, Qdrant | ⭐⭐⭐⭐⭐ |
-| `dp-api` | Django REST, arquitectura cliente | ⭐⭐⭐⭐⭐ |
-| `sbm-api` | Arquitectura empresarial interna | ⭐⭐⭐⭐⭐ |
-| `sbm-manager` | Frontend administrativo | ⭐⭐⭐⭐☆ |
+| `SBM-AI-ASSISTANT` | RAG, agentes, tools, Slack, Qdrant | ⭐⭐⭐⭐⭐ |
+| `DP-API` | Django REST, arquitectura cliente | ⭐⭐⭐⭐⭐ |
+| `SBM-API` | Arquitectura empresarial interna | ⭐⭐⭐⭐⭐ |
+| `SBM-MANAGER` | Frontend administrativo | ⭐⭐⭐⭐☆ |
 | `sbm-comercial` | React y producto comercial | ⭐⭐⭐⭐☆ |
-| `ks-store` | E-commerce, pagos y SEO | ⭐⭐⭐⭐⭐ |
+| `KS-STORE` | E-commerce, pagos y SEO | ⭐⭐⭐⭐⭐ |
 | Plataforma K3s | Kubernetes y observabilidad | ⭐⭐⭐⭐⭐ |
 | Demand Forecasting | ML y MLOps | ⭐⭐⭐⭐⭐ |
 
@@ -253,9 +253,9 @@ Convertir GitHub en una landing técnica.
 
 ## Pinned repositories
 
-1. `sbm-ai-assistant`;
-2. `dp-api`;
-3. `sbm-api`;
+1. `SBM-AI-ASSISTANT`;
+2. `DP-API`;
+3. `SBM-API`;
 4. `sbm-comercial`;
 5. proyecto ML;
 6. infraestructura Kubernetes.

@@ -152,7 +152,7 @@ These domains remain independent even when they share common fields.
 | Catalog | BOM/recipe/commercial composition joining item components and quantities | Brand API | existing concept; richer composition planned |
 | Ticket | Unit sold/reported/scheduled by the commercial channel | Brand API | existing concept; semantics generalized |
 | Package | Mandatory packaging/logistics classification for every item type, including logical Service package | Brand API / SBM-DB | existing concepts require canonicalization |
-| Price | Versioned monetary state derived from base amount, rules, tax and currency | Brand API / sbm-calculation | existing + planned extension |
+| Price | Versioned monetary state derived from base amount, rules, tax and currency | Brand API / SBM-CALCULATION | existing + planned extension |
 | Provider | Supplier/service provider | Brand API | existing |
 | Branch | Physical/operational location | Brand API | existing |
 | Agreement | Commercial relationship/conditions | Brand API | existing |
@@ -197,7 +197,7 @@ Internal platform operation:
 
 ```text
 SBM User
-→ SBM Manager / sbm-mobile / approved internal channel
+→ SBM Manager / SBM-MOBILE / approved internal channel
 → SBM-API
 → identity, provisioning, authorization or global configuration
 ```
@@ -215,7 +215,7 @@ AI-assisted operation:
 
 ```text
 Authorized caller
-→ sbm-ai-assistant
+→ SBM-AI-ASSISTANT
 → explicit Tool / specialized agent
 → responsible API
 → validated result
@@ -242,9 +242,9 @@ A Price target may include:
 
 Rules:
 
-- `sbm-calculation` is the planned reusable financial/accounting calculation engine;
+- `SBM-CALCULATION` is the planned reusable financial/accounting calculation engine;
 - brand APIs remain responsible for the business operation invoking those calculations;
-- `sbm-util` may ingest authoritative exchange-rate observations such as USD and future EUR/UF;
+- `SBM-UTIL` may ingest authoritative exchange-rate observations such as USD and future EUR/UF;
 - formula evaluation must be deterministic and monetary values use exact decimal handling;
 - price/currency history must remain auditable; converted values are not silently overwritten;
 - estimated/provisioned costs must remain distinguishable from actual paid/reconciled costs;
@@ -405,7 +405,7 @@ Ticket
 
 Import services are instantiated per acquisition/unit even when provider/value is similar, so actual and provisioned costs remain traceable. Examples include shipping line, forwarder, customs, deconsolidation, insurance, land freight, warehouse, cranes, warranty service and warranty-replacement provision.
 
-`sbm-util` is planned to retrieve/store authoritative exchange-rate observations (initially USD; future EUR/UF or others), while `sbm-calculation` applies deterministic financial formulas. Kiseki equipment rental, contracts, technical service and spare-parts inventory remain long-term scope and are not part of the immediate sales implementation.
+`SBM-UTIL` is planned to retrieve/store authoritative exchange-rate observations (initially USD; future EUR/UF or others), while `SBM-CALCULATION` applies deterministic financial formulas. Kiseki equipment rental, contracts, technical service and spare-parts inventory remain long-term scope and are not part of the immediate sales implementation.
 
 ### PortalConvenios.cl
 
@@ -421,7 +421,7 @@ Operational examples:
 - waiting-list referral: Ticket represents the referral/appointment and is confirmed through QR/customer interaction;
 - subscription may charge the greater of a fixed monthly amount or the configured per-treated-patient amount.
 
-`pc-client` serves PC Client users; `pc-customer` serves the downstream customer/patient with QR, profile, scheduling and confirmation.
+`PC-CLIENT` serves PC Client users; `PC-CUSTOMER` serves the downstream customer/patient with QR, profile, scheduling and confirmation.
 
 ### Consorcio y Gestión
 
@@ -433,7 +433,7 @@ Required business capabilities include:
 - external-provider services and calendar/stage management;
 - client SII/basic business data and documentation;
 - plans/drawings, missing-document dependencies and status tracking;
-- `cg-client` for client-visible progress, documents, dependencies, general information and FAQ;
+- `CG-CLIENT` for client-visible progress, documents, dependencies, general information and FAQ;
 - SBM-MANAGER plan module with drag/drop editing, export and OCR/AI-assisted digitization from PDF/PNG through authorized services.
 
 ## 21. Pricing, package and accounting baseline
@@ -456,13 +456,23 @@ Price must preserve currency and exchange-rate history instead of silently overw
 
 | Channel | Primary audience |
 |---|---|
-| `sbm-manager` / `sbm-mobile` | SBM User and approved administration |
-| `ks-mobile` / `pc-mobile` / `cg-mobile` | Brand/Franchise User |
-| `ks-client` / `pc-client` / `cg-client` | Client User |
-| `pc-customer` | PC Customer/patient |
-| `ks-store` / `pc-store` / `cg-store` | Public/end-customer commercial channel |
+| `SBM-MANAGER` / `SBM-MOBILE` | SBM User and approved administration |
+| `KS-MOBILE` / `PC-MOBILE` / `CG-MOBILE` | Brand/Franchise User |
+| `KS-CLIENT` / `PC-CLIENT` / `CG-CLIENT` | Client User |
+| `PC-CUSTOMER` | PC Customer/patient |
+| `KS-STORE` / `PC-STORE` / `CG-STORE` | Public/end-customer commercial channel |
 
 The exact feature set is brand-owned; common naming does not imply identical business behavior.
+
+### Marketing and agent-operated business processes
+
+`SBM-MARKETING` is a business operations API, not only a social connector. It owns campaign/social data, SEO, calendars, photo/video production sessions, paid-promotion operations, marketing equipment rental, contracted marketing services/providers, costs and metrics.
+
+- `Belfort Agent` leads Marketing/Sales strategy; `Stratton Agent` manages MarTech/integrations/QA; `Donnie Agent` executes channels/chatbot/publications.
+- `DaVinci Agent` produces creative assets; `Medici Agent` independently reviews quality, standards and trends.
+- `WallStreet Agent` owns sales/revenue/pipeline; finance/accounting/treasury remain separate specialized domains.
+- `DP Agent`, `KS Agent`, `PC Agent` and `CG Agent` represent only their brand and communicate through SBM Manager / `sbm-admin`.
+- Deterministic APIs/services/jobs are preferred; agents activate only for reasoning, ambiguity or high-value analysis.
 
 ## 23. Document boundary
 

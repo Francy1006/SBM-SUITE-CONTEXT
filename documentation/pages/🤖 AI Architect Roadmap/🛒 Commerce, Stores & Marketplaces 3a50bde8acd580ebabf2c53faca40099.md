@@ -37,11 +37,11 @@ Construir una capa comercial transversal que permita:
 
 La estrategia cubre:
 
-- `ks-store`;
+- `KS-STORE`;
 - `sbm-comercial`;
 - `sbm-digital-api`;
-- `dp-api`;
-- `sbm-api`;
+- `DP-API`;
+- `SBM-API`;
 - futuras APIs cliente;
 - Mercado Libre;
 - tiendas web;
@@ -101,7 +101,7 @@ La estrategia cubre:
     
 10. **Progressive implementation**
     
-    `ks-store` será el primer caso real antes de generalizar la plataforma.
+    `KS-STORE` será el primer caso real antes de generalizar la plataforma.
     
 
 ---
@@ -132,19 +132,19 @@ sbm-digital-api
         ▼
 Client API
         │
-        └── dp-api
+        └── DP-API
         │
         ▼
 Internal Platform
         │
-        └── sbm-api
+        └── SBM-API
 ```
 
 ---
 
 # 5. Modelo de aplicaciones
 
-## `ks-store`
+## `KS-STORE`
 
 Primera tienda pública de marca.
 
@@ -161,7 +161,7 @@ Responsabilidades:
 - pedidos;
 - clientes;
 - multimedia;
-- integración con `dp-api`.
+- integración con `DP-API`.
 
 ## `sbm-comercial`
 
@@ -196,7 +196,7 @@ Responsabilidades:
 - integrar multimedia;
 - conectar marketplaces.
 
-## `dp-api`
+## `DP-API`
 
 Primera API cliente.
 
@@ -214,7 +214,7 @@ Responsabilidades:
 - tickets;
 - datos públicos y de negocio de Ditaly Pasta.
 
-## `sbm-api`
+## `SBM-API`
 
 API interna transversal.
 
@@ -970,7 +970,7 @@ No implementar modelos complejos sin datos suficientes.
 ## Integración
 
 - WhatsApp Business Platform;
-- `sbm-ai-assistant`;
+- `SBM-AI-ASSISTANT`;
 - `sbm-digital-api`;
 - agentes comerciales;
 - aprobación humana.
@@ -1260,7 +1260,7 @@ Los agentes consumen APIs y tools autorizadas; no escriben directamente en base 
 7. APIs;
 8. QA.
 
-## Etapa 2 — `ks-store`
+## Etapa 2 — `KS-STORE`
 
 1. diseño;
 2. catálogo público;
@@ -1319,7 +1319,7 @@ Los agentes consumen APIs y tools autorizadas; no escriben directamente en base 
 
 1. estabilizar `product`;
 2. estabilizar `material`;
-3. completar separación `sbm-api` / `dp-api`;
+3. completar separación `SBM-API` / `DP-API`;
 4. definir configuración de marca;
 5. documentar contratos;
 6. QA;
@@ -1327,7 +1327,7 @@ Los agentes consumen APIs y tools autorizadas; no escriben directamente en base 
 
 ## Corto plazo
 
-1. `ks-store`;
+1. `KS-STORE`;
 2. catálogo público;
 3. SEO;
 4. multimedia;
@@ -1416,7 +1416,7 @@ SBM Suite debe evolucionar hacia una plataforma comercial omnicanal donde cada m
 
 # 49. Brand commerce channels — 2026-08-16
 
-Production-target stores are `ks-store`, `pc-store` and `cg-store`, implemented as brand public Ticket vitrines/channels consuming their canonical APIs. Catalog is the internal BOM/composition; Ticket is the sellable/reportable/scheduled commercial unit. Ditaly remains the historical reference and does not require a new production store.
+Production-target stores are `KS-STORE`, `PC-STORE` and `CG-STORE`, implemented as brand public Ticket vitrines/channels consuming their canonical APIs. Catalog is the internal BOM/composition; Ticket is the sellable/reportable/scheduled commercial unit. Ditaly remains the historical reference and does not require a new production store.
 
 ---
 

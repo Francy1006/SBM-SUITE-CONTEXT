@@ -123,8 +123,8 @@
 | TypeScript | Mobile Development Language | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | In Progress |
 | Android Studio | Mobile IDE | ⭐⭐⭐⭐☆ | ⭐⭐⭐⭐⭐ | Advanced |
 | Android SDK | Native Android Platform | ⭐⭐⭐⭐☆ | ⭐⭐⭐⭐⭐ | Advanced |
-| sbm-mobile | Internal SBM Mobile Application | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Urgent |
-| ks-mobile | Client Mobile Application by Brand | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Urgent |
+| SBM-MOBILE | Internal SBM Mobile Application | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Urgent |
+| KS-MOBILE | Client Mobile Application by Brand | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Urgent |
 | React Native  | Cross-Platform Mobile Framework  | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Urgent |
 | Expo Go | Mobile Development Preview App | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Urgent |
 
@@ -979,4 +979,21 @@ Las tecnologías marcadas como **Research** u **Optional** no bloquean el roadma
 
 # SBM polyglot target — 2026-08-16
 
-The target suite intentionally remains polyglot where responsibility justifies it: Vue 3 (`SBM-MANAGER`), React stores, React Native mobile, Python/FastAPI/Django brand/AI services as appropriate, Java Spring Boot candidate/target for `sbm-util`, and .NET/Blazor candidate for `sbm-ai-manager`. Technology diversity is acceptable only when services remain API-decoupled and do not duplicate business ownership.
+Technology diversity is accepted only when responsibility justifies it and services remain API-decoupled. Selected/established targets:
+
+| Project/family | Technology |
+|---|---|
+| SBM-MANAGER | Vue.js 3 |
+| SBM-API | Python / Django REST |
+| __BASE-FRANCHISE-API and derived brand APIs | Python / Django REST |
+| SBM-AI-ASSISTANT | Python / FastAPI / Qdrant |
+| SBM-CALCULATION | Python / FastAPI / pandas / scikit-learn / statsmodels |
+| SBM-UTIL | Java / Spring Boot |
+| SBM-MARKETING | Node.js / TypeScript / NestJS |
+| SBM-CONTENT | Python / FastAPI |
+| SBM-SECURITY-API | Go / Gin / PostgreSQL |
+| SBM-MOBILE / __BASE-MOBILE | React Native |
+| __BASE-STORE | React |
+| SBM-AI-MANAGER | .NET / Blazor candidate until activation validates it |
+
+Portfolio variety is a consequence of bounded service responsibility, not a reason to split business ownership or introduce a technology without need.

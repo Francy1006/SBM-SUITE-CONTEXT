@@ -16,16 +16,16 @@
 
 Actualmente el trabajo se concentra en:
 
-- separación de responsabilidades entre `sbm-api` y `dp-api`;
-- migración de endpoints y procesos públicos desde `sbm-api` hacia `dp-api`;
+- separación de responsabilidades entre `SBM-API` y `DP-API`;
+- migración de endpoints y procesos públicos desde `SBM-API` hacia `DP-API`;
 - eliminación futura de duplicaciones;
 - estabilización de los módulos `product` y `material`;
-- integración funcional de `dp-api` con `sbm-manager`;
+- integración funcional de `DP-API` con `SBM-MANAGER`;
 - preparación del estándar transversal de QA y seguridad;
 - documentación técnica por repositorio;
 - planificación de migración hacia Azure DevOps.
 
-## Estado de `sbm-ai-assistant`
+## Estado de `SBM-AI-ASSISTANT`
 
 Actualmente incluye:
 
@@ -39,8 +39,8 @@ Actualmente incluye:
 
 La siguiente etapa es conectar el asistente con:
 
-1. `sbm-api`;
-2. `dp-api`.
+1. `SBM-API`;
+2. `DP-API`.
 
 ---
 
@@ -82,7 +82,7 @@ Preparar el entorno Microsoft y comenzar la certificación prioritaria sin deten
 7. Mantener GitHub como vitrina pública.
 8. Utilizar Azure DevOps como plataforma empresarial de gestión y CI/CD.
 9. Preparar un Self-Hosted Agent para evitar infraestructura cloud permanente.
-10. Documentar posteriormente la aplicación de Azure AI Foundry dentro de `sbm-ai-assistant`.
+10. Documentar posteriormente la aplicación de Azure AI Foundry dentro de `SBM-AI-ASSISTANT`.
 
 ## Resultado esperado
 
@@ -99,7 +99,7 @@ Preparar el entorno Microsoft y comenzar la certificación prioritaria sin deten
 
 Finalizar la separación funcional entre la API interna y la primera API cliente.
 
-## `sbm-api`
+## `SBM-API`
 
 Debe conservar:
 
@@ -116,7 +116,7 @@ Debe conservar:
 - integraciones internas;
 - funciones no expuestas directamente al cliente.
 
-## `dp-api`
+## `DP-API`
 
 Debe concentrar:
 
@@ -142,7 +142,7 @@ Debe concentrar:
     - compartido;
     - duplicado;
     - obsoleto.
-3. Migrar a `dp-api` los endpoints públicos aún existentes en `sbm-api`.
+3. Migrar a `DP-API` los endpoints públicos aún existentes en `SBM-API`.
 4. Eliminar implementaciones duplicadas una vez validadas.
 5. Revisar serializers, modelos y permisos.
 6. Definir contratos OpenAPI.
@@ -169,11 +169,11 @@ Crear una estructura de calidad aplicable a todos los proyectos, no solo a Djang
 
 ## Alcance
 
-- `sbm-manager`;
-- `sbm-api`;
-- `dp-api`;
-- `sbm-ai-assistant`;
-- `sbm-db`;
+- `SBM-MANAGER`;
+- `SBM-API`;
+- `DP-API`;
+- `SBM-AI-ASSISTANT`;
+- `SBM-DB`;
 - `sbm-comercial`;
 - futuras APIs y aplicaciones;
 - infraestructura;
@@ -409,7 +409,7 @@ Debe incluir:
 
 ---
 
-# 8. Fase 5 — Integración inicial de `sbm-ai-assistant`
+# 8. Fase 5 — Integración inicial de `SBM-AI-ASSISTANT`
 
 ## Objetivo
 
@@ -420,7 +420,7 @@ Transformar el asistente desde un lector RAG hacia un orquestador de herramienta
 ### 1. SBM API Integration Agent
 
 - detectar intención;
-- decidir entre `sbm-api` y `dp-api`;
+- decidir entre `SBM-API` y `DP-API`;
 - ejecutar tools controladas;
 - comenzar con operaciones de lectura;
 - validar permisos y marca;
@@ -453,7 +453,7 @@ Transformar el asistente desde un lector RAG hacia un orquestador de herramienta
 
 ### 5. OpenClaw Multichannel Gateway
 
-OpenClaw se evaluará como una integración opcional para exponer `sbm-ai-assistant` en múltiples canales sin desarrollar cada conector desde cero.
+OpenClaw se evaluará como una integración opcional para exponer `SBM-AI-ASSISTANT` en múltiples canales sin desarrollar cada conector desde cero.
 
 Canales potenciales:
 
@@ -467,14 +467,14 @@ Responsabilidades:
 
 - recibir mensajes desde distintos canales;
 - conservar contexto de sesión cuando corresponda;
-- redirigir solicitudes hacia `sbm-ai-assistant`;
+- redirigir solicitudes hacia `SBM-AI-ASSISTANT`;
 - unificar la entrada multicanal;
 - aplicar autenticación y permisos mínimos;
-- evitar acceso directo a `sbm-api`, `dp-api`, bases de datos o infraestructura crítica.
+- evitar acceso directo a `SBM-API`, `DP-API`, bases de datos o infraestructura crítica.
 
 OpenClaw no reemplazará:
 
-- `sbm-ai-assistant`;
+- `SBM-AI-ASSISTANT`;
 - el Intent Router;
 - el Tool Router;
 - LangGraph;
@@ -509,7 +509,7 @@ Slack / WhatsApp / Telegram / Teams
      OpenClaw — opcional
                 │
                 ▼
-       sbm-ai-assistant
+       SBM-AI-ASSISTANT
                 │
                 ├── Intent Router
                 ├── Tool Router
@@ -528,7 +528,7 @@ Slack / WhatsApp / Telegram / Teams
 - actualización controlada de Notion;
 - Jira separado para tareas de negocio;
 - prueba de concepto multicanal mediante OpenClaw;
-- `sbm-ai-assistant` mantenido como orquestador central.
+- `SBM-AI-ASSISTANT` mantenido como orquestador central.
 
 ---
 
@@ -576,7 +576,7 @@ Usos:
 2. Configurar workers por servicio.
 3. Configurar Celery Beat.
 4. Incorporar Flower.
-5. Migrar el scheduler de `sbm-ai-assistant`.
+5. Migrar el scheduler de `SBM-AI-ASSISTANT`.
 6. Definir políticas de retry.
 7. Definir idempotencia.
 8. Implementar dead-letter handling cuando corresponda.
@@ -731,7 +731,7 @@ Observar la plataforma completa desde aplicaciones hasta agentes IA.
 
 ---
 
-# 13. Fase 10 — `ks-store` y configuración digital por marca
+# 13. Fase 10 — `KS-STORE` y configuración digital por marca
 
 ## Objetivo
 
@@ -751,7 +751,7 @@ Publicar la primera tienda de marca y crear la base reusable para futuros canale
     - datos legales;
     - SEO;
     - canales activos.
-3. Conectar la tienda con `dp-api`.
+3. Conectar la tienda con `DP-API`.
 4. Implementar catálogo.
 5. Implementar productos.
 6. Implementar imágenes y videos.
@@ -792,7 +792,7 @@ Crear una capa Node.js/NestJS justificada como BFF y Digital Experience API.
 ## Consumidores
 
 - `sbm-comercial`;
-- `ks-store`;
+- `KS-STORE`;
 - futuras tiendas;
 - aplicaciones móviles;
 - redes sociales;
@@ -895,7 +895,7 @@ Incorporar modelos solo cuando exista un caso de negocio concreto.
 
 ## Objetivo
 
-Ampliar `sbm-ai-assistant` como orquestador de una fuerza de trabajo digital controlada.
+Ampliar `SBM-AI-ASSISTANT` como orquestador de una fuerza de trabajo digital controlada.
 
 ## Agentes futuros
 
@@ -1146,14 +1146,14 @@ Analytics
 ## Urgente
 
 1. AI-3016 y preparación Azure.
-2. Separación `sbm-api` / `dp-api`.
+2. Separación `SBM-API` / `DP-API`.
 3. Estabilización de `product` y `material`.
 4. QA transversal.
 5. SonarQube y cobertura.
 6. Seguridad DevSecOps.
 7. Documentación por repositorio.
 8. Azure DevOps.
-9. Integración de `sbm-ai-assistant` con APIs.
+9. Integración de `SBM-AI-ASSISTANT` con APIs.
 
 ## Corto plazo
 
@@ -1169,7 +1169,7 @@ Analytics
 
 ## Mediano plazo
 
-1. `ks-store`.
+1. `KS-STORE`.
 2. configuración digital por marca;
 3. `sbm-digital-api`;
 4. comercio omnicanal;
@@ -1214,8 +1214,8 @@ Immediate architecture track:
 
 1. stabilize DP as reusable historical reference;
 2. complete shared data/model objectives in SBM-DB without assuming unimplemented schema changes;
-3. create `ks-api`, `pc-api`, `cg-api`;
-4. create `sbm-core`, `sbm-calculation`, `sbm-util`;
+3. create `KS-API`, `PC-API`, `CG-API`;
+4. create `SBM-CORE`, `SBM-CALCULATION`, `SBM-UTIL`;
 5. create required stores/mobile/client channels;
 6. create control planes and specialized agents;
 7. harden production topology, storage, security and observability.

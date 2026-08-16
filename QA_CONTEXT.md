@@ -458,12 +458,12 @@ Pending projects must add project-owned QA before production onboarding. Minimum
 - SBM/Franchise/Client/Customer authorization boundaries;
 - Catalog composition/dosage and Package invariants;
 - Price/FX/tax calculation determinism and historical rate reference;
-- sbm-core retries, idempotency, scheduler and queue failure handling;
-- sbm-calculation formula/commission/provision reconciliation;
+- SBM-CORE retries, idempotency, scheduler and queue failure handling;
+- SBM-CALCULATION formula/commission/provision reconciliation;
 - PC QR/schedule/customer confirmation and restricted-data access;
 - CG document/plan object authorization and workflow-stage transitions;
 - KS import provision-versus-actual cost reconciliation;
-- privileged control-plane authorization for sbm-control, sbm-security and sbm-ai-manager;
+- privileged control-plane authorization for SBM-CONTROL, SBM-SECURITY and SBM-AI-MANAGER;
 - agent Tool calls preserving caller scope;
 - store/mobile/client apps consuming only canonical APIs.
 

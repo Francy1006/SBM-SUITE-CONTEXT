@@ -3,7 +3,7 @@
 > Roadmap de ingeniería de Inteligencia Artificial para SBM Suite.
 > 
 > 
-> Esta página define la arquitectura, capacidades, herramientas, agentes, controles y evolución de `sbm-ai-assistant` como orquestador central de IA, RAG, tools, APIs, MCP y agentes especializados.
+> Esta página define la arquitectura, capacidades, herramientas, agentes, controles y evolución de `SBM-AI-ASSISTANT` como orquestador central de IA, RAG, tools, APIs, MCP y agentes especializados.
 > 
 > El objetivo no es agregar IA como una función aislada, sino integrarla de forma segura, observable y útil dentro de los procesos reales de la plataforma.
 > 
@@ -12,7 +12,7 @@
 
 # 1. Objetivo
 
-Convertir `sbm-ai-assistant` en una capa inteligente transversal capaz de:
+Convertir `SBM-AI-ASSISTANT` en una capa inteligente transversal capaz de:
 
 - responder preguntas empresariales;
 - consultar documentación;
@@ -30,7 +30,7 @@ Convertir `sbm-ai-assistant` en una capa inteligente transversal capaz de:
 
 # 2. Estado actual
 
-Actualmente `sbm-ai-assistant` incluye:
+Actualmente `SBM-AI-ASSISTANT` incluye:
 
 - FastAPI;
 - RAG documental;
@@ -46,8 +46,8 @@ Actualmente `sbm-ai-assistant` incluye:
 
 ## Limitaciones actuales
 
-- no consulta todavía `sbm-api`;
-- no consulta todavía `dp-api`;
+- no consulta todavía `SBM-API`;
+- no consulta todavía `DP-API`;
 - no dispone de un router completo de intención;
 - no dispone de tools empresariales consolidadas;
 - no dispone de agentes especializados;
@@ -73,7 +73,7 @@ Slack / Chat / Web / Canales externos
 Multichannel Gateway opcional
    │
    ▼
-sbm-ai-assistant
+SBM-AI-ASSISTANT
    │
    ├── Intent Router
    ├── Tool Router
@@ -96,7 +96,7 @@ sbm-ai-assistant
 | Tool Router | Seleccionar la herramienta o integración adecuada |
 | Agent Orchestrator | Coordinar agentes y flujos complejos |
 | RAG Engine | Recuperar conocimiento empresarial |
-| API Clients | Consumir `sbm-api`, `dp-api` y futuras APIs cliente |
+| API Clients | Consumir `SBM-API`, `DP-API` y futuras APIs cliente |
 | MCP Clients | Consumir servidores MCP autorizados |
 | Policy Layer | Validar permisos, marca, alcance y riesgo |
 | Human Approval | Confirmar operaciones críticas |
@@ -114,7 +114,7 @@ Primera integración operativa prioritaria.
 ### Responsabilidades
 
 - detectar intención;
-- decidir entre `sbm-api` y `dp-api`;
+- decidir entre `SBM-API` y `DP-API`;
 - consumir endpoints mediante tools controladas;
 - validar autenticación;
 - validar permisos;
@@ -130,13 +130,13 @@ Primera integración operativa prioritaria.
 ```
 Usuario
    ↓
-sbm-ai-assistant
+SBM-AI-ASSISTANT
    ↓
 Intent Router
    ↓
 SBM API Integration Agent
-   ├── sbm-api
-   └── dp-api
+   ├── SBM-API
+   └── DP-API
 ```
 
 ### Casos iniciales
@@ -227,7 +227,7 @@ Jira no será el backlog técnico principal.
 
 ## 5. OpenClaw Multichannel Gateway
 
-Integración opcional para exponer `sbm-ai-assistant` en múltiples canales.
+Integración opcional para exponer `SBM-AI-ASSISTANT` en múltiples canales.
 
 ### Canales potenciales
 
@@ -256,7 +256,7 @@ Integración opcional para exponer `sbm-ai-assistant` en múltiples canales.
 
 OpenClaw no reemplaza:
 
-- `sbm-ai-assistant`;
+- `SBM-AI-ASSISTANT`;
 - LangGraph;
 - MCP;
 - el Intent Router;
@@ -359,7 +359,7 @@ Se evaluará una capa como LiteLLM para:
 
 ## Objetivo
 
-Permitir que `sbm-ai-assistant` se conecte de forma estandarizada con herramientas y fuentes externas.
+Permitir que `SBM-AI-ASSISTANT` se conecte de forma estandarizada con herramientas y fuentes externas.
 
 ## Componentes
 
@@ -742,7 +742,7 @@ Alta, en paralelo al desarrollo.
 - explorar agentes;
 - aplicar seguridad;
 - conectar servicios;
-- integrar conocimientos posteriormente en `sbm-ai-assistant`.
+- integrar conocimientos posteriormente en `SBM-AI-ASSISTANT`.
 
 ## Uso futuro en SBM Suite
 
@@ -837,9 +837,9 @@ Alta, en paralelo al desarrollo.
 
 ## Urgente
 
-1. estabilizar `sbm-api` y `dp-api`;
+1. estabilizar `SBM-API` y `DP-API`;
 2. implementar QA y seguridad;
-3. integrar `sbm-ai-assistant` con APIs;
+3. integrar `SBM-AI-ASSISTANT` con APIs;
 4. comenzar AI-3016;
 5. preparar Azure DevOps.
 
@@ -893,6 +893,6 @@ Una capacidad de IA se considera implementada cuando:
 
 # 23. Named agent/application model — 2026-08-16
 
-`sbm-ai-assistant` remains the reasoning/tool/agent orchestrator. Planned named agents include `sbm-agent` (orchestrator), `dev-agent`, `qa-agent`, `security-agent`, `backlog-agent`, `ks-agent`, `pc-agent`, `cg-agent`, `marketing-agent` and `content-agent`.
+`SBM-AI-ASSISTANT` remains the reasoning/tool/agent orchestrator. The canonical named-agent catalog is governed by `CEO Agent`, `SBM Agent` and `CFO Agent`, with specialized cells such as Development (`Tesla`, `Edison`, `Igor`, `Armstrong`), Security (`Batman`, `Alfred`, `Robin`, `Gotham`, `Joker`, `Queen`, `Darth Maul`, `Cerberus`, `Hercules`), Marketing/Content (`Belfort`, `Stratton`, `Donnie`, `DaVinci`, `Medici`) and brand agents (`DP`, `KS`, `PC`, `CG`). `Scrum Agent` owns backlog/process coordination. Legacy generic placeholders such as dev-agent, qa-agent, backlog-agent, marketing-agent and content-agent are superseded by these canonical named roles.
 
-Domain applications keep persistent state and UI ownership: `sbm-ai-manager`, `sbm-security`, `sbm-marketing`, `sbm-content`, `sbm-control`. Agents act through authorized APIs/tools and never acquire direct database authority.
+Domain applications keep persistent state and UI ownership: `SBM-AI-MANAGER`, `SBM-SECURITY`, `SBM-MARKETING`, `SBM-CONTENT`, `SBM-CONTROL`. Agents act through authorized APIs/tools and never acquire direct database authority; deterministic APIs, jobs and services remain the default execution path and agents activate only when reasoning is required.

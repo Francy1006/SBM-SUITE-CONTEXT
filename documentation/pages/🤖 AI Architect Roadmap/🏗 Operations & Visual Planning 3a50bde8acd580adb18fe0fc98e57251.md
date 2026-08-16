@@ -1501,4 +1501,4 @@ SBM Suite debe evolucionar hacia una plataforma operativa visual capaz de planif
 
 # 58. CG plans/documents workflow — 2026-08-16
 
-CG requires staged procedure workflows, missing-document dependencies, provider calendars and plan/document handling. Planned SBM-MANAGER capability includes drag-and-drop plan editing/export plus OCR/AI-assisted digitization from PDF/PNG through authorized AI/tool services. `cg-client` exposes only client-scoped progress, documentation, dependencies and FAQ.
+CG requires staged procedure workflows, missing-document dependencies, provider calendars and plan/document handling. Planned SBM-MANAGER capability includes drag-and-drop plan editing/export plus OCR/AI-assisted digitization from PDF/PNG through authorized AI/tool services. `CG-CLIENT` exposes only client-scoped progress, documentation, dependencies and FAQ.

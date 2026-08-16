@@ -73,20 +73,20 @@ Actualmente el desarrollo está concentrado en Ditaly Pasta.
 
 Los módulos `product` y `material` fueron implementados recientemente en:
 
-- `dp-api`;
-- `sbm-manager`.
+- `DP-API`;
+- `SBM-MANAGER`.
 
 Antes de continuar con nuevos módulos de negocio, se implementará una base transversal de calidad y seguridad.
 
-#### Separación entre `sbm-api` y `dp-api`
+#### Separación entre `SBM-API` y `DP-API`
 
-Actualmente `sbm-api` todavía contiene métodos y endpoints que corresponden a `dp-api`.
+Actualmente `SBM-API` todavía contiene métodos y endpoints que corresponden a `DP-API`.
 
 Se está ejecutando una migración para establecer responsabilidades definitivas.
 
 ##### Estado deseado
 
-`sbm-api`:
+`SBM-API`:
 
 - procesos internos;
 - funciones críticas;
@@ -95,7 +95,7 @@ Se está ejecutando una migración para establecer responsabilidades definitivas
 - selección de marca o franquicia;
 - operaciones no expuestas directamente al cliente.
 
-`dp-api`:
+`DP-API`:
 
 - primera API cliente;
 - productos;
@@ -111,7 +111,7 @@ Se está ejecutando una migración para establecer responsabilidades definitivas
 
 ##### Resultado esperado
 
-1. Eliminar de `sbm-api` las funciones que correspondan a `dp-api`.
+1. Eliminar de `SBM-API` las funciones que correspondan a `DP-API`.
 2. Eliminar duplicaciones.
 3. Establecer contratos claros entre ambas APIs.
 4. Separar correctamente permisos y usuarios.
@@ -190,7 +190,7 @@ Este cierre corrige el consumo del frontend; no acredita eliminación de endpoin
 
 ### 4. Modelo de APIs
 
-#### `sbm-api`
+#### `SBM-API`
 
 API interna y transversal de SBM Suite.
 
@@ -228,7 +228,7 @@ Estas APIs expondrán únicamente las funciones necesarias para:
 
 ##### Primera API cliente
 
-`dp-api` es la primera API cliente de SBM Suite y corresponde a Ditaly Pasta.
+`DP-API` es la primera API cliente de SBM Suite y corresponde a Ditaly Pasta.
 
 Las futuras marcas podrán incorporar APIs propias cuando exista una necesidad funcional real.
 
@@ -242,22 +242,22 @@ Las futuras marcas podrán incorporar APIs propias cuando exista una necesidad f
                    Usuarios internos
                           │
                           ▼
-                    sbm-manager
+                    SBM-MANAGER
                           │
                           ▼
-                       sbm-api
+                       SBM-API
                 API interna transversal
                           │
         ┌─────────────────┼──────────────────┐
         │                 │                  │
         ▼                 ▼                  ▼
-     dp-api       futuras APIs cliente   sbm-ai-assistant
+     DP-API       futuras APIs cliente   SBM-AI-ASSISTANT
  Primera API                              IA, RAG, Tools,
  cliente                                  Agentes y MCP
         │
         └──────────────┐
                        ▼
-                    sbm-db
+                    SBM-DB
              PostgreSQL / Flyway
        autoridad de esquemas y migraciones
 ```
@@ -268,23 +268,23 @@ Arquitectura futura ampliada:
 Usuarios internos
        │
        ▼
-sbm-manager
+SBM-MANAGER
        │
        ▼
-sbm-api
+SBM-API
        │
-       ├── sbm-ai-assistant
+       ├── SBM-AI-ASSISTANT
        ├── sbm-digital-api
-       ├── dp-api
+       ├── DP-API
        ├── futuras APIs cliente
-       ├── sbm-db
+       ├── SBM-DB
        ├── Kafka
        ├── Redis / Celery
        └── servicios externos
 
 Usuarios públicos
        │
-       ├── ks-store
+       ├── KS-STORE
        ├── sbm-comercial
        ├── futuras tiendas
        ├── aplicaciones móviles
@@ -298,7 +298,7 @@ Usuarios públicos
 
 ### 7. Repositorios y aplicaciones
 
-#### `sbm-manager`
+#### `SBM-MANAGER`
 
 ##### Tipo
 
@@ -354,7 +354,7 @@ Centralizar la administración de SBM Suite y de todas las marcas asociadas.
 
 🚧 En desarrollo.
 
-#### `sbm-api`
+#### `SBM-API`
 
 ##### Tipo
 
@@ -395,7 +395,7 @@ Gestionar procesos críticos, administrativos y compartidos de SBM Suite.
 
 🚧 En refactorización y separación de responsabilidades.
 
-#### `dp-api`
+#### `DP-API`
 
 ##### Tipo
 
@@ -458,7 +458,7 @@ Podrán aparecer cuando una marca necesite:
 
 No deben crearse anticipadamente sin necesidad funcional.
 
-#### `sbm-ai-assistant`
+#### `SBM-AI-ASSISTANT`
 
 ##### Tipo
 
@@ -479,10 +479,10 @@ Actualmente incluye:
 
 ##### Siguiente avance
 
-Conectar `sbm-ai-assistant` con:
+Conectar `SBM-AI-ASSISTANT` con:
 
-1. `sbm-api`;
-2. `dp-api`.
+1. `SBM-API`;
+2. `DP-API`.
 
 Flujo objetivo:
 
@@ -493,12 +493,12 @@ Usuario
 Slack / Chat / Web
    │
    ▼
-sbm-ai-assistant
+SBM-AI-ASSISTANT
    │
    ├── detecta intención
    ├── valida permisos
    ├── selecciona Tool o Agent
-   ├── consulta sbm-api o dp-api
+   ├── consulta SBM-API o DP-API
    ├── procesa respuesta
    └── registra trazabilidad
 ```
@@ -520,7 +520,7 @@ sbm-ai-assistant
 
 🚧 RAG implementado; integración con APIs como siguiente etapa.
 
-#### `sbm-db`
+#### `SBM-DB`
 
 ##### Tipo
 
@@ -560,13 +560,13 @@ Repositorio central de persistencia y migraciones.
 - SEO;
 - configuraciones de tienda.
 
-Estos datos de marca se incorporarán cuando comience formalmente la etapa de publicación de `ks-store`.
+Estos datos de marca se incorporarán cuando comience formalmente la etapa de publicación de `KS-STORE`.
 
 ##### Estado
 
 🚧 En desarrollo.
 
-#### `ks-store`
+#### `KS-STORE`
 
 ##### Tipo
 
@@ -607,8 +607,8 @@ Servir como portal corporativo y comercial de SBM Suite.
 
 Podrá consumir información de:
 
-- `sbm-api`;
-- `dp-api`;
+- `SBM-API`;
+- `DP-API`;
 - futuras APIs cliente;
 - `sbm-digital-api`;
 - servicios externos.
@@ -657,11 +657,11 @@ Unificar y adaptar información para canales públicos.
 - redes sociales;
 - marketplaces;
 - integración con distintas APIs cliente;
-- aislamiento de `sbm-api`.
+- aislamiento de `SBM-API`.
 
 ##### Justificación
 
-Esta API permite que `sbm-comercial`, `ks-store` y futuros canales consuman una capa especializada sin conectarse directamente a múltiples servicios internos.
+Esta API permite que `sbm-comercial`, `KS-STORE` y futuros canales consuman una capa especializada sin conectarse directamente a múltiples servicios internos.
 
 ##### Estado
 
@@ -851,8 +851,8 @@ La evidencia de cierre de `SBM-MANAGER-002` del `2026-08-14` registra:
 
 Limitaciones y transiciones explícitas en el documento fuente:
 
-- `sbm-api` todavía contiene métodos y endpoints que corresponden a `dp-api`;
-- la separación definitiva entre `sbm-api` y `dp-api` continúa en evolución;
+- `SBM-API` todavía contiene métodos y endpoints que corresponden a `DP-API`;
+- la separación definitiva entre `SBM-API` y `DP-API` continúa en evolución;
 - PostgreSQL podrá mantenerse inicialmente fuera del clúster para evitar complejidad innecesaria;
 - varios servicios, agentes, canales y componentes de infraestructura permanecen planificados.
 
@@ -862,7 +862,7 @@ Limitaciones y transiciones explícitas en el documento fuente:
 
 | Objective ID | Objective | Status | Priority | Target date | Branch |
 |---|---|---|---:|---|---|
-| SBM-MANAGER-001 | Integrar SBM-MANAGER completamente a SBM Suite, incluyendo contextos, lifecycle scripts, QA/SonarQube, registro en sbm-ai-assistant, sincronización global y actualización del diagrama canónico de arquitectura en SUITE_CONTEXT.md. | active | 5 | 2026-08-07 | `FEATURE-integrates-sbm-manager` |
+| SBM-MANAGER-001 | Integrar SBM-MANAGER completamente a SBM Suite, incluyendo contextos, lifecycle scripts, QA/SonarQube, registro en SBM-AI-ASSISTANT, sincronización global y actualización del diagrama canónico de arquitectura en SUITE_CONTEXT.md. | active | 5 | 2026-08-07 | FEATURE-integrates-sbm-manager |
 | SBM-MANAGER-003 | Corregir y completar QA de SBM-MANAGER. | pending | 5 | N/A | `BUGFIX-completes-manager-qa` |
 
 `SBM-MANAGER-001` permanece **active** y `SBM-MANAGER-003` permanece **pending**. `SBM-MANAGER-002` fue retirado del roadmap tras su cierre validado y quedó registrado en `Current state`.
@@ -871,7 +871,7 @@ Limitaciones y transiciones explícitas en el documento fuente:
 
 | Objective ID | Objective | Status | Priority | Target date | Branch |
 |---|---|---|---:|---|---|
-| SBM-DB-001 | habilitación de sbm-db | active | 5 | 2026-08-07 | `FEATURE-enables-sbm-db` |
+| SBM-DB-001 | habilitación de SBM-DB | active | 5 | 2026-08-07 | FEATURE-enables-sbm-db |
 
 Este objetivo permanece **active**. Su presencia aquí no representa cierre ni implementación completada.
 
@@ -879,21 +879,47 @@ Este objetivo permanece **active**. Su presencia aquí no representa cierre ni i
 
 | Objective ID | Objective | Status | Priority | Target date | Branch |
 |---|---|---|---:|---|---|
-| OBJ-DOC-001 | Implement the manual documentation deploy and upgrade workflow with dedicated RAG and Qdrant collection | pending | 4 |  | FEATURE-adds-documentation-workflow |
+| OBJ-DOC-001 | Implement the manual documentation deploy and upgrade workflow with dedicated RAG and Qdrant collection | pending | 5 | N/A | FEATURE-adds-documentation-workflow |
 | OBJ-CTX-002 | Habilitar un sistema automatizado para ejecutar flujos transversales sobre uno o varios proyectos. | pending | 5 | N/A | FEATURE-automates-cross-project-flows |
 | OBJ-CTX-003 | Separar QA y Context mediante una estructura específica por proyecto. | pending | 5 | N/A | FEATURE-separates-qa-context |
-| OBJ-CTX-004 | Habilitar un nuevo proyecto para procesamiento asíncrono, incluyendo PostgreSQL, Celery, Redis, Kafka y los componentes de infraestructura relacionados. | pending | 5 | N/A | FEATURE-enables-async-platform |
-| OBJ-CTX-005 | Habilitar un proyecto UTIL para centralizar servicios y utilidades reutilizables y desacoplarlos de proyectos específicos, incluyendo generación de ZIP y procesamiento de contextos. | pending | 5 | N/A | FEATURE-enables-shared-utils |
-| OBJ-CTX-006 | Habilitar un agente de backlog que convierta objetivos en issues y épicas y gestione su sincronización con Jira vía API. El nombre definitivo del agente se revisará al activar el objetivo. | pending | 5 | N/A | FEATURE-enables-backlog-agent |
-| OBJ-CTX-007 | Habilitar un agente QA para gestionar y automatizar procesos de validación de calidad de los proyectos. | pending | 5 | N/A | FEATURE-enables-qa-agent |
-| OBJ-CTX-008 | Habilitar un entorno y flujo de seguridad ejecutado después de QA y antes del commit. | pending | 5 | N/A | FEATURE-enables-security-flow |
-| OBJ-CTX-009 | Habilitar un agente de seguridad para ejecutar y gestionar las validaciones del flujo de seguridad. | pending | 5 | N/A | FEATURE-enables-security-agent |
-| OBJ-CTX-010 | Habilitar una aplicación para visualizar y gestionar agentes, definiendo la tecnología y lenguaje apropiados al activar el objetivo. | pending | 5 | N/A | FEATURE-enables-agent-management |
-| OBJ-CTX-011 | Completar `INIT_CONTEXT.md` para soportar creación/onboarding de nuevos proyectos SBM. | pending | 5 | N/A | FEATURE-completes-project-onboarding |
-| OBJ-CTX-012 | Separar el flujo del agente en `SBM_AGENT_INIT.md`, dejando `INIT_CONTEXT.md` como punto de entrada y orquestación. | pending | 5 | N/A | FEATURE-separates-agent-init-flow |
-| OBJ-CTX-014 | Habilitar QA transversal en `SBM-SUITE/context` para ejecutar, centralizar y gestionar validaciones QA de los proyectos de la suite desde el contexto global, manteniendo los scripts QA específicos por proyecto y una orquestación común desde `context`. | active | 5 | N/A | FEATURE-enables-transversal-qa |
+| OBJ-CTX-004 | Crear SBM-CORE para scheduler/cron, PostgreSQL de flags/estado, Celery, Redis, retries/idempotency y Kafka solo donde el patrón event-driven lo justifique; sin lógica financiera ni de seguridad de dominio. | pending | 5 | N/A | FEATURE-enables-sbm-core |
+| OBJ-CTX-005 | Crear SBM-UTIL como servicio reutilizable Java/Spring Boot para email, archivos, APIs externas, conectores determinísticos, transformaciones técnicas y tipos de cambio oficiales consumidos por servicios/agentes. | pending | 5 | N/A | FEATURE-enables-sbm-util |
+| OBJ-CTX-006 | Habilitar Scrum Agent para convertir Objectives en Jira Epic/Issue, priorizar backlog y coordinar dependencias, procesos asíncronos y activaciones IA mediante SBM-CORE/Control API. | pending | 5 | N/A | FEATURE-enables-scrum-agent |
+| OBJ-CTX-007 | Habilitar Igor Agent como responsable técnico de QA automation, DevOps/SRE, infraestructura y troubleshooting, integrándolo a CI/CD y a los gates técnicos sin mezclar QA con Security. | pending | 5 | N/A | FEATURE-enables-igor-agent |
+| OBJ-CTX-008 | Habilitar el Security Gate posterior a QA y previo a release: ejecución automatizada, evidencias, findings, mitigación/prevención, aprobación humana en SBM-SECURITY y retorno obligatorio a Development cuando Security rechace. | pending | 5 | N/A | FEATURE-enables-security-flow |
+| OBJ-CTX-009 | Evolucionar la capacidad security-agent hacia la célula nombrada en SBM-AI-ASSISTANT liderada por Batman Agent e integrada por Alfred, Robin, Gotham, Joker, Queen, Darth Maul, Cerberus y Hercules, usando SBM-SECURITY-API y herramientas locales/dockerizadas/externas bajo autorización. | pending | 5 | N/A | FEATURE-enables-security-agents |
+| OBJ-CTX-010 | Crear SBM-AI-MANAGER como frontend/control plane para registrar, visualizar, configurar y operar agentes; tecnología .NET/Blazor queda como candidata a validar al activar. | pending | 5 | N/A | FEATURE-enables-ai-manager |
+| OBJ-CTX-011 | Completar INIT_CONTEXT.md para soportar creación/onboarding de nuevos proyectos SBM. | pending | 5 | N/A | FEATURE-completes-project-onboarding |
+| OBJ-CTX-012 | Separar el flujo del agente en SBM_AGENT_INIT.md, dejando INIT_CONTEXT.md como punto de entrada y orquestación. | pending | 5 | N/A | FEATURE-separates-agent-init-flow |
+| OBJ-CTX-015 | Crear KS-API clonando/adaptando __BASE-FRANCHISE-API en Python/Django REST para venta/importación KS: Product/Material/Service/Catalog/Ticket, inventario, costos de importación, pricing multimoneda y trazabilidad; arriendo queda fuera del alcance inmediato. | pending | 5 | N/A | FEATURE-enables-ks-api |
+| OBJ-CTX-016 | Crear PC-API clonando/adaptando __BASE-FRANCHISE-API en Python/Django REST para operativos y derivaciones: agendamiento, Client/Customer, QR, confirmación, comisión, conciliación y suscripción mensual. | pending | 5 | N/A | FEATURE-enables-pc-api |
+| OBJ-CTX-017 | Crear CG-API clonando/adaptando __BASE-FRANCHISE-API en Python/Django REST para trámites, documentos, etapas, dependencias, calendarización, proveedores y planos. | pending | 5 | N/A | FEATURE-enables-cg-api |
+| OBJ-CTX-018 | Crear SBM-CALCULATION en Python/FastAPI con pandas, scikit-learn y statsmodels para fórmulas, precios, FX, impuestos, comisiones, provisiones, costos, conciliaciones, regresiones y capacidades ML autorizadas. | pending | 5 | N/A | FEATURE-enables-sbm-calculation |
+| OBJ-CTX-019 | Crear SBM-SECURITY como frontend humano de Security: findings, scans, vulnerabilidades, evidencias, riesgos, protocolos, planes de mitigación/prevención, reportes y aprobación/rechazo del Security Gate consumiendo SBM-SECURITY-API. | pending | 5 | N/A | FEATURE-enables-sbm-security |
+| OBJ-CTX-020 | Crear SBM-MARKETING como API Node.js/TypeScript/NestJS para datos de redes, SEO, campañas, métricas, calendarizaciones, sesiones foto/video, pago de promociones, arriendo de equipos, contratación de servicios e integraciones sociales. | pending | 5 | N/A | FEATURE-enables-sbm-marketing |
+| OBJ-CTX-021 | Crear SBM-CONTENT en Python/FastAPI para assets y workflows de producción, generación y edición de contenido, integrando DaVinci/Medici y herramientas creativas autorizadas como Photoshop y Blender. | pending | 5 | N/A | FEATURE-enables-sbm-content |
+| OBJ-CTX-022 | Crear SBM-CONTROL como control plane global de SBM Suite: health/status, logs, métricas/reportes, cron/schedulers, workers/colas, Context/Objectives/Documentation, QA, Security, deploys, alertas y backups. | pending | 5 | N/A | FEATURE-enables-sbm-control |
+| OBJ-CTX-023 | Crear SBM-MOBILE en React Native para SBM User y operaciones administrativas aprobadas. | pending | 5 | N/A | FEATURE-enables-sbm-mobile |
+| OBJ-CTX-024 | Crear KS-STORE clonando/adaptando __BASE-STORE como vitrina/commerce pública de Tickets KS bajo dominio propio. | pending | 5 | N/A | FEATURE-enables-ks-store |
+| OBJ-CTX-025 | Crear PC-STORE clonando/adaptando __BASE-STORE como canal público de servicios/Tickets PC bajo dominio propio cuando corresponda. | pending | 5 | N/A | FEATURE-enables-pc-store |
+| OBJ-CTX-026 | Crear CG-STORE clonando/adaptando __BASE-STORE como canal público de servicios/Tickets CG bajo dominio propio cuando corresponda. | pending | 5 | N/A | FEATURE-enables-cg-store |
+| OBJ-CTX-027 | Crear KS-MOBILE clonando/adaptando __BASE-MOBILE en React Native para KS/Franchise User. | pending | 5 | N/A | FEATURE-enables-ks-mobile |
+| OBJ-CTX-028 | Crear PC-MOBILE clonando/adaptando __BASE-MOBILE en React Native para PC/Franchise User. | pending | 5 | N/A | FEATURE-enables-pc-mobile |
+| OBJ-CTX-029 | Crear CG-MOBILE clonando/adaptando __BASE-MOBILE en React Native para CG/Franchise User. | pending | 5 | N/A | FEATURE-enables-cg-mobile |
+| OBJ-CTX-030 | Crear KS-CLIENT clonando/adaptando __BASE-CLIENT para Client User KS, inicialmente control de inventario/equipos y capacidades autorizadas de monitoreo/operación. | pending | 5 | N/A | FEATURE-enables-ks-client |
+| OBJ-CTX-031 | Crear PC-CLIENT clonando/adaptando __BASE-CLIENT para Client User PC, incluyendo operativos/derivaciones, agenda, QR/confirmaciones y conciliación operativa. | pending | 5 | N/A | FEATURE-enables-pc-client |
+| OBJ-CTX-032 | Crear PC-CUSTOMER clonando/adaptando __BASE-CUSTOMER para PC Customer: ficha, QR, agendamiento, confirmación y seguimiento del servicio con tratamiento reforzado de datos personales/salud. | pending | 5 | N/A | FEATURE-enables-pc-customer |
+| OBJ-CTX-033 | Crear CG-CLIENT clonando/adaptando __BASE-CLIENT para seguimiento de etapas de tramitación, dependencias, documentos faltantes, información general y FAQ. | pending | 5 | N/A | FEATURE-enables-cg-client |
+| OBJ-CTX-034 | Expandir SBM-AI-ASSISTANT con el catálogo canónico de agentes nombrados, jerarquías/gobierno, permisos, herramientas y activación bajo demanda; Scrum Agent/SBM Agent coordinan y por defecto se prefieren APIs, jobs y servicios determinísticos antes de ejecutar IA. | pending | 5 | N/A | FEATURE-expands-named-agents |
+| OBJ-CTX-035 | Habilitar almacenamiento de objetos/documentos transversal para archivos, planos, assets, evidencias y contenido, con aislamiento, versionado y políticas de acceso. | pending | 5 | N/A | FEATURE-enables-object-storage |
+| OBJ-CTX-036 | Definir despliegue productivo compartido para KS/PC/CG con gateway/reverse proxy, TLS, backups y separación de servicios públicos/internos; SonarQube permanece QA temporal y SBM-SECURITY-API/SECURITY tooling se aísla del runtime de negocio. | pending | 5 | N/A | FEATURE-defines-prod-topology |
+| OBJ-CTX-037 | Corregir objective-git-finalize.sh para preflight multi-repo, commit/push de branch FEATURE/BUGFIX, ejecutar git push --set-upstream origin <branch> cuando la primera publicación no tenga upstream, merge --no-ff a main, push de main y normalización segura; sin force-push ni borrado de ramas. | pending | 5 | N/A | BUGFIX-fixes-git-finalizer |
+| OBJ-CTX-038 | Habilitar Git Flow transversal para repos SBM: main/develop, branches feature/bugfix/hotfix/release, asociación Objective→branch, gates QA/Security, finalización/merge/cleanup multi-repo y migración controlada desde el flujo actual directo a main. | pending | 5 | N/A | FEATURE-enables-git-flow |
+| OBJ-CTX-039 | Habilitar el framework de proyectos base __BASE-*: __BASE-FRANCHISE-API, __BASE-STORE, __BASE-MOBILE, __BASE-CLIENT, __BASE-CUSTOMER; creación por clone/adaptación, versionado de origen, tracking de derivados, propagación controlada de cambios, resolución de divergencias y validación por agentes. | pending | 5 | N/A | FEATURE-enables-base-project-inheritance |
+| OBJ-CTX-040 | Crear SBM-SECURITY-API en Go/Gin/PostgreSQL como backend aislado de Security para pentests/scans, tool runs, findings, evidencias, políticas, riesgos y approvals; integra herramientas locales/dockerizadas/externas y usa SBM-CORE solo para scheduling/jobs, sin lógica Security en Core. | pending | 5 | N/A | FEATURE-enables-security-api |
+| OBJ-CTX-041 | Permitir que context-upgrade.sh acepte exactamente un input/context-upgrade*.zip y documentation-upgrade.sh exactamente un documentation/input/documentation-upgrade*.zip, incluyendo sufijos como (32), sin renombrado manual y manteniendo validación estricta de manifest/workflow. | pending | 5 | N/A | BUGFIX-accepts-upgrade-zip-suffixes |
 
-Los objetivos anteriores conservan literalmente su estado operativo actual de Context. Los objetivos `active` y `pending` son planificación y no acreditan implementación completada.
+Los objetivos anteriores reflejan literalmente el estado operativo actual de Context; `pending` no acredita implementación.
 
 ### Objetivo pendiente de `SBM-DB`
 
@@ -932,7 +958,7 @@ Se utilizará para:
 
 Se utilizará como scheduler distribuido.
 
-La sincronización programada de Confluence en `sbm-ai-assistant` deberá migrarse desde APScheduler hacia Celery Beat cuando se implemente la infraestructura distribuida.
+La sincronización programada de Confluence en `SBM-AI-ASSISTANT` deberá migrarse desde APScheduler hacia Celery Beat cuando se implemente la infraestructura distribuida.
 
 #### Kafka
 
@@ -1188,7 +1214,7 @@ Usuario
 Slack / Chat / Web
    │
    ▼
-sbm-ai-assistant
+SBM-AI-ASSISTANT
    │
    ├── Intent Router
    ├── Tool Router
@@ -1203,7 +1229,7 @@ sbm-ai-assistant
 
 #### Estado actual
 
-Actualmente `sbm-ai-assistant` incluye:
+Actualmente `SBM-AI-ASSISTANT` incluye:
 
 - RAG documental;
 - integración con Confluence;
@@ -1222,12 +1248,12 @@ La siguiente etapa consiste en conectar el asistente con las APIs de negocio de 
 
 ##### 1. SBM API Integration Agent
 
-Será la primera integración operativa de `sbm-ai-assistant`.
+Será la primera integración operativa de `SBM-AI-ASSISTANT`.
 
 Responsabilidades:
 
 - detectar la intención del usuario;
-- determinar si corresponde consultar `sbm-api` o `dp-api`;
+- determinar si corresponde consultar `SBM-API` o `DP-API`;
 - consumir endpoints mediante tools controladas;
 - validar autenticación, permisos, marca y alcance;
 - transformar respuestas técnicas en respuestas conversacionales;
@@ -1240,13 +1266,13 @@ Responsabilidades:
 Usuario
    │
    ▼
-sbm-ai-assistant
+SBM-AI-ASSISTANT
    │
    ▼
 SBM API Integration Agent
    │
-   ├── sbm-api
-   └── dp-api
+   ├── SBM-API
+   └── DP-API
 ```
 
 ---
@@ -1324,11 +1350,11 @@ Jira no será el backlog principal de desarrollo.
 Usuario
    │
    ▼
-sbm-ai-assistant
+SBM-AI-ASSISTANT
    │
    ├── SBM API Integration Agent
-   │      ├── sbm-api
-   │      └── dp-api
+   │      ├── SBM-API
+   │      └── DP-API
    │
    ├── Azure Boards Agent
    │      └── Backlog técnico
@@ -1393,7 +1419,7 @@ Los agentes no deberán acceder directamente a la base de datos ni ejecutar oper
 
 #### Evolución futura
 
-La evolución de `sbm-ai-assistant` incluirá:
+La evolución de `SBM-AI-ASSISTANT` incluirá:
 
 - LangGraph;
 - MCP;
@@ -1448,7 +1474,7 @@ Antes de continuar con nuevos módulos, SBM Suite implementará una base transve
 
 ### 17. Prioridad inmediata
 
-1. Finalizar la separación entre `sbm-api` y `dp-api`.
+1. Finalizar la separación entre `SBM-API` y `DP-API`.
 2. Eliminar endpoints y procesos duplicados.
 3. Estabilizar `product` y `material`.
 4. Implementar QA transversal.
@@ -1457,7 +1483,7 @@ Antes de continuar con nuevos módulos, SBM Suite implementará una base transve
 7. Incorporar herramientas de seguridad gratuitas o locales.
 8. Documentar cada repositorio.
 9. Migrar progresivamente la gestión a Azure DevOps.
-10. Conectar `sbm-ai-assistant` con `sbm-api` y `dp-api`.
+10. Conectar `SBM-AI-ASSISTANT` con `SBM-API` y `DP-API`.
 11. Implementar Redis y Celery.
 12. Migrar el scheduler de IA a Celery Beat.
 13. Incorporar Kafka.
@@ -1468,7 +1494,7 @@ Antes de continuar con nuevos módulos, SBM Suite implementará una base transve
 
 ### 18. Desarrollo posterior
 
-1. `ks-store`.
+1. `KS-STORE`.
 2. Configuración digital por marca.
 3. `sbm-digital-api`.
 4. Futuras APIs cliente.
@@ -1502,7 +1528,7 @@ Objetivos:
 - obtener la credencial;
 - aprender Azure AI Foundry;
 - utilizar Azure DevOps Free;
-- aplicar posteriormente lo aprendido en `sbm-ai-assistant` y SBM Suite.
+- aplicar posteriormente lo aprendido en `SBM-AI-ASSISTANT` y SBM Suite.
 
 ---
 
@@ -1551,18 +1577,22 @@ No sustituye los contextos operacionales de `SBM-SUITE/context/`, los contextos 
 
 - DP/Ditaly Pasta: closed, one year of real data, historical/reference implementation.
 - Production targets: Kiseki Tech (KS), PortalConvenios.cl (PC), Consorcio y Gestión (CG).
-- New shared projects: `sbm-core`, `sbm-calculation`, `sbm-util`, `sbm-ai-manager`, `sbm-security`, `sbm-marketing`, `sbm-content`, `sbm-control`, `sbm-mobile`.
-- Brand APIs: `ks-api`, `pc-api`, `cg-api`.
-- Public stores: `ks-store`, `pc-store`, `cg-store`.
-- Brand-user mobile: `ks-mobile`, `pc-mobile`, `cg-mobile`.
-- Client applications: `ks-client`, `pc-client`, `cg-client`; PC additionally requires `pc-customer`.
-- `SBM-DB` remains Flyway/DBML authority and not a query gateway.
-- `sbm-core` owns async orchestration; `sbm-calculation` owns financial/accounting calculations; `sbm-util` owns deterministic integrations.
-- `sbm-control`, `sbm-security` and `sbm-ai-manager` are distinct operational control planes.
+- Canonical application/project display names are uppercase; literal filesystem paths remain unchanged until explicit migration.
+- Shared projects include `SBM-CORE`, `SBM-CALCULATION`, `SBM-UTIL`, `SBM-AI-MANAGER`, `SBM-SECURITY`, `SBM-SECURITY-API`, `SBM-MARKETING`, `SBM-CONTENT`, `SBM-CONTROL`, `SBM-MOBILE`.
+- `SBM-CALCULATION`: Python/FastAPI + regression/ML stack.
+- `SBM-MARKETING`: Node.js/TypeScript/NestJS API.
+- `SBM-CONTENT`: Python/FastAPI.
+- `SBM-SECURITY-API`: Go/Gin/PostgreSQL. `SBM-SECURITY` is the human review front; named Security agents run in `SBM-AI-ASSISTANT`; `SBM-CORE` schedules jobs only.
 
-Canonical business model target: Product, Material, Service, planned Equipment, mandatory Package, compositional Catalog, commercial/reporting Ticket and versioned Price/FX.
+```text
+__BASE-FRANCHISE-API → DP-API / KS-API / PC-API / CG-API
+__BASE-STORE         → KS-STORE / PC-STORE / CG-STORE
+__BASE-MOBILE        → KS-MOBILE / PC-MOBILE / CG-MOBILE
+__BASE-CLIENT        → KS-CLIENT / PC-CLIENT / CG-CLIENT
+__BASE-CUSTOMER      → PC-CUSTOMER
+```
 
----
+`OBJ-CTX-037` repairs current finalization/upstream behavior; `OBJ-CTX-038` introduces Git Flow; `OBJ-CTX-039` implements controlled base/derived inheritance; `OBJ-CTX-040` creates the isolated Security API; `OBJ-CTX-041` accepts workflow-prefixed upgrade ZIP filenames with client/download suffixes without manual renaming. `OBJ-CTX-034` governs the named-agent catalog and on-demand activation.
 
 ## Legacy digital roadmap concepts
 

@@ -985,14 +985,14 @@ ML Model
       ↓
 Prediction API
       ↓
-sbm-api / API cliente
+SBM-API / API cliente
       ↓
-sbm-manager / tiendas / agentes
+SBM-MANAGER / tiendas / agentes
       ↓
 Human Validation
 ```
 
-## Integración con `sbm-ai-assistant`
+## Integración con `SBM-AI-ASSISTANT`
 
 El asistente podrá:
 

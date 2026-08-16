@@ -323,7 +323,7 @@ git status --short
 14. `git clone` is the operation that creates the final project directory. Do not add a prior `mkdir` for `${target}`.
 15. After the user confirms successful cloning, require a fresh `context.zip` before any project registration, objective creation, context generation, QA or documentation operation.
 16. The fresh `project-tree.txt` must evidence the cloned repository before the new project is treated as present.
-17. Cloning does not by itself register the project in `sbm-ai-assistant`, create lifecycle scripts, create contexts, enable QA or modify global Suite contexts. Those are separate evidenced enablement steps.
+17. Cloning does not by itself register the project in `SBM-AI-ASSISTANT`, create lifecycle scripts, create contexts, enable QA or modify global Suite contexts. Those are separate evidenced enablement steps.
 18. Never invent the backend Project Registry mapping. When project enablement begins, derive and validate the canonical repository-relative mapping through the corresponding lifecycle evidence.
 
 ### Option 4 — QA

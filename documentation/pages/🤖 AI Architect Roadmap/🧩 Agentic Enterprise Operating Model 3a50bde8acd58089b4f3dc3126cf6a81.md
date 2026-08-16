@@ -1180,7 +1180,7 @@ Slack / WhatsApp / Teams / Telegram
                 ↓
              OpenClaw
                 ↓
-        sbm-ai-assistant
+        SBM-AI-ASSISTANT
                 ↓
         Agent Orchestrator
 ```
@@ -1474,6 +1474,81 @@ SBM Suite debe evolucionar hacia un sistema operativo empresarial multimarcas do
 
 ---
 
-# 61. SBM named-agent operating baseline — 2026-08-16
+# 61. Canonical named-agent operating model — 2026-08-16
 
-Agent hierarchy now targets `sbm-agent` as orchestrator plus `dev-agent`, `qa-agent`, `security-agent`, `backlog-agent`, brand agents (`ks-agent`, `pc-agent`, `cg-agent`) and domain agents (`marketing-agent`, `content-agent`). Control/approval UIs are separated from agent execution through `sbm-ai-manager`, `sbm-security` and `sbm-control`.
+This section supersedes generic role names in earlier roadmap sections when there is a conflict. The canonical catalog contains 53 named agents. Agents are definitions/capabilities, not permanently running processes.
+
+## Execution principle
+
+```text
+API/service/job/cron deterministic solution first
+→ agent only when reasoning/ambiguity/high-value analysis is required
+→ Scrum Agent + orchestration decides activation
+→ least privilege + audit + explicit governance
+```
+
+`SBM Agent` consolidates suite-level processes. `Scrum Agent` coordinates async processes, priorities and dependencies. `Tesla Agent` implements; `Edison Agent` independently challenges technical choices; `Igor Agent` owns technical QA/DevOps/SRE; `Armstrong Agent` coordinates deploy/release. Security is led by `Batman Agent` with specialized Blue/Red/Threat/Email roles. `Snape Agent` is governed directly by `sbm-admin` and audits CEO/governance independently of Batman.
+
+Brand agents (`DP Agent`, `KS Agent`, `PC Agent`, `CG Agent`) protect only their own brand and communicate through SBM Manager / `sbm-admin`; specialist internal-agent processes are consolidated through SBM Manager.
+
+## Canonical catalog
+
+| N° | Agente | Gobierno | Responsabilidad | Apps / fuentes principales |
+|---:|---|---|---|---|
+| 1 | CEO Agent | Primordial | Dirección estratégica, decisiones y autorizaciones finales. | sbm-admin ; SBM-MANAGER ; reportes |
+| 2 | SBM Agent | Primordial | Orquesta y consolida procesos, dominios, agentes y marcas. | SBM-CORE ; Control API ; SBM-MANAGER ; sbm-admin |
+| 3 | CFO Agent | CEO | Evalúa finanzas, tecnología, riesgos y autorizaciones económicas. | sbm-admin ; Finanzas ; Procurement ; reportes |
+| 4 | Snape Agent | sbm-admin | Audita independientemente al CEO y escala desviaciones. | sbm-admin ; audit logs ; reportes ; Context/Documentation |
+| 5 | Jarvis Agent | CEO | Asiste al CEO con síntesis, métricas, decisiones y seguimiento. | sbm-admin ; Galileo/read-model ; reportes |
+| 6 | Spock Agent | CFO | Analiza trade-offs, riesgos y costo/beneficio para CFO. | Finanzas ; Sherlock ; Nostradamus ; sbm-admin |
+| 7 | Scrum Agent | SBM | Coordina procesos asíncronos, prioridades, dependencias y activaciones IA. | SBM-CORE ; Control API ; Jira ; SBM-MANAGER |
+| 8 | Sherlock Agent | SBM | Investiga tecnologías, amenazas, normativa, tendencias y evidencia nueva. | Web/search ; Knowledge Base ; Context ; Documentation |
+| 9 | Nostradamus Agent | SBM | Realiza forecasting y predicciones estadísticas transversales. | Galileo/read-model ; históricos ; SBM-CORE |
+| 10 | Darwin Agent | SBM | Entrena, evalúa, fine-tunea y mejora continuamente los agentes. | SBM-AI-ASSISTANT ; eval pipelines ; Sherlock ; Nostradamus |
+| 11 | Tesla Agent | CFO + CEO | Diseña e implementa desarrollos autorizados. | Git repos ; CI ; project APIs ; SBM-CORE |
+| 12 | Edison Agent | CFO | Desafía independientemente las decisiones tecnológicas de Tesla. | Git repos ; CI ; Sherlock ; Nostradamus |
+| 13 | Igor Agent | Tesla | QA técnico, DevOps/SRE, infraestructura y troubleshooting. | CI/CD ; tests ; cloud ; observabilidad |
+| 14 | Armstrong Agent | Tesla + Robin | Coordina deploy, release, readiness y rollback. | CI/CD ; cloud deploy ; repos ; releases |
+| 15 | Batman Agent | CEO + sbm-admin | Patrulla, anticipa ataques, encuentra fallos y exige mejoras. | SBM-SECURITY-API ; SBM-SECURITY ; logs ; SBM-CORE |
+| 16 | Alfred Agent | Batman | Gestiona requerimientos de seguridad y garantiza QA/CIA. | SBM-MANAGER ; QA ; repos ; SBM-SECURITY |
+| 17 | Robin Agent | Batman | Protege integridad funcional/data, backups y coherencia documental. | Context ; Documentation ; backups ; object storage |
+| 18 | Gotham Agent | Robin + Batman | Detecta diferencias entre SBM-SUITE real, Context y Documentation. | Context ; Documentation ; repos ; service inventory |
+| 19 | Joker Agent | Batman / Control API | Ejecuta Red Team y pentesting autorizado contra SBM-SUITE. | Security lab ; pentest tools ; SBM-SECURITY-API ; logs |
+| 20 | Queen Agent | Joker / Control API | Administra ambientes, herramientas y QA técnico de Joker. | Security lab ; CI/CD ; tools/APIs |
+| 21 | Darth Maul Agent | Batman | Threat hunting y atribución de atacantes reales. | SBM-SECURITY-API ; logs ; threat intel ; Joker outputs |
+| 22 | Cerberus Agent | Batman | Trata correo y adjuntos como hostiles y controla cuarentena. | SBM-UTIL mail ; sandbox ; SBM-SECURITY-API |
+| 23 | Hercules Agent | Cerberus + MacGyver | Normaliza contenido sanitizado a formatos seguros para agentes. | SBM-UTIL ; parsers ; object storage |
+| 24 | Murphy Agent | CFO + CEO | Gestiona riesgo transversal y escenarios adversos. | Risk register ; Operations ; Finance ; Security reports |
+| 25 | Abagnale Agent | CFO + Batman | Detecta fraude, falsificación, suplantación y patrones anómalos. | Payments ; identity logs ; finance data ; Galileo |
+| 26 | L Agent | Snape + sbm-admin | Auditoría investigativa, evidencias y reconstrucción de hechos. | audit logs ; Context ; Documentation ; reports |
+| 27 | Belfort Agent | CEO | Lidera estrategia de Marketing/Sales, campañas, tendencias y métricas. | SBM-MARKETING ; Google Analytics ; Search Console ; social APIs |
+| 28 | Stratton Agent | Belfort | Mano técnica de Marketing: ambientes, integraciones, QA y desarrollos. | SBM-MARKETING ; CI/CD ; social APIs ; integrations |
+| 29 | Donnie Agent | Belfort | Ejecuta canales, redes, chatbot y atención externa. | SBM-MARKETING ; social APIs ; chatbot ; messaging |
+| 30 | DaVinci Agent | Belfort | Produce contenido creativo, visual, frontend y campañas. | Blender ; Photoshop ; frontend repos ; asset storage |
+| 31 | Medici Agent | Belfort | QA creativo, estándares, patrones, consistencia y tendencias. | asset storage ; design systems ; Sherlock |
+| 32 | WallStreet Agent | CEO | Gestiona ventas, revenue, pipeline, conversión y forecast. | CRM/Sales ; sbm-admin ; Galileo |
+| 33 | Rockefeller Agent | CFO | Controla gastos, costos, consumo y cotizaciones. | Finance ; cloud billing ; Procurement ; sbm-admin |
+| 34 | Buffett Agent | CFO | Presupuestos, proyecciones, austeridad y optimización de costos. | Finance ; pricing/cost sources ; sbm-admin |
+| 35 | Burns Agent | CFO | Normativa contable/fiscal, monedas, UF/USD y estructuras. | SII ; Accounting ; FX/UF ; sbm-admin |
+| 36 | Smithers Agent | Burns | Operación contable, facturas, respaldos y faltantes. | Accounting ; SII ; Records |
+| 37 | Frink Agent | Burns | Tecnología, integraciones, ambientes y deploys contables. | Accounting integrations ; SBM-UTIL ; CI/CD ; Tesla |
+| 38 | Midas Agent | CFO | Tesorería: caja, pagos, cobranza, conciliación y liquidez. | Finance ; bank/payment APIs ; Accounting |
+| 39 | Galileo Agent | SBM + CEO | KPIs, analytics, calidad de datos y read-model multimarcas. | Data warehouse ; Analytics ; brand data |
+| 40 | MacGyver Agent | SBM + Tesla | Integraciones, conectores, email, archivos y APIs determinísticas. | SBM-UTIL ; external APIs ; mail/files |
+| 41 | Blackbeard Agent | CFO + Mario | Procurement, proveedores, OC, logística, aduana y supply chain. | Procurement ; supplier APIs/docs ; Logistics |
+| 42 | Gringotts Agent | Mario | Gestiona inventario, stock, bodegas, equipos y activos. | Inventory/Assets ; warehouse data ; SBM-MANAGER |
+| 43 | Hermione Agent | Robin | Records, documentos, assets, versionado, retención y archivo. | Object Storage ; Records ; Documentation |
+| 44 | Sparrow Agent | Blackbeard + CEO | Investiga mercados, proveedores, rutas, riesgos y costos de importación. | Procurement/import ; research ; freight/customs |
+| 45 | Barbossa Agent | Blackbeard + CEO | Gestiona importaciones, embarques, aduana, documentos y atrasos. | Import/Logistics ; customs/freight ; Procurement |
+| 46 | Mario Agent | SBM | Gestiona operaciones, atrasos, procesos, cotizaciones, KPIs y estimaciones. | Operations ; SBM-MANAGER ; operational read-model |
+| 47 | Luigi Agent | Mario | Genera diagramas, formatos, reportes y documentación operacional. | Operations ; diagram/report tools ; Documentation |
+| 48 | Harvey Agent | CEO | Legal: contratos, riesgos jurídicos y análisis legal. | Legal docs ; contracts ; sbm-admin ; Hermione |
+| 49 | Louis Agent | CEO | Compliance, controles, obligaciones y evidencia regulatoria. | Compliance ; audit logs ; regulatory sources ; sbm-admin |
+| 50 | DP Agent | Admin DP + SBM Manager | Vela exclusivamente por los intereses de DP. | SBM-MANAGER ; sbm-admin |
+| 51 | KS Agent | Admin KS + SBM Manager | Vela exclusivamente por los intereses de KS. | SBM-MANAGER ; sbm-admin |
+| 52 | PC Agent | Admin PC + SBM Manager | Vela exclusivamente por los intereses de PC. | SBM-MANAGER ; sbm-admin |
+| 53 | CG Agent | Admin CG + SBM Manager | Vela exclusivamente por los intereses de CG. | SBM-MANAGER ; sbm-admin |
+
+## Related implementation objective
+
+`OBJ-CTX-034` expands `SBM-AI-ASSISTANT` to register/govern this catalog, its hierarchy, permissions, tools and on-demand activation without making agents the default automation mechanism.

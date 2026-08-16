@@ -33,14 +33,14 @@ Implementar observabilidad integral para:
 
 La estrategia cubre:
 
-- `sbm-manager`;
-- `sbm-api`;
-- `dp-api`;
-- `sbm-ai-assistant`;
-- `sbm-db`;
+- `SBM-MANAGER`;
+- `SBM-API`;
+- `DP-API`;
+- `SBM-AI-ASSISTANT`;
+- `SBM-DB`;
 - `sbm-comercial`;
 - `sbm-digital-api`;
-- `ks-store`;
+- `KS-STORE`;
 - PostgreSQL;
 - Redis;
 - Celery;
@@ -204,9 +204,9 @@ Frontend
    ↓
 API Gateway
    ↓
-sbm-api
+SBM-API
    ↓
-dp-api
+DP-API
    ↓
 Celery
    ↓
@@ -1111,6 +1111,6 @@ SBM Suite debe evolucionar hacia una plataforma donde cada servicio, integració
 
 ---
 
-# 46. sbm-control operating model — 2026-08-16
+# 46. SBM-CONTROL operating model — 2026-08-16
 
-`sbm-control` is the planned global operations control plane for application/service health, logs, reports/metrics, cron/schedulers, workers/queues, Kafka/Redis/Celery state, Context/Objectives/Documentation, QA, Security, deployments, alerts and DB/backups. It observes/orchestrates approved operations but does not own underlying business logic.
+`SBM-CONTROL` is the planned global operations control plane for application/service health, logs, reports/metrics, cron/schedulers, workers/queues, Kafka/Redis/Celery state, Context/Objectives/Documentation, QA, Security, deployments, alerts and DB/backups. It observes/orchestrates approved operations but does not own underlying business logic.

@@ -413,26 +413,57 @@ SBM User
 
 Additional high-risk data/surfaces:
 
-- `pc-customer`: patient identity, health/prevision, appointments and QR confirmation are restricted data;
+- `PC-CUSTOMER`: patient identity, health/prevision, appointments and QR confirmation are restricted data;
 - CG documents/plans/SII information: object-level authorization, encrypted transport, controlled storage and audit are mandatory;
 - KS camera/device integrations: authenticated device/client scope and explicit authorization are mandatory;
-- `sbm-control`, `sbm-security` and `sbm-ai-manager`: privileged control planes; deny-by-default, strong auth and full audit required;
-- `sbm-core`: jobs/events must carry authorization/tenant context and use idempotency/retry controls without escalating privilege;
-- `sbm-marketing`/`sbm-content`: social credentials, publication permissions and creative assets require separate secrets/access controls.
+- `SBM-CONTROL`, `SBM-SECURITY` and `SBM-AI-MANAGER`: privileged control planes; deny-by-default, strong auth and full audit required;
+- `SBM-CORE`: jobs/events must carry authorization/tenant context and use idempotency/retry controls without escalating privilege;
+- `SBM-MARKETING`/`SBM-CONTENT`: social credentials, publication permissions and creative assets require separate secrets/access controls.
 
 Security workflow target remains:
 
 ```text
 implementation
 → QA
-→ security validation / security-agent
-→ approval when required
-→ commit/release
+→ Batman/Joker security validation through SBM-SECURITY-API
+→ human Security Gate in SBM-SECURITY when required
+→ APPROVE: commit/release
+→ REJECT: Development → QA → Security
 ```
 
-`sbm-security` is the planned UI/control plane for findings, scans, evidence and approvals; it does not replace scanners or the security-agent.
+`SBM-SECURITY` is the planned human UI/control plane for findings, scans, evidence, risks and approvals; `SBM-SECURITY-API` is the isolated Go/Gin/PostgreSQL backend; named Security agents live in `SBM-AI-ASSISTANT`.
 
 SonarQube is treated as temporary QA/static-analysis infrastructure and is not required to run continuously in production.
+
+### Autonomous Security cell and tooling
+
+| Component | Responsibility |
+|---|---|
+| Batman Agent | Security leader/CISO/SOC orchestration, continuous posture and escalation |
+| Alfred Agent | Security requirements, QA/CIA coordination and remediation follow-up |
+| Robin Agent | Integrity, backups, data/document coherence |
+| Gotham Agent | Drift between repositories, runtime, Context and Documentation |
+| Joker Agent | Authorized Red Team and pentesting |
+| Queen Agent | Security lab, tool/API environments and technical QA for Joker |
+| Darth Maul Agent | Threat hunting and attribution using real/Joker indicators |
+| Cerberus Agent | Hostile-by-default email/attachment quarantine and malware triage |
+| Hercules Agent | Sanitization/normalization of validated content for downstream agents |
+| Snape Agent | Independent `sbm-admin` audit of CEO/governance; outside Batman's operational chain |
+| SBM-SECURITY-API | Go/Gin/PostgreSQL Security domain API and evidence owner |
+| SBM-SECURITY | Human review/approval frontend |
+| SBM-CORE | Scheduling/jobs/retries only; no Security policy/domain logic |
+
+Local/Docker/open-source target tools: `Semgrep ; Trivy ; Gitleaks ; OWASP ZAP ; Nuclei ; Nmap ; OSV-Scanner`. External web/API integrations when free/authorized: `SSL Labs ; HTTP Observatory ; SecurityHeaders ; OSV API ; VirusTotal API ; SSL Labs API`. Notifications/integrations: `Slack ; Email ; Jira ; Git ; Documentation`.
+
+```text
+Hourly  → critical alerts/exposed surface/threat indicators/high-risk checks
+Daily   → dependencies/secrets/containers/DAST deltas and unresolved critical/high findings
+Weekly  → broader pentest/regression/threat-hunting and mitigation status
+Monthly → posture report, trends, protocols and prevention plan
+Release → QA PASS → Security Gate → approval/rejection
+```
+
+Pentest execution: Joker/Batman requests `SBM-SECURITY-API`; the API validates scope/policy; `SBM-CORE` schedules isolated work when asynchronous execution is needed; Queen-managed tools test only authorized targets; results/evidence return to `SBM-SECURITY-API`; agents correlate findings with business context, generate mitigation/prevention and a regression control when possible; `SBM-SECURITY` presents the final human gate.
 
 ## 22. Document boundary
 
