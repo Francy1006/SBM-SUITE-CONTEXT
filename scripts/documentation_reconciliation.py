@@ -13,7 +13,7 @@ from typing import Any
 ACTIVE_HEADING = "## 3. Active objectives"
 PENDING_HEADING = "## 4. Pending objectives"
 COMPLETED_HEADING = "## 1. Completed objectives by project"
-LIFECYCLE_STATUSES = {"active", "pending", "completed", "cancelled"}
+LIFECYCLE_STATUSES = {"active", "pending", "completed", "registered", "cancelled", "deleted"}
 PLANNING_HEADINGS = {"## 11. Pending work", "## 12. Roadmap"}
 CANONICAL_DOCUMENTATION_HEADINGS = {
     "## 3. Current state",
@@ -157,7 +157,7 @@ def _completed_objectives(markdown: str) -> list[ObjectiveRecord]:
         row = dict(zip(headers, cells, strict=True))
         objective_id = row.get("Objective ID", "")
         status = row.get("Final status", "")
-        if not objective_id or status not in {"completed", "cancelled"}:
+        if not objective_id or status not in {"completed", "registered", "cancelled", "deleted"}:
             continue
         records.append(
             ObjectiveRecord(

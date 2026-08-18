@@ -26,20 +26,28 @@ SBM-SUITE/
 │   │   ├── qa-all.sh
 │   │   └── output/
 │   ├── scripts/
+│   │   ├── git-flow-policy.py
+│   │   ├── objective-branches.sh
 │   │   ├── context-deploy.sh
 │   │   ├── context-upgrade.sh
 │   │   ├── documentation-deploy.sh
 │   │   ├── documentation-upgrade.sh
 │   │   ├── objective-git-finalize.sh
 │   │   ├── objective-git-cleanup.sh
+│   │   ├── objective-git-state.py
 │   │   ├── repos-branches.sh
 │   │   ├── repos-changes.sh
 │   │   ├── repos-check.sh
+│   │   ├── suite-artifacts.py
 │   │   ├── suite-repositories.py
 │   │   └── project-tree.sh
+│   ├── shared/
+│   │   ├── artifacts.json
+│   │   └── TRANSVERSAL_GOVERNANCE.md
+│   ├── SBM_AGENT.md
 │   └── project-tree.txt
-├── dp/DP-API/
-└── sbm/
+├── DP/DP-API/
+└── SBM/
     ├── SBM-API/
     ├── SBM-DB/
     ├── SBM-MANAGER/
@@ -71,11 +79,11 @@ No standalone installation is required for the Markdown contracts. All manual Co
 
 `context-deploy` receives a registered project name, validates its canonical path through the backend Project Registry, refreshes the global `project-tree.txt`, gathers Git and QA evidence from that project, and requests the RAG package. `context-upgrade` obtains the project from the ZIP manifest and applies project-scoped or suite-scoped rules accordingly. Documentation deploy is global: it compares the complete active, pending and completed Context lifecycle with all functional Documentation pages, selects real candidates across projects and uses `sbm-suite-context` only as an internal backend identity.
 
-Objective creation uses `planning-activation`. Activating an objective that already exists as pending uses `objective-activation` with the complete objective payload expressing desired `status=active`; that transition preserves ID, description, priority, target date and branch and never inserts a second objective.
+Objective creation uses `planning-activation`. Activating one or more objectives that already exist as pending uses one atomic `objective-activation` with a complete payload per objective expressing desired `status=active`; every transition preserves ID, description, priority and target date, permits an explicit valid branch migration (including a shared branch), and never inserts duplicate objectives.
 
 During `implementation-progress` for `sbm-suite-context`, `context-deploy` can validate the transversal without-Sonar summary and queue, include Context QA evidence when present, and normalize that evidence into the generated context package without changing the objective lifecycle state.
 
-During `implementation-closure`, QA applicability is derived structurally from the selected repository's `scripts/qa-check.sh`: absence produces canonical `not-applicable` evidence, while presence requires validated successful execution evidence.
+Every 1..N lifecycle batch requires successful complete-suite evidence from `QA/qa-full.sh` after the branch changes and before finalization; fast-track transitions and lifecycle-only changes never bypass Context QA, the all-project with-Sonar queue or Documentation.
 
 ## Usage
 
@@ -95,19 +103,35 @@ Execute from the local repository root `SBM-SUITE/context`:
 ./QA/qa-all.sh --with-sonar --sonarqube-ready
 ./scripts/objective-git-finalize.sh <objective-id> <objective-branch>
 ./scripts/objective-git-cleanup.sh <objective-id> <objective-branch>
+./scripts/objective-branches.sh prepare <objective-branch>
+./scripts/objective-branches.sh verify <objective-branch>
+./scripts/suite-artifacts.py check all
+./scripts/suite-artifacts.py apply <project-or-path> [<project-or-path> ...]
 ./scripts/repos-check.sh
 ./scripts/project-tree.sh
 ```
 
 All Context and Documentation commands and artifact paths are relative to this working directory.
 
+Every temporary branch finalization is fail-safe. It expects
+`QA/output/finalization-gate.json` with the exact branch, ordered objective IDs
+and `status: "passed"`, plus
+`documentation/output/finalization-gate.json` with the same batch and
+`status: "updated"`. `QA/qa-full.sh` creates the QA gate only after Context QA
+and the sequential all-project Sonar queue pass; `objective-documentation-gate.py`
+records the Documentation gate only after a real global Context→Documentation reconciliation reports `synchronized=true`; lifecycle `Documentation` cells are not used as a substitute for reconciliation.
+
 QA modes are intentionally split. Context QA runs the Context regression suite and syntax checks without Sonar. Project `without-sonar` mode uses only project-owned split test/coverage entrypoints and never bypasses Sonar. Project `with-sonar` mode executes canonical `scripts/qa-check.sh` after explicit SonarQube readiness confirmation. The all-project Sonar mode runs sequentially and records its local queue in `QA/output/qa-all-with-sonar-queue.tsv`.
 
 When Documentation is already synchronized, deploy exits successfully with `Documentation already synchronized` and does not create a package that would lead to a metadata-only upgrade.
 
-Supported lifecycle phases are `planning-activation` (new objectives), `objective-activation` (one existing `pending → active` transition), `implementation-progress`, and `implementation-closure`.
+All Context/Documentation HTTP orchestration uses bounded connect/total timeouts (`AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS`, `AI_ASSISTANT_MAX_TIME_SECONDS`) so a lost backend worker cannot leave lifecycle commands blocked indefinitely.
+
+Supported lifecycle phases are `planning-activation`, `objective-activation`, `objective-registration`, `objective-completion`, `objective-deletion`, `objective-update`, `implementation-progress`, and the compatible legacy `implementation-closure`. Every route accepts an atomic 1..N batch, including explicitly identified multiproject batches routed through `sbm-suite-context`; creation may start directly as `pending`, `active` or `completed`.
 
 Every successful context upgrade writes one backup to `backup/<timestamp>_<project>/`, including original files, `EXECUTIVE_README.md`, `COMMIT_MESSAGE.md`, and `BACKUP_MANIFEST.json`.
+
+`context-upgrade.sh` accepts exactly one ZIP matching `input/context-upgrade*.zip`; `documentation-upgrade.sh` accepts exactly one ZIP matching `documentation/input/documentation-upgrade*.zip`. Client-added suffixes such as `(32)` are accepted without manual renaming. Ambiguous ZIP sets and invalid workflow prefixes are rejected, and the accepted file is normalized internally to the canonical filename before backend validation.
 
 ## API or interfaces
 
@@ -129,7 +153,7 @@ Do not commit or package secrets, tokens, credentials, `.env` files, raw vectors
 
 ## Known limitations
 
-The workflows remain manually initiated. Objective branch preparation/finalization and post-finalization branch cleanup are automated by explicit transversal scripts, but are never executed implicitly by the agent. Documentation creation, deletion, rename, and structural moves require explicit manual contract updates.
+The workflows remain manually initiated. `main` is the only stable and integration destination. Every `FEATURE-*`, `BUGFIX-*`, `RELEASE-*` or `HOTFIX-*` work branch starts from `main`, requires complete QA and Documentation, merges with `--no-ff` directly into `main`, returns all repositories to `main`, and is then deleted locally/remotely. Objective branch preparation/finalization and cleanup are explicit transversal operations and are never executed implicitly by the agent.
 
 ## Target multi-brand portfolio
 
@@ -137,10 +161,11 @@ The current repository governs an expanding suite. Ditaly Pasta/DP remains the h
 
 Planned repositories are documentation/backlog targets only until onboarding creates a real repository and canonical Project Registry entry. Database changes listed in global objectives remain pending until implemented and evidenced in SBM-DB through Flyway/DBML/PostgreSQL.
 
-Planned governance also includes `SBM_AGENT.md` as the minimal clean-chat bootstrap over `INIT_CONTEXT.md`, transversal Context/script propagation from `SBM-SUITE/context`, standardized project onboarding, Git→Notion Documentation publication and Context Objective→Jira backlog synchronization.
+Implemented governance includes `SBM_AGENT.md` as the minimal clean-chat bootstrap over the canonical `INIT_CONTEXT.md` and controlled common-artifact propagation from `SBM-SUITE/context`. `shared/artifacts.json` is the explicit allowlist; `check` is read-only and `apply` performs a global clean-tree preflight before creating or updating managed files. Full project Context files and project-specific scripts are never copied indiscriminately.
 
 ## Related documentation
 
+- `SBM_AGENT.md`
 - `PROJECT_CONTEXT.md`
 - `COMPLETED_OBJECTIVES.md`
 - `SUITE_CONTEXT.md`

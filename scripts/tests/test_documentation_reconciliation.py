@@ -121,6 +121,21 @@ class DocumentationReconciliationTests(unittest.TestCase):
         self.assertTrue(result["synchronized"])
         self.assertEqual(result["differences"], [])
 
+    def test_registered_and_deleted_terminal_states_are_reconciled(self) -> None:
+        for status in ("registered", "deleted"):
+            with self.subTest(status=status):
+                result = self._build(
+                    _project_context(),
+                    _completed_context([("OBJ-T", "PROJECT-A", status)]),
+                    {
+                        "roadmap.md": _documentation_table(
+                            [("OBJ-T", "PROJECT-A", status)]
+                        )
+                    },
+                )
+                self.assertTrue(result["synchronized"])
+                self.assertEqual(result["differences"], [])
+
     def test_real_active_to_pending_difference_is_detected(self) -> None:
         result = self._build(
             _project_context(active=[("OBJ-A", "PROJECT-A", "active")]),

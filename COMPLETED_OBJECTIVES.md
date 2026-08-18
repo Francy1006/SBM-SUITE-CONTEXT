@@ -26,12 +26,14 @@ Allowed final statuses:
 ```text
 completed
 cancelled
+registered
+deleted
 ```
 
 Rules:
 
 - group records by project;
-- append only newly completed or cancelled objectives;
+- append only newly completed, registered, deleted or cancelled objectives;
 - never include active or pending objectives;
 - never create project-level `COMPLETED_OBJECTIVES.md` files;
 - never rewrite unrelated historical records;
@@ -56,6 +58,7 @@ Rules:
 | OBJ-CTX-013 | SBM-SUITE | Corregir y validar el workflow de documentación de `SBM-SUITE/context`, incluyendo `documentation-deploy.sh`, `documentation-upgrade.sh` y el flujo completo posterior a `context-upgrade`. | completed | 5 | BUGFIX-fixes-context-documentation-workflow | N/A | 2026-08-11 | Centralized and stabilized Context, Documentation and Project Tree lifecycle orchestration, including exact lifecycle dispatch, global Documentation reconciliation and suite-scoped QA applicability. | `context-deploy` completed in `implementation-closure` evidence mode; QA was structurally `not-applicable` because `scripts/qa-check.sh` is absent, with the evidence SHA-256 preserved in the export manifest. | N/A | `fix(context): stabilize context documentation workflow` |
 | OBJ-CTX-001 | SBM-SUITE | Validate and stabilize the expanded context governance model, synchronized section patches and project-tree evidence | completed | 5 | FEATURE-expands-context-governance | N/A | 2026-08-13 | Lifecycle-only/no-op closure; no uncommitted Git changes or implementation changes were detected. | QA not-applicable: scripts/qa-check.sh does not exist for sbm-suite-context. | `context/documentation/pages/AI Architect Roadmap/`, `context/documentation/pages/SBM-Suite/` | chore(context): close OBJ-CTX-001 lifecycle |
 | OBJ-CTX-014 | SBM-SUITE | Habilitar QA transversal en `SBM-SUITE/context` para ejecutar, centralizar y gestionar validaciones QA de los proyectos de la suite desde el contexto global, manteniendo los scripts QA específicos por proyecto y una orquestación común desde `context`. | completed | 5 | FEATURE-enables-transversal-qa | N/A | 2026-08-16 | Implemented transversal QA orchestration from `SBM-SUITE/context`, including centralized project execution, queue evidence and lifecycle integration while preserving project-owned QA entrypoints. | Transversal `without-sonar` QA passed for DP-API, SBM-MANAGER, SBM-DB, SBM-API and sbm-ai-assistant with exit code 0 for every queued repository; Context QA passed with exit code 0; SonarQube was not used. | N/A | feat(context): enable transversal QA orchestration |
+| OBJ-CTX-041 | SBM-SUITE | Permitir que `context-upgrade.sh` acepte exactamente un archivo `input/context-upgrade*.zip` y `documentation-upgrade.sh` exactamente un `documentation/input/documentation-upgrade*.zip`, incluyendo sufijos generados por el cliente como `(32)`, sin renombrado manual; mantener validación de manifest/workflow y rechazo de entradas ambiguas o no válidas. | completed | 5 | FEATURE-standardizes-suite-governance | N/A | 2026-08-17 | Implemented workflow-prefixed ZIP input discovery for Context and Documentation upgrades: exactly one matching ZIP is accepted, client-generated suffixes are supported without manual renaming, ambiguous/invalid inputs are rejected, and backend manifest/workflow validation remains canonical. | Canonical full-suite QA passed: Context QA passed and the sequential with-Sonar transversal queue passed for DP-API, sbm-ai-assistant, SBM-API, SBM-DB and SBM-MANAGER. | N/A | chore(context): close OBJ-CTX-041 |
 
 ### SBM-MANAGER
 

@@ -16,9 +16,22 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 
 QA_WORKFLOW_PATH = "scripts/qa-check.sh"
+FULL_QA_WORKFLOW_PATH = "QA/qa-full.sh"
 TRANSVERSAL_RESULTS_PATH = "QA/output/qa-all-without-sonar-results.md"
 TRANSVERSAL_QUEUE_PATH = "QA/output/qa-all-without-sonar-queue.tsv"
+FULL_TRANSVERSAL_RESULTS_PATH = "QA/output/qa-all-with-sonar-results.md"
+FULL_TRANSVERSAL_QUEUE_PATH = "QA/output/qa-all-with-sonar-queue.tsv"
 CONTEXT_QA_RESULTS_PATH = "QA/output/context-qa-results.md"
+LIFECYCLE_PHASES = {
+    "planning-activation",
+    "objective-activation",
+    "objective-registration",
+    "objective-completion",
+    "objective-deletion",
+    "objective-update",
+    "implementation-progress",
+    "implementation-closure",
+}
 
 
 class QAContractError(ValueError):
@@ -94,7 +107,7 @@ def _read_evidence(root: Path, relative_path: str) -> str | None:
     return content
 
 
-def _transversal_queue_status(queue: str) -> str:
+def _transversal_queue_status(queue: str, expected_mode: str = "without-sonar") -> str:
     reader = csv.DictReader(io.StringIO(queue), delimiter="\t")
     expected_fields = {"project", "repository", "mode", "status", "exit_code"}
     if reader.fieldnames is None or set(reader.fieldnames) != expected_fields:
@@ -108,7 +121,7 @@ def _transversal_queue_status(queue: str) -> str:
     for row in rows:
         if not row["project"].strip() or not row["repository"].strip():
             raise QAContractError("transversal QA queue has an incomplete project row")
-        if row["mode"] != "without-sonar":
+        if row["mode"] != expected_mode:
             raise QAContractError("transversal QA queue has an unexpected mode")
         try:
             exit_code = int(row["exit_code"])
@@ -116,12 +129,66 @@ def _transversal_queue_status(queue: str) -> str:
             raise QAContractError(
                 "transversal QA queue has an invalid exit code"
             ) from exc
-        if row["status"] != "passed" or exit_code != 0:
+        acceptable = row["status"] == "passed" and exit_code == 0
+        if expected_mode == "with-sonar":
+            acceptable = acceptable or (
+                row["status"] == "skipped" and exit_code == 3
+            )
+        if not acceptable:
             passed = False
     return "passed" if passed else "failed"
 
 
-def _transversal_summary_status(summary: str) -> str:
+def evaluate_full_qa(project_name: str, context_root: Path) -> tuple[QADecision, str]:
+    """Require successful Context plus all-project Sonar evidence for any lifecycle batch."""
+    resolved_root = context_root.resolve(strict=True)
+    context_evidence = _read_evidence(resolved_root, CONTEXT_QA_RESULTS_PATH)
+    summary = _read_evidence(resolved_root, FULL_TRANSVERSAL_RESULTS_PATH)
+    queue = _read_evidence(resolved_root, FULL_TRANSVERSAL_QUEUE_PATH)
+    if context_evidence is None or summary is None or queue is None:
+        raise QAContractError(
+            "full-suite QA evidence requires context QA plus with-Sonar summary and queue"
+        )
+    context_status = _executed_status(context_evidence)
+    summary_status = _transversal_summary_status(summary, allow_not_applicable=True)
+    queue_status = _transversal_queue_status(queue, "with-sonar")
+    status = "passed" if context_status == summary_status == queue_status == "passed" else "failed"
+    evidence = "\n".join(
+        (
+            "# QA Results",
+            "",
+            f"Overall status: {status}",
+            "",
+            f"## {CONTEXT_QA_RESULTS_PATH}",
+            "",
+            context_evidence.rstrip(),
+            "",
+            f"## {FULL_TRANSVERSAL_RESULTS_PATH}",
+            "",
+            summary.rstrip(),
+            "",
+            f"## {FULL_TRANSVERSAL_QUEUE_PATH}",
+            "",
+            "```tsv",
+            queue.rstrip(),
+            "```",
+            "",
+        )
+    )
+    decision = QADecision(
+        status=status,
+        applicable=True,
+        workflow_path=FULL_QA_WORKFLOW_PATH,
+        evidence_file="qa-results.md",
+        evidence_sha256=_sha256(evidence),
+        reason="full Context and transversal with-Sonar QA evidence verified",
+    )
+    if status != "passed":
+        raise QAContractError("lifecycle batch is blocked by failed full-suite QA")
+    return decision, evidence
+
+
+def _transversal_summary_status(summary: str, *, allow_not_applicable: bool = False) -> str:
     statuses = re.findall(
         r"^\|\s*[^|]+\|\s*`[^`]+`\s*\|\s*([^|]+?)\s*\|",
         summary,
@@ -130,7 +197,10 @@ def _transversal_summary_status(summary: str) -> str:
     statuses = [status.strip().casefold() for status in statuses]
     if not statuses:
         raise QAContractError("transversal QA summary has no project results")
-    return "passed" if all(status == "passed" for status in statuses) else "failed"
+    allowed = {"passed"}
+    if allow_not_applicable:
+        allowed.add("not-applicable")
+    return "passed" if all(status in allowed for status in statuses) else "failed"
 
 
 def evaluate_progress_qa(
@@ -340,7 +410,12 @@ def normalize_context_export(
     if manifest.get("project_name") != project_name:
         raise QAContractError("context package project_name does not match QA decision")
     phase = manifest.get("lifecycle_phase")
-    if phase == "implementation-closure":
+    if decision.workflow_path == FULL_QA_WORKFLOW_PATH:
+        if phase not in LIFECYCLE_PHASES:
+            raise QAContractError("full QA export has an unsupported lifecycle phase")
+        if decision.status != "passed" or not decision.applicable:
+            raise QAContractError("full QA export has no authorizing QA status")
+    elif phase == "implementation-closure":
         if decision.status not in {"passed", "not-applicable"}:
             raise QAContractError("closure export has no authorizing QA status")
         if decision.applicable != (decision.status == "passed"):
@@ -394,6 +469,11 @@ def _main() -> int:
     progress.add_argument("--project-root", required=True)
     progress.add_argument("--output", required=True)
 
+    full = subparsers.add_parser("evaluate-full")
+    full.add_argument("--project-name", required=True)
+    full.add_argument("--project-root", required=True)
+    full.add_argument("--output", required=True)
+
     normalize = subparsers.add_parser("normalize-export")
     normalize.add_argument("--decision", required=True)
     normalize.add_argument("--context-package", required=True)
@@ -433,6 +513,23 @@ def _main() -> int:
                 payload["qa_results"] = evidence
             Path(arguments.output).write_text(
                 json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+        elif arguments.command == "evaluate-full":
+            decision, evidence = evaluate_full_qa(
+                arguments.project_name, Path(arguments.project_root)
+            )
+            Path(arguments.output).write_text(
+                json.dumps(
+                    {
+                        "project_name": arguments.project_name,
+                        "qa": decision.manifest(),
+                        "qa_results": evidence,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
                 encoding="utf-8",
             )
         else:

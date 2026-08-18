@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "artifacts": [
+    {
+      "source": "shared/TRANSVERSAL_GOVERNANCE.md",
+      "target": "context/TRANSVERSAL_GOVERNANCE.md",
+      "exclude_projects": [
+        "context"
+      ]
+    }
+  ]
+}

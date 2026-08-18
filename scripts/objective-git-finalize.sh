@@ -1,72 +1,67 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-usage() {
-  cat <<'USAGE'
-Uso:
-  ./scripts/objective-git-finalize.sh <objective-id> <objective-branch>
-USAGE
-}
-
-[[ "$#" == "2" ]] || {
-  usage >&2
+[[ "$#" -ge "2" ]] || {
+  echo "Uso: ./scripts/objective-git-finalize.sh <objective-id>... <objective-branch>" >&2
   exit 1
 }
 
-OBJECTIVE_ID="$1"
-OBJECTIVE_BRANCH="$2"
-COMMIT_MESSAGE="chore(objective): finalize ${OBJECTIVE_ID}"
-
-[[ -n "${OBJECTIVE_ID//[[:space:]]/}" ]] || {
-  echo "ERROR: objective-id no puede estar vacío" >&2
-  exit 1
-}
-
-git check-ref-format --branch "${OBJECTIVE_BRANCH}" >/dev/null 2>&1 || {
-  echo "ERROR: Branch de objetivo inválida: ${OBJECTIVE_BRANCH}" >&2
-  exit 1
-}
-[[ "${OBJECTIVE_BRANCH}" != "main" ]] || {
-  echo "ERROR: La branch del objetivo no puede ser main" >&2
-  exit 1
-}
-
+OBJECTIVE_COUNT=$(( $# - 1 ))
+OBJECTIVE_IDS=("${@:1:${OBJECTIVE_COUNT}}")
+OBJECTIVE_BRANCH="${!#}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTEXT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
 PROJECT_CONTEXT_FILE="${CONTEXT_ROOT}/PROJECT_CONTEXT.md"
 COMPLETED_OBJECTIVES_FILE="${CONTEXT_ROOT}/COMPLETED_OBJECTIVES.md"
-OBJECTIVE_BRANCH_SCRIPT="${SCRIPT_DIR}/objective-branches.sh"
 REPOSITORY_HELPER="${SCRIPT_DIR}/suite-repositories.py"
+BRANCH_HELPER="${SCRIPT_DIR}/objective-branches.sh"
+POLICY_HELPER="${SCRIPT_DIR}/git-flow-policy.py"
 
-[[ -f "${PROJECT_CONTEXT_FILE}" ]] || {
-  echo "ERROR: No existe context/PROJECT_CONTEXT.md" >&2
-  exit 1
-}
-[[ -f "${COMPLETED_OBJECTIVES_FILE}" ]] || {
-  echo "ERROR: No existe context/COMPLETED_OBJECTIVES.md" >&2
-  exit 1
-}
-[[ -x "${OBJECTIVE_BRANCH_SCRIPT}" ]] || {
-  echo "ERROR: No existe scripts/objective-branches.sh ejecutable" >&2
-  exit 1
-}
-[[ -x "${REPOSITORY_HELPER}" ]] || {
-  echo "ERROR: No existe scripts/suite-repositories.py ejecutable" >&2
+for required_file in \
+  "${PROJECT_CONTEXT_FILE}" \
+  "${COMPLETED_OBJECTIVES_FILE}" \
+  "${REPOSITORY_HELPER}" \
+  "${BRANCH_HELPER}" \
+  "${POLICY_HELPER}"; do
+  [[ -f "${required_file}" ]] || {
+    echo "ERROR: archivo requerido inexistente: ${required_file}" >&2
+    exit 1
+  }
+done
+
+IFS=$'\t' read -r BRANCH_TYPE BASE_BRANCH INTEGRATION_BRANCH FINAL_BRANCH REQUIRES_QA REQUIRES_DOCUMENTATION < <(
+  python3 "${POLICY_HELPER}" describe "${OBJECTIVE_BRANCH}" --format tsv
+)
+[[ "${BASE_BRANCH}" == "main" && "${INTEGRATION_BRANCH}" == "main" && "${FINAL_BRANCH}" == "main" ]] || {
+  echo "ERROR: La política de finalización debe usar main exclusivamente" >&2
   exit 1
 }
 
-# Hard lifecycle gate: finalization is legal only after the objective is already
-# persisted as completed and removed from active/pending operational state.
-python3 - "${OBJECTIVE_ID}" "${OBJECTIVE_BRANCH}" \
-  "${PROJECT_CONTEXT_FILE}" "${COMPLETED_OBJECTIVES_FILE}" <<'PY'
-from pathlib import Path
+python3 - \
+  "${PROJECT_CONTEXT_FILE}" \
+  "${COMPLETED_OBJECTIVES_FILE}" \
+  "${OBJECTIVE_BRANCH}" \
+  "${OBJECTIVE_IDS[@]}" <<'PY'
+from __future__ import annotations
+
 import re
 import sys
+from pathlib import Path
 
-objective_id, objective_branch, project_path, completed_path = sys.argv[1:]
-project_text = Path(project_path).read_text(encoding="utf-8")
-completed_text = Path(completed_path).read_text(encoding="utf-8")
+project_path = Path(sys.argv[1])
+completed_path = Path(sys.argv[2])
+branch = sys.argv[3]
+objective_ids = sys.argv[4:]
+
+if not objective_ids or any(not value.strip() for value in objective_ids):
+    raise SystemExit("ERROR: se requiere al menos un objective-id no vacío")
+
+duplicates = sorted({value for value in objective_ids if objective_ids.count(value) > 1})
+if duplicates:
+    raise SystemExit(
+        "ERROR: objective-id duplicado en la solicitud: " + ", ".join(duplicates)
+    )
 
 
 def cells(line: str) -> list[str]:
@@ -86,159 +81,226 @@ def table_records(text: str):
         if "Objective ID" in values or "ID" in values:
             headers = values
             continue
-        if headers is None or len(values) != len(headers):
-            continue
-        yield dict(zip(headers, values))
+        if headers is not None and len(values) == len(headers):
+            yield dict(zip(headers, values, strict=True))
 
 
-completed_matches = [
-    row
-    for row in table_records(completed_text)
-    if row.get("Objective ID") == objective_id
-]
-if len(completed_matches) != 1:
-    raise SystemExit(
-        f"ERROR: {objective_id} no está completed exactamente una vez en COMPLETED_OBJECTIVES.md"
-    )
+project_records = list(table_records(project_path.read_text(encoding="utf-8")))
+completed_records = list(table_records(completed_path.read_text(encoding="utf-8")))
 
-record = completed_matches[0]
-status = record.get("Final status", "")
-branch = record.get("Branch", "").strip("`")
-if status != "completed":
-    raise SystemExit(
-        f"ERROR: {objective_id} tiene Final status '{status or 'N/A'}'; se requiere completed"
-    )
-if branch != objective_branch:
-    raise SystemExit(
-        f"ERROR: Branch de cierre para {objective_id} es '{branch or 'N/A'}', no '{objective_branch}'"
-    )
-
-for row in table_records(project_text):
-    row_id = row.get("ID") or row.get("Objective ID")
-    status = row.get("Status", "")
-    if row_id == objective_id and status in {"active", "pending"}:
+for objective_id in objective_ids:
+    operational = [
+        row
+        for row in project_records
+        if row.get("ID") == objective_id
+        and row.get("Status") in {"active", "pending"}
+    ]
+    if operational:
+        states = ", ".join(sorted({row.get("Status", "N/A") for row in operational}))
         raise SystemExit(
-            f"ERROR: {objective_id} todavía figura como {status} en PROJECT_CONTEXT.md"
+            f"ERROR: {objective_id} todavía figura como {states}; finalización requiere completed"
         )
 
-print(f"Lifecycle finalizado validado: {objective_id} / {objective_branch}")
+    completed = [
+        row
+        for row in completed_records
+        if row.get("Objective ID") == objective_id
+        and row.get("Final status") == "completed"
+    ]
+    if len(completed) != 1:
+        raise SystemExit(
+            f"ERROR: {objective_id} debe existir exactamente una vez en "
+            "COMPLETED_OBJECTIVES.md con Final status=completed"
+        )
+
+    recorded_branch = completed[0].get("Branch", "").strip("`")
+    if recorded_branch != branch:
+        raise SystemExit(
+            f"ERROR: Branch de cierre para {objective_id} es "
+            f"'{recorded_branch or 'N/A'}', no '{branch}'"
+        )
+
+print(
+    "Lifecycle closure validado: "
+    + ", ".join(objective_ids)
+    + f" / {branch}"
+)
 PY
 
-REPOSITORY_LIST="$(mktemp)"
-CHANGED_LIST="$(mktemp)"
-trap 'rm -f "${REPOSITORY_LIST}" "${CHANGED_LIST}"' EXIT
+# Verificación transversal antes de cualquier add/commit/push/merge/checkout a main.
+"${BRANCH_HELPER}" verify "${OBJECTIVE_BRANCH}"
 
-python3 "${REPOSITORY_HELPER}" list-paths > "${REPOSITORY_LIST}"
-
-# La verificación transversal sucede antes de cualquier add/commit/push/merge.
-"${OBJECTIVE_BRANCH_SCRIPT}" verify "${OBJECTIVE_BRANCH}"
-
-while IFS= read -r relative_path; do
-  [[ -n "${relative_path}" ]] || continue
-  repository="${SUITE_ROOT}/${relative_path}"
-  if [[ -n "$(git -C "${repository}" status --porcelain)" ]]; then
-    printf '%s\n' "${relative_path}" >> "${CHANGED_LIST}"
-  fi
-done < "${REPOSITORY_LIST}"
-
-if [[ ! -s "${CHANGED_LIST}" ]]; then
-  echo "Sin repositorios con cambios; se normalizarán todos los repositorios a main."
-fi
+REPOSITORIES="$(mktemp)"
+CHANGED_REPOSITORIES="$(mktemp)"
+trap 'rm -f "${REPOSITORIES}" "${CHANGED_REPOSITORIES}"' EXIT
+python3 "${REPOSITORY_HELPER}" list-paths > "${REPOSITORIES}"
 
 preflight_repository() {
-  local relative_path="$1"
-  local repository="${SUITE_ROOT}/${relative_path}"
-  local current_branch
-  local lock_name
+  local path="$1"
+  local repository="${SUITE_ROOT}/$1"
+  local name
+  local occupied
+  local remote_main
 
-  current_branch="$(git -C "${repository}" branch --show-current)"
-  [[ "${current_branch}" == "${OBJECTIVE_BRANCH}" ]] || {
-    echo "ERROR: ${relative_path}: branch actual '${current_branch:-detached HEAD}', esperada '${OBJECTIVE_BRANCH}'" >&2
+  [[ -d "${repository}" ]] || {
+    echo "ERROR: ${path}: directorio inexistente" >&2
+    return 1
+  }
+  git -C "${repository}" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
+    echo "ERROR: ${path}: no es un repositorio Git válido" >&2
+    return 1
+  }
+  [[ "$(git -C "${repository}" rev-parse --show-toplevel)" == "$(cd "${repository}" && pwd -P)" ]] || {
+    echo "ERROR: ${path}: el path resuelto no es la raíz del repositorio" >&2
+    return 1
+  }
+  [[ "$(git -C "${repository}" branch --show-current)" == "${OBJECTIVE_BRANCH}" ]] || {
+    echo "ERROR: ${path}: branch temporal no activa" >&2
     return 1
   }
   [[ -z "$(git -C "${repository}" diff --name-only --diff-filter=U)" ]] || {
-    echo "ERROR: ${relative_path}: existen conflictos sin resolver" >&2
+    echo "ERROR: ${path}: conflictos sin resolver" >&2
     return 1
   }
   git -C "${repository}" diff --check >/dev/null || {
-    echo "ERROR: ${relative_path}: git diff --check falló" >&2
+    echo "ERROR: ${path}: git diff --check falló" >&2
     return 1
   }
   git -C "${repository}" show-ref --verify --quiet refs/heads/main || {
-    echo "ERROR: ${relative_path}: branch local main inexistente" >&2
+    echo "ERROR: ${path}: main inexistente" >&2
     return 1
   }
   git -C "${repository}" remote get-url origin >/dev/null 2>&1 || {
-    echo "ERROR: ${relative_path}: remote origin inexistente" >&2
+    echo "ERROR: ${path}: origin inexistente" >&2
     return 1
   }
-  git -C "${repository}" fetch origin "+refs/heads/main:refs/remotes/origin/main" >/dev/null 2>&1 || {
-    echo "ERROR: ${relative_path}: no se pudo actualizar origin/main" >&2
+  remote_main="$(git -C "${repository}" ls-remote origin refs/heads/main | awk '{print $1}')"
+  [[ -n "${remote_main}" ]] || {
+    echo "ERROR: ${path}: origin/main inexistente" >&2
+    return 1
+  }
+  git -C "${repository}" fetch origin \
+    "+refs/heads/main:refs/remotes/origin/main" >/dev/null 2>&1 || {
+    echo "ERROR: ${path}: no se pudo actualizar origin/main" >&2
     return 1
   }
   git -C "${repository}" merge-base --is-ancestor main origin/main || {
-    echo "ERROR: ${relative_path}: main local no puede actualizarse por fast-forward a origin/main" >&2
+    echo "ERROR: ${path}: main local no admite fast-forward" >&2
     return 1
   }
-  git -C "${repository}" push --dry-run origin \
-    "HEAD:refs/heads/${OBJECTIVE_BRANCH}" >/dev/null 2>&1 || {
-    echo "ERROR: ${relative_path}: la branch del objetivo no puede publicarse por fast-forward" >&2
+
+  occupied="$(
+    git -C "${repository}" worktree list --porcelain \
+      | awk '/^branch refs\/heads\// {sub(/^branch refs\/heads\//, ""); print}'
+  )"
+  grep -Fxq "main" <<< "${occupied}" && {
+    echo "ERROR: ${path}: main ocupada por otro worktree" >&2
     return 1
   }
-  for lock_name in index.lock HEAD.lock packed-refs.lock; do
-    [[ ! -e "$(git -C "${repository}" rev-parse --git-path "${lock_name}")" ]] || {
-      echo "ERROR: ${relative_path}: bloqueo Git activo (${lock_name})" >&2
+
+  for name in \
+    index.lock HEAD.lock packed-refs.lock \
+    MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD rebase-merge rebase-apply; do
+    [[ ! -e "$(git -C "${repository}" rev-parse --git-path "${name}")" ]] || {
+      echo "ERROR: ${path}: operación Git activa (${name})" >&2
       return 1
     }
   done
-  for lock_name in MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD rebase-merge rebase-apply; do
-    [[ ! -e "$(git -C "${repository}" rev-parse --git-path "${lock_name}")" ]] || {
-      echo "ERROR: ${relative_path}: operación Git en curso (${lock_name})" >&2
-      return 1
-    }
-  done
+
+  if [[ -n "$(git -C "${repository}" status --porcelain)" ]]; then
+    printf '%s\n' "${path}" >> "${CHANGED_REPOSITORIES}"
+    if git -C "${repository}" rev-parse --abbrev-ref '@{upstream}' >/dev/null 2>&1; then
+      git -C "${repository}" push --dry-run origin \
+        "HEAD:refs/heads/${OBJECTIVE_BRANCH}" >/dev/null 2>&1 || {
+        echo "ERROR: ${path}: branch temporal no publicable" >&2
+        return 1
+      }
+    else
+      git -C "${repository}" push --dry-run --set-upstream origin \
+        "${OBJECTIVE_BRANCH}" >/dev/null 2>&1 || {
+        echo "ERROR: ${path}: primera publicación no disponible" >&2
+        return 1
+      }
+    fi
+  fi
 }
 
-preflight_failed=0
-while IFS= read -r relative_path; do
-  [[ -n "${relative_path}" ]] || continue
-  preflight_repository "${relative_path}" || preflight_failed=1
-done < "${REPOSITORY_LIST}"
+failed=0
+while IFS= read -r path; do
+  [[ -z "${path}" ]] || preflight_repository "${path}" || failed=1
+done < "${REPOSITORIES}"
 
-[[ "${preflight_failed}" == "0" ]] || {
-  echo "ERROR: Preflight Git transversal fallido; no se ejecutó add/commit/push/merge." >&2
+[[ "${failed}" == "0" ]] || {
+  echo "ERROR: Preflight transversal fallido; no se ejecutó add/commit/push/merge." >&2
   exit 1
 }
 
-while IFS= read -r relative_path; do
-  [[ -n "${relative_path}" ]] || continue
-  repository="${SUITE_ROOT}/${relative_path}"
+OBJECTIVE_LABEL="$(IFS=,; echo "${OBJECTIVE_IDS[*]}")"
+COMMIT_MESSAGE="chore(objective): finalize ${OBJECTIVE_LABEL}"
+MERGE_MESSAGE="merge(objective): ${OBJECTIVE_LABEL}"
 
-  echo "Finalizando ${relative_path}..."
+# Solo los repositorios con cambios reales reciben commit y publicación de la branch.
+while IFS= read -r path; do
+  [[ -n "${path}" ]] || continue
+  repository="${SUITE_ROOT}/${path}"
+
   git -C "${repository}" add .
-  if git -C "${repository}" diff --cached --quiet; then
-    echo "Sin cambios staged en ${relative_path}; se omite commit."
-    continue
+  if ! git -C "${repository}" diff --cached --quiet; then
+    git -C "${repository}" commit -m "${COMMIT_MESSAGE}"
   fi
-  git -C "${repository}" commit -m "${COMMIT_MESSAGE}"
-  git -C "${repository}" push -u origin "${OBJECTIVE_BRANCH}"
+
+  if git -C "${repository}" rev-parse --abbrev-ref '@{upstream}' >/dev/null 2>&1; then
+    git -C "${repository}" push origin "${OBJECTIVE_BRANCH}"
+  else
+    git -C "${repository}" push --set-upstream origin "${OBJECTIVE_BRANCH}"
+  fi
+done < "${CHANGED_REPOSITORIES}"
+
+# Todos los repositorios terminan en main; solo los modificados hacen merge/push.
+while IFS= read -r path; do
+  [[ -n "${path}" ]] || continue
+  repository="${SUITE_ROOT}/${path}"
 
   git -C "${repository}" checkout main
   git -C "${repository}" pull --ff-only origin main
-  git -C "${repository}" merge --no-ff "${OBJECTIVE_BRANCH}" \
-    -m "merge: ${OBJECTIVE_BRANCH}"
-  git -C "${repository}" push origin main
 
-done < "${CHANGED_LIST}"
-
-while IFS= read -r relative_path; do
-  [[ -n "${relative_path}" ]] || continue
-  repository="${SUITE_ROOT}/${relative_path}"
-  if [[ "$(git -C "${repository}" branch --show-current)" != "main" ]]; then
-    echo "Normalizando ${relative_path} a main..."
-    git -C "${repository}" checkout main
+  if grep -Fxq "${path}" "${CHANGED_REPOSITORIES}"; then
+    git -C "${repository}" merge --no-ff "${OBJECTIVE_BRANCH}" -m "${MERGE_MESSAGE}"
+    git -C "${repository}" push origin main
   fi
-  git -C "${repository}" pull --ff-only origin main
-done < "${REPOSITORY_LIST}"
 
-echo "Finalización Git transversal completada para ${OBJECTIVE_ID} (${OBJECTIVE_BRANCH}). Todos los repositorios quedaron en main."
+done < "${REPOSITORIES}"
+
+# Verificación final. La branch se conserva para objective-git-cleanup.sh.
+postflight_failed=0
+while IFS= read -r path; do
+  [[ -n "${path}" ]] || continue
+  repository="${SUITE_ROOT}/${path}"
+  [[ "$(git -C "${repository}" branch --show-current)" == "main" ]] || {
+    echo "ERROR: ${path}: no terminó en main" >&2
+    postflight_failed=1
+    continue
+  }
+  [[ -z "$(git -C "${repository}" status --porcelain)" ]] || {
+    echo "ERROR: ${path}: working tree no quedó limpio" >&2
+    postflight_failed=1
+  }
+  git -C "${repository}" fetch origin \
+    "+refs/heads/main:refs/remotes/origin/main" >/dev/null 2>&1 || {
+    echo "ERROR: ${path}: no se pudo verificar origin/main" >&2
+    postflight_failed=1
+    continue
+  }
+  [[ "$(git -C "${repository}" rev-parse main)" == "$(git -C "${repository}" rev-parse origin/main)" ]] || {
+    echo "ERROR: ${path}: main no quedó sincronizada con origin/main" >&2
+    postflight_failed=1
+  }
+done < "${REPOSITORIES}"
+
+[[ "${postflight_failed}" == "0" ]] || {
+  echo "ERROR: Postflight transversal fallido." >&2
+  exit 1
+}
+
+echo "Finalización transversal completada para ${OBJECTIVE_COUNT} objetivo(s) (${BRANCH_TYPE}); repositorios en main."
+echo "Branch temporal preservada para cleanup separado: ${OBJECTIVE_BRANCH}"

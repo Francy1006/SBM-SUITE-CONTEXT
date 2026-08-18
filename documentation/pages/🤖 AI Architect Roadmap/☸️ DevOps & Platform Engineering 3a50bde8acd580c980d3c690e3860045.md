@@ -1,6 +1,6 @@
 # ☸️ DevOps & Platform Engineering
 
-> **Last updated:** 2026-08-14
+> **Last updated:** 2026-08-18
 >
 > **Purpose:**
 >
@@ -53,6 +53,7 @@ Validated lifecycle state from current global Context:
 | DP-TEST-001 | DP-API | completed | Lifecycle-only/no-op closure with current QA evidence; no implementation-state change claimed. |
 | OBJ-CTX-013 | SBM-SUITE | completed | Context closure evidence confirms the centralized Context/Documentation workflow, exact lifecycle dispatch, global reconciliation, stale-output handling and structured QA `not-applicable` support. |
 | SBM-MANAGER-002 | SBM-MANAGER | completed | Closure evidence records canonical DP-API/SBM-API frontend ownership, 45/45 passing tests, 70.14% coverage and server-side Quality Gate `PASSED`. |
+| OBJ-CTX-041 | SBM-SUITE | completed | Closure evidence records workflow-prefixed ZIP input discovery for Context and Documentation upgrades, including client-generated suffix support, ambiguity rejection, canonical manifest/workflow validation and successful full-suite QA with SonarQube. |
 
 Current workflow behavior includes:
 
@@ -62,6 +63,7 @@ Current workflow behavior includes:
 - context contract preflight before shared exchange cleanup;
 - bounded QA evidence persisted to `context/qa-results.md`;
 - client-side ZIP manifest and physical-patch preflight before backend context upgrade;
+- upgrade input discovery accepts exactly one workflow-prefixed ZIP (`context-upgrade*.zip` or `documentation-upgrade*.zip`), supports client-generated suffixes such as `(32)` without manual renaming, and rejects ambiguous or invalid ZIP inputs;
 - mandatory project/global objective and QA synchronization during closure;
 - `implementation-progress` never triggers Git finalization; a valid progress no-op may skip Documentation but continues implementation;
 - closure-only Git finalization is allowed only after the objective is persisted as `completed` and required Documentation reconciliation is complete;
@@ -264,6 +266,14 @@ Historical `DP-QA-001` evidence dated `2026-08-02` remains valid for its recorde
 
 The documentation upgrade validator additionally requires exact metadata labels, exact level-two heading order, authorized existing paths, matching manifest lists and valid SHA-256 hashes.
 
+Validated `OBJ-CTX-041` closure evidence:
+
+- Context lifecycle closure is recorded as `completed`;
+- Context QA passed;
+- the sequential transversal queue with SonarQube passed for DP-API, sbm-ai-assistant, SBM-API, SBM-DB and SBM-MANAGER;
+- workflow-prefixed Context/Documentation upgrade ZIP handling was validated without manual filename renaming;
+- no QA errors are recorded for the closure evidence.
+
 ## 11. Known limitations
 
 - The `2026-08-07` QA run records server-side Quality Gate `OK`; this result applies only to that configured QA execution.
@@ -281,7 +291,7 @@ The documentation upgrade validator additionally requires exact metadata labels,
 
 | Objective ID | Objective | Status | Priority | Target date | Branch |
 |---|---|---|---:|---|---|
-| OBJ-CTX-014 | Habilitar QA transversal en `SBM-SUITE/context` para ejecutar, centralizar y gestionar validaciones QA de los proyectos de la suite desde el contexto global, manteniendo los scripts QA específicos por proyecto y una orquestación común desde `context`. | active | 5 | N/A | FEATURE-enables-transversal-qa |
+| OBJ-CTX-014 | Habilitar QA transversal en `SBM-SUITE/context` para ejecutar, centralizar y gestionar validaciones QA de los proyectos de la suite desde el contexto global, manteniendo los scripts QA específicos por proyecto y una orquestación común desde `context`. | completed | 5 | N/A | FEATURE-enables-transversal-qa |
 
 Este objetivo permanece active y representa una ejecución en curso. Su activación no acredita todavía implementación completada, ejecución QA exitosa ni cambios de runtime.
 
@@ -290,6 +300,26 @@ Este objetivo permanece active y representa una ejecución en curso. Su activaci
 - Add downstream Notion synchronization without changing Git ownership.
 - Expand observability for indexing, retrieval, validation, backup and rollback.
 - Maintain separate context, documentation and Confluence collections.
+
+### Platform responsibilities and transversal governance — 2026-08-16
+
+`SBM-CORE` is the planned async/runtime workflow platform; `SBM-CONTROL` is the planned operational control plane; `SBM-SECURITY` is the planned human Security-process UI; and `SBM-SECURITY-API` is the planned isolated Go/Gin/PostgreSQL Security backend. Kafka must not be deployed by default when Celery/Redis task semantics are sufficient. SonarQube remains an explicit QA/static-analysis dependency rather than permanent production runtime.
+
+`OBJ-CTX-038` remains **active**. The current temporary branch contains the main-only transversal Git finalization work for 1..N objectives/projects, including branch verification, full QA and Documentation gates, direct `--no-ff` merge to `main`, return to `main` and temporary-branch cleanup. This work is not considered completed until the lifecycle is finalized successfully.
+
+`OBJ-CTX-041` is **completed**. The validated implementation removes manual download renaming by allowing exactly one physical `input/context-upgrade*.zip` or `documentation/input/documentation-upgrade*.zip`, normalizing the accepted filename internally while preserving the canonical manifest/workflow contract and rejecting ambiguous or invalid inputs. Its validated closure is reflected in `Current state`.
+
+`OBJ-CTX-039` remains **pending**. It plans reusable bases:
+
+```text
+__BASE-FRANCHISE-API → DP-API / KS-API / PC-API / CG-API
+__BASE-STORE         → brand stores
+__BASE-MOBILE        → brand-user mobile apps
+__BASE-CLIENT        → client apps
+__BASE-CUSTOMER      → customer apps
+```
+
+The planned inheritance model tracks base version, last inherited version, synchronization status and explicit divergences, with controlled diff/adaptation and validation instead of ad-hoc copying.
 
 ## 13. Related pages
 
@@ -309,25 +339,3 @@ Este objetivo permanece active y representa una ejecución en curso. Su activaci
 ## 15. Document boundary
 
 This page defines the current DevOps, QA evidence and context/documentation workflow operating model supported by supplied evidence. The `2026-08-07` configured QA run includes server-side Quality Gate `OK`, but this page does not certify production readiness, cloud or Kubernetes deployment, tenant isolation, object-level authorization, database compatibility, migration execution or Notion synchronization.
-
----
-
-## 16. New platform responsibilities — 2026-08-16
-
-`SBM-CORE` becomes the planned async/runtime workflow platform; `SBM-CONTROL` becomes the operational control plane; `SBM-SECURITY` becomes the human Security-process UI; `SBM-SECURITY-API` becomes the isolated Go/Gin/PostgreSQL Security backend. Kafka must not be deployed by default when Celery/Redis task semantics are sufficient. SonarQube remains an explicit QA/static-analysis dependency, not permanent production runtime.
-
-Current Git finalization remains guarded by `objective-git-finalize.sh`; `OBJ-CTX-037` must add first-publication handling with `git push --set-upstream origin <objective-branch>` when no upstream exists. `OBJ-CTX-038` then introduces Git Flow as the target transversal lifecycle (`main`, `develop`, `feature`, `bugfix`, `hotfix`, `release`) with Objective→branch association and QA/Security gates.
-
-`OBJ-CTX-041` removes manual download renaming: Context upgrade input must resolve exactly one `input/context-upgrade*.zip`, and Documentation upgrade input exactly one `documentation/input/documentation-upgrade*.zip`. Suffixes such as `context-upgrade(32).zip` are valid physical filenames; manifest/workflow validation remains canonical and ambiguous/multiple candidates remain blocked.
-
-`OBJ-CTX-039` introduces reusable bases:
-
-```text
-__BASE-FRANCHISE-API → DP-API / KS-API / PC-API / CG-API
-__BASE-STORE         → brand stores
-__BASE-MOBILE        → brand-user mobile apps
-__BASE-CLIENT        → client apps
-__BASE-CUSTOMER      → customer apps
-```
-
-Derived projects track base commit/version, last inherited version, sync status and explicit divergences. Base changes propagate via controlled diff/adaptation and pass implementation review, QA and Security before merge; ad-hoc copy is not synchronization.

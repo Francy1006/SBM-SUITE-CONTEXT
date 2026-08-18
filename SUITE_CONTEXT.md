@@ -410,7 +410,9 @@ SBM_AGENT.md
 → consumes INIT_CONTEXT.md
 ```
 
-Cross-project Context tooling is planned under `SBM-SUITE/context` to propagate shared Context files/contracts/scripts to registered projects without manual per-repository editing. Standard project onboarding registers repo/local path, Context, Documentation, QA, Security, Git lifecycle and optional `__BASE-*` lineage.
+Cross-project tooling is implemented under `SBM-SUITE/context`. It discovers physical repositories through `scripts/suite-repositories.py`, reads the explicit `shared/artifacts.json` allowlist, supports read-only `check` and explicit `apply` for one, several or all repositories, rejects dirty target repositories before mutation and never overwrites unmarked project-specific content. Standard project onboarding registers repo/local path, Context, Documentation, QA, Security, Git lifecycle and optional `__BASE-*` lineage.
+
+The transversal Git Flow policy is implemented once in `scripts/git-flow-policy.py`: every temporary branch type starts from `main`, carries an atomic 1..N objective batch across one or more projects, requires complete QA plus updated Documentation, merges with `--no-ff` directly into `main`, returns every involved repository to `main`, and is removed locally/remotely. Fast-track lifecycle transitions may omit intermediate states but never QA or Documentation.
 
 
 ## 16. Deployment model
@@ -498,18 +500,17 @@ Validated workflow state:
 Run all lifecycle orchestration from the root of `SBM-SUITE/context`.
 
 ```text
-<selected-project>/scripts/qa-check.sh
-→ when present, QA is applicable and closure requires canonical successful execution evidence
-→ when absent, closure QA is structurally `not-applicable`
-→ missing or failed evidence for an applicable QA workflow blocks closure
+QA/qa-full.sh
+→ every lifecycle batch requires canonical full-suite successful execution evidence before finalization
+→ `not-applicable`, missing, stale or failed evidence blocks finalization
 
 ./scripts/context-deploy.sh <project_name> <lifecycle_phase> <objectives-json-array> [user_prompt]
 → validate the selected project through the backend Project Registry
-→ dispatch planning-activation, objective-activation, implementation-progress and implementation-closure by exact literal equality
+→ dispatch planning-activation, objective-activation, objective-registration, objective-completion, objective-deletion, objective-update, implementation-progress and implementation-closure by exact literal equality
 → reserve planning-activation for new objectives
-→ reserve objective-activation for exactly one existing pending → active transition
+→ reserve objective-activation for one or more existing pending → active transitions validated and applied atomically
 → preserve active/pending state during implementation-progress
-→ reserve active → completed exclusively for implementation-closure
+→ support atomic registration, completion, deletion and allowed pending/active updates without forced intermediate states
 → request GET /contexts/contract before exchange-directory cleanup
 → generate project-tree.txt through ./scripts/project-tree.sh
 → collect Git evidence and canonical QA evidence from the registry-resolved project root

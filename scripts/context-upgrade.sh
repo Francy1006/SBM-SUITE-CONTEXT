@@ -13,7 +13,6 @@ cd "${CONTEXT_ROOT}"
 
 INPUT_DIR="${CONTEXT_ROOT}/input"
 OUTPUT_DIR="${CONTEXT_ROOT}/output"
-UPGRADE_ZIP="${INPUT_DIR}/context-upgrade.zip"
 DEPLOY_PACKAGE="${OUTPUT_DIR}/context-deploy-package.zip"
 RESPONSE_FILE="${OUTPUT_DIR}/context-upgrade-response.json"
 
@@ -48,12 +47,22 @@ fi
   echo "ERROR: Falta AI_ASSISTANT_URL; expórtala o configúrala en sbm-ai-assistant/.env.dev" >&2
   exit 1
 }
-[[ -d "${INPUT_DIR}" ]] || {
-  echo "ERROR: No existe ${INPUT_DIR}" >&2
+
+[[ "${AI_ASSISTANT_URL}" =~ ^https?:// ]] || {
+  echo "ERROR: AI_ASSISTANT_URL debe usar http:// o https://" >&2
   exit 1
 }
-[[ -f "${UPGRADE_ZIP}" ]] || {
-  echo "ERROR: No existe ${UPGRADE_ZIP}" >&2
+
+AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS="${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS:-5}"
+AI_ASSISTANT_MAX_TIME_SECONDS="${AI_ASSISTANT_MAX_TIME_SECONDS:-180}"
+for timeout_value in "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" "${AI_ASSISTANT_MAX_TIME_SECONDS}"; do
+  [[ "${timeout_value}" =~ ^[1-9][0-9]*$ ]] || {
+    echo "ERROR: Los timeouts HTTP deben ser enteros positivos" >&2
+    exit 1
+  }
+done
+[[ -d "${INPUT_DIR}" ]] || {
+  echo "ERROR: No existe ${INPUT_DIR}" >&2
   exit 1
 }
 [[ -f "${DEPLOY_PACKAGE}" ]] || {
@@ -61,9 +70,15 @@ fi
   exit 1
 }
 
-ZIP_COUNT="$(find "${INPUT_DIR}" -maxdepth 1 -type f -name '*.zip' | wc -l | tr -d ' ')"
-[[ "${ZIP_COUNT}" == "1" ]] || {
-  echo "ERROR: Debe existir exactamente un ZIP en ${INPUT_DIR}" >&2
+UPGRADE_INPUT="$(
+  "${SCRIPT_DIR}/resolve-upgrade-input.py" \
+    "${INPUT_DIR}" \
+    "context-upgrade" \
+    "context-upgrade.zip"
+)"
+IFS=$'\t' read -r ORIGINAL_UPGRADE_ZIP UPGRADE_ZIP <<< "${UPGRADE_INPUT}"
+[[ -f "${UPGRADE_ZIP}" ]] || {
+  echo "ERROR: No se pudo normalizar ${ORIGINAL_UPGRADE_ZIP} a ${UPGRADE_ZIP}" >&2
   exit 1
 }
 
@@ -93,7 +108,9 @@ CONTRACT_FILE="$(mktemp)"
 trap 'rm -f "${CONTRACT_FILE}"' EXIT
 
 HTTP_STATUS="$(
-  curl --silent --show-error \
+  curl --connect-timeout "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" \
+    --max-time "${AI_ASSISTANT_MAX_TIME_SECONDS}" \
+    --silent --show-error \
     --output "${CONTRACT_FILE}" \
     --write-out "%{http_code}" \
     --request GET \
@@ -222,7 +239,7 @@ if not isinstance(objectives, list) or not objectives:
 
 id_pattern = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 branch_pattern = re.compile(
-    r"^(FEATURE|BUGFIX|HOTFIX)-[a-z0-9]+(?:-[a-z0-9]+){0,3}$"
+    r"^(FEATURE|BUGFIX|HOTFIX|RELEASE)-[a-z0-9]+(?:-[a-z0-9]+){0,3}$"
 )
 required_planning = {
     "objective_id",
@@ -243,7 +260,10 @@ for index, objective in enumerate(objectives, start=1):
         raise SystemExit(f"ERROR: manifest.objectives[{index}].objective_id inválido")
     ids.append(objective_id)
 
-    if phase in {"planning-activation", "objective-activation"}:
+    if phase in {
+        "planning-activation", "objective-activation", "objective-registration",
+        "objective-completion", "objective-deletion", "objective-update",
+    }:
         missing = sorted(required_planning - set(objective))
         if missing:
             raise SystemExit(
@@ -252,9 +272,14 @@ for index, objective in enumerate(objectives, start=1):
             )
         if not isinstance(objective.get("objective"), str) or not objective["objective"].strip():
             raise SystemExit(f"ERROR: manifest.objectives[{index}].objective inválido")
-        allowed_statuses = (
-            {"active"} if phase == "objective-activation" else {"active", "pending"}
-        )
+        allowed_statuses = {
+            "planning-activation": {"active", "pending", "completed"},
+            "objective-activation": {"active"},
+            "objective-registration": {"registered"},
+            "objective-completion": {"completed"},
+            "objective-deletion": {"deleted"},
+            "objective-update": {"active", "pending"},
+        }[phase]
         if objective.get("status") not in allowed_statuses:
             raise SystemExit(f"ERROR: manifest.objectives[{index}].status inválido")
 
@@ -279,9 +304,6 @@ for index, objective in enumerate(objectives, start=1):
 
 if len(ids) != len(set(ids)):
     raise SystemExit("ERROR: manifest.objectives contiene IDs duplicados")
-if phase != "planning-activation" and len(objectives) != 1:
-    raise SystemExit(f"ERROR: {phase} actualmente requiere exactamente un objetivo")
-
 try:
     project_root = resolve_project_root(Path(suite_root), expected_canonical)
     operational_contexts = [Path(context_root) / "PROJECT_CONTEXT.md"]
@@ -301,14 +323,19 @@ try:
             operational_contexts,
             completed_context,
         )
-        if route == "implementation-closure":
-            validate_closure_manifest_qa(
-                manifest.get("qa"),
-                project_name,
-                project_root,
-            )
 except (ObjectiveLifecycleError, QAContractError) as exc:
     raise SystemExit(f"ERROR: {exc}") from exc
+
+qa = manifest.get("qa")
+if qa is not None:
+    if not isinstance(qa, dict):
+        raise SystemExit(f"ERROR: {phase} contiene metadata QA inválida")
+    if qa.get("status") != "passed" or qa.get("applicable") is not True:
+        raise SystemExit(f"ERROR: {phase} requiere QA completo exitoso cuando adjunta QA")
+    if qa.get("workflow_path") != "QA/qa-full.sh":
+        raise SystemExit(f"ERROR: {phase} requiere el workflow QA/qa-full.sh")
+elif phase == "implementation-closure":
+    raise SystemExit("ERROR: implementation-closure requiere metadata QA completa")
 
 if manifest.get("output_filename") != "context-upgrade.zip":
     raise SystemExit("ERROR: manifest.output_filename debe ser context-upgrade.zip")
@@ -316,12 +343,11 @@ if manifest.get("output_filename") != "context-upgrade.zip":
 generated_patches = {
     name for name in names if name.startswith("patches/") and name.endswith(".json")
 }
-required_patches, forbidden_patches = lifecycle_patch_policy(route, project_name)
+required_patches, forbidden_patches = lifecycle_patch_policy(route, project_name, objectives)
 for forbidden_patch in sorted(forbidden_patches):
     if forbidden_patch in generated_patches:
         raise SystemExit(
-            f"ERROR: {forbidden_patch} solo aplica a "
-            "implementation-closure"
+            f"ERROR: {forbidden_patch} no está autorizado para {phase}"
         )
 
 missing_patches = sorted(required_patches - generated_patches)
@@ -363,7 +389,9 @@ python3 "${SCRIPT_DIR}/validate-context-upgrade.py" \
 mkdir -p "${OUTPUT_DIR}"
 
 HTTP_STATUS="$(
-  curl --silent --show-error \
+  curl --connect-timeout "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" \
+    --max-time "${AI_ASSISTANT_MAX_TIME_SECONDS}" \
+    --silent --show-error \
     --output "${RESPONSE_FILE}" \
     --write-out "%{http_code}" \
     --request POST \
