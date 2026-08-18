@@ -22,9 +22,16 @@ REQUIRED_ACTIVATION_FIELDS = {
 LIFECYCLE_ROUTES = {
     "planning-activation": "planning-activation",
     "objective-activation": "objective-activation",
+    "objective-registration": "objective-registration",
+    "objective-completion": "objective-completion",
+    "objective-deletion": "objective-deletion",
+    "objective-update": "objective-update",
     "implementation-progress": "implementation-progress",
     "implementation-closure": "implementation-closure",
 }
+GIT_FLOW_BRANCH_PATTERN = re.compile(
+    r"^(FEATURE|BUGFIX|HOTFIX|RELEASE)-[a-z0-9]+(?:-[a-z0-9]+){0,3}$"
+)
 
 
 class ObjectiveLifecycleError(ValueError):
@@ -42,16 +49,37 @@ def lifecycle_route(lifecycle_phase: str) -> str:
 
 
 def lifecycle_patch_policy(
-    lifecycle_phase: str, project_name: str
+    lifecycle_phase: str,
+    project_name: str,
+    objectives: list[dict[str, Any]] | None = None,
 ) -> tuple[set[str], set[str]]:
     route = lifecycle_route(lifecycle_phase)
     required: set[str] = set()
     forbidden: set[str] = set()
 
-    if route in {"planning-activation", "objective-activation"}:
+    if route == "planning-activation":
+        statuses = {
+            objective.get("status")
+            for objective in (objectives or [])
+            if isinstance(objective, dict)
+        }
+        # Without the manifest payload, retain the conservative operational
+        # requirement used by callers that only need a static route policy.
+        has_operational = not statuses or bool(statuses & {"pending", "active"})
+        has_completed = "completed" in statuses
+        if has_operational:
+            required.add("patches/global-project-context.json")
+            if project_name != "sbm-suite-context":
+                required.add("patches/project-context.json")
+        if has_completed:
+            required.add("patches/completed-objectives.json")
+        if not has_completed:
+            forbidden.add("patches/completed-objectives.json")
+    elif route in {"objective-activation", "objective-update"}:
         required.add("patches/global-project-context.json")
         if project_name != "sbm-suite-context":
             required.add("patches/project-context.json")
+        forbidden.add("patches/completed-objectives.json")
     elif route == "implementation-closure":
         required |= {
             "patches/completed-objectives.json",
@@ -63,9 +91,20 @@ def lifecycle_patch_policy(
                 "patches/project-context.json",
                 "patches/project-qa-context.json",
             }
-
-    if route != "implementation-closure":
+    elif route in {
+        "objective-completion",
+        "objective-registration",
+        "objective-deletion",
+    }:
+        required |= {
+            "patches/completed-objectives.json",
+            "patches/global-project-context.json",
+        }
+        if project_name != "sbm-suite-context":
+            required.add("patches/project-context.json")
+    elif route == "implementation-progress":
         forbidden.add("patches/completed-objectives.json")
+
     return required, forbidden
 
 
@@ -185,24 +224,42 @@ def _completed_ids(markdown: str) -> set[str]:
     return completed
 
 
-def _activation_objective(raw_objectives: Any) -> dict[str, Any]:
-    if not isinstance(raw_objectives, list) or len(raw_objectives) != 1:
+def _activation_objectives(raw_objectives: Any) -> list[dict[str, Any]]:
+    if not isinstance(raw_objectives, list) or not raw_objectives:
         raise ObjectiveLifecycleError(
-            "objective-activation requires exactly one objectives[] item"
+            "objective-activation requires a non-empty objectives[] array"
         )
-    objective = raw_objectives[0]
-    if not isinstance(objective, dict):
-        raise ObjectiveLifecycleError("objective-activation item must be an object")
-    missing = sorted(REQUIRED_ACTIVATION_FIELDS - set(objective))
-    if missing:
+    objectives: list[dict[str, Any]] = []
+    objective_ids: list[str] = []
+    for objective in raw_objectives:
+        if not isinstance(objective, dict):
+            raise ObjectiveLifecycleError("objective-activation item must be an object")
+        missing = sorted(REQUIRED_ACTIVATION_FIELDS - set(objective))
+        if missing:
+            raise ObjectiveLifecycleError(
+                "objective-activation item is missing: " + ", ".join(missing)
+            )
+        if objective.get("status") != "active":
+            raise ObjectiveLifecycleError(
+                "objective-activation desired status must be active"
+            )
+        branch = objective.get("branch")
+        if not isinstance(branch, str) or GIT_FLOW_BRANCH_PATTERN.fullmatch(branch) is None:
+            raise ObjectiveLifecycleError(
+                "objective-activation branch must follow the current Git Flow pattern"
+            )
+        objective_id = objective.get("objective_id")
+        if not isinstance(objective_id, str) or not objective_id:
+            raise ObjectiveLifecycleError(
+                "objective-activation requires objective_id for every item"
+            )
+        objectives.append(objective)
+        objective_ids.append(objective_id)
+    if len(objective_ids) != len(set(objective_ids)):
         raise ObjectiveLifecycleError(
-            "objective-activation item is missing: " + ", ".join(missing)
+            "objective-activation contains duplicate objective IDs"
         )
-    if objective.get("status") != "active":
-        raise ObjectiveLifecycleError(
-            "objective-activation desired status must be active"
-        )
-    return objective
+    return objectives
 
 
 def validate_planning_creation(
@@ -264,24 +321,18 @@ def validate_activation(
     operational_contexts: list[Path],
     completed_context: Path,
 ) -> None:
-    objective = _activation_objective(raw_objectives)
-    objective_id = objective["objective_id"]
+    objectives = _activation_objectives(raw_objectives)
+    objective_ids = [objective["objective_id"] for objective in objectives]
 
     completed = _completed_ids(_read_markdown(completed_context))
-    if objective_id in completed:
+    completed_collisions = sorted(set(objective_ids) & completed)
+    if completed_collisions:
         raise ObjectiveLifecycleError(
-            f"cannot activate completed objective: {objective_id}"
+            "cannot activate completed objective: " + ", ".join(completed_collisions)
         )
 
-    expected_literal = {
-        "Objective": objective["objective"],
-        "Priority": str(objective["priority"]),
-        "Target date": objective["target_date"],
-        "Branch": objective["branch"],
-    }
-
     seen_contexts: set[Path] = set()
-    for source in operational_contexts:
+    for context_index, source in enumerate(operational_contexts):
         resolved = source.resolve(strict=True)
         if resolved in seen_contexts:
             continue
@@ -290,25 +341,48 @@ def validate_activation(
         active = _rows_by_id(markdown, ACTIVE_HEADING)
         pending = _rows_by_id(markdown, PENDING_HEADING)
 
-        if objective_id in active:
-            raise ObjectiveLifecycleError(
-                f"objective is already active in {source}: {objective_id}"
-            )
-        current = pending.get(objective_id)
-        if current is None:
-            raise ObjectiveLifecycleError(
-                f"pending objective does not exist in {source}: {objective_id}"
-            )
-        if current.get("Status") != "pending":
-            raise ObjectiveLifecycleError(
-                f"objective current status is not pending in {source}: {objective_id}"
-            )
-        for column, desired_value in expected_literal.items():
-            if current.get(column) != desired_value:
+        local_project = (
+            resolved.parent.parent.name
+            if context_index > 0 and resolved.parent.name == "context"
+            else None
+        )
+        relevant_objectives = [
+            objective
+            for objective in objectives
+            if local_project is None
+            or objective.get("project") is None
+            or str(objective["project"]).casefold() == local_project.casefold()
+        ]
+        for objective in relevant_objectives:
+            objective_id = objective["objective_id"]
+            if objective_id in active:
                 raise ObjectiveLifecycleError(
-                    f"objective-activation must preserve {column} literally for "
-                    f"{objective_id}"
+                    f"objective is already active in {source}: {objective_id}"
                 )
+            current = pending.get(objective_id)
+            if current is None:
+                raise ObjectiveLifecycleError(
+                    f"pending objective does not exist in {source}: {objective_id}"
+                )
+            if current.get("Status") != "pending":
+                raise ObjectiveLifecycleError(
+                    f"objective current status is not pending in {source}: {objective_id}"
+                )
+            expected_literal = {
+                "Objective": objective["objective"],
+                "Priority": str(objective["priority"]),
+                "Target date": objective["target_date"],
+            }
+            if "Project" in current and objective.get("project") is not None:
+                expected_literal["Project"] = str(objective["project"])
+            if "Documentation" in current and objective.get("documentation") is not None:
+                expected_literal["Documentation"] = str(objective["documentation"])
+            for column, desired_value in expected_literal.items():
+                if current.get(column) != desired_value:
+                    raise ObjectiveLifecycleError(
+                        f"objective-activation must preserve {column} literally for "
+                        f"{objective_id}"
+                    )
 
 
 def validate_existing_objective(
@@ -318,30 +392,52 @@ def validate_existing_objective(
     completed_context: Path,
 ) -> None:
     route = lifecycle_route(lifecycle_phase)
-    if route not in {"implementation-progress", "implementation-closure"}:
+    if route not in {
+        "implementation-progress",
+        "implementation-closure",
+        "objective-registration",
+        "objective-completion",
+        "objective-deletion",
+        "objective-update",
+    }:
         raise ObjectiveLifecycleError(
-            "existing-objective validation requires implementation-progress "
-            "or implementation-closure"
+            "unsupported existing-objective lifecycle route"
         )
-    if not isinstance(raw_objectives, list) or len(raw_objectives) != 1:
-        raise ObjectiveLifecycleError(
-            f"{route} requires exactly one objectives[] item"
-        )
-    objective = raw_objectives[0]
-    if not isinstance(objective, dict):
+    if not isinstance(raw_objectives, list) or not raw_objectives:
+        raise ObjectiveLifecycleError(f"{route} requires a non-empty objectives[] array")
+    if any(not isinstance(objective, dict) for objective in raw_objectives):
         raise ObjectiveLifecycleError(f"{route} item must be an object")
-    objective_id = objective.get("objective_id")
-    if not isinstance(objective_id, str) or not objective_id:
+    objective_ids = [objective.get("objective_id") for objective in raw_objectives]
+    if any(not isinstance(objective_id, str) or not objective_id for objective_id in objective_ids):
         raise ObjectiveLifecycleError(f"{route} requires objective_id")
+    if len(objective_ids) != len(set(objective_ids)):
+        raise ObjectiveLifecycleError(f"{route} contains duplicate objective IDs")
+    desired_status = {
+        "objective-registration": "registered",
+        "objective-completion": "completed",
+        "objective-deletion": "deleted",
+    }.get(route)
+    if desired_status is not None and any(
+        objective.get("status") != desired_status for objective in raw_objectives
+    ):
+        raise ObjectiveLifecycleError(f"{route} requires status={desired_status}")
+    if route == "objective-update" and any(
+        objective.get("status") not in {"pending", "active"}
+        for objective in raw_objectives
+    ):
+        raise ObjectiveLifecycleError(
+            "objective-update requires desired status pending or active"
+        )
 
     completed = _completed_ids(_read_markdown(completed_context))
-    if objective_id in completed:
+    collisions = sorted(set(objective_ids) & completed)
+    if collisions:
         raise ObjectiveLifecycleError(
-            f"cannot route completed objective through {route}: {objective_id}"
+            f"cannot route completed objective through {route}: " + ", ".join(collisions)
         )
 
     seen_contexts: set[Path] = set()
-    for source in operational_contexts:
+    for context_index, source in enumerate(operational_contexts):
         resolved = source.resolve(strict=True)
         if resolved in seen_contexts:
             continue
@@ -349,37 +445,59 @@ def validate_existing_objective(
         markdown = _read_markdown(resolved)
         active = _rows_by_id(markdown, ACTIVE_HEADING)
         pending = _rows_by_id(markdown, PENDING_HEADING)
-        if objective_id in active and objective_id in pending:
-            raise ObjectiveLifecycleError(
-                f"objective exists in active and pending sections in {source}: "
-                f"{objective_id}"
-            )
-        if route == "implementation-closure":
-            if (
-                objective_id not in active
-                or active[objective_id].get("Status") != "active"
-            ):
+        local_project = (
+            resolved.parent.parent.name
+            if context_index > 0 and resolved.parent.name == "context"
+            else None
+        )
+        relevant = [
+            objective
+            for objective in raw_objectives
+            if local_project is None
+            or objective.get("project") is None
+            or str(objective["project"]).casefold() == local_project.casefold()
+        ]
+        for objective in relevant:
+            objective_id = objective["objective_id"]
+            if objective_id in active and objective_id in pending:
                 raise ObjectiveLifecycleError(
-                    f"implementation-closure requires an active objective in "
+                    f"objective exists in active and pending sections in {source}: "
                     f"{source}: {objective_id}"
                 )
-        elif objective_id in active:
-            if active[objective_id].get("Status") != "active":
+            if route == "implementation-closure":
+                if objective_id not in active or active[objective_id].get("Status") != "active":
+                    raise ObjectiveLifecycleError(
+                        f"implementation-closure requires an active objective in "
+                        f"{source}: {objective_id}"
+                    )
+            elif route in {
+                "objective-registration",
+                "objective-completion",
+                "objective-deletion",
+                "objective-update",
+            }:
+                current = active.get(objective_id) or pending.get(objective_id)
+                if current is None:
+                    raise ObjectiveLifecycleError(
+                        f"objective does not exist in operational context {source}: {objective_id}"
+                    )
+            elif objective_id in active:
+                if active[objective_id].get("Status") != "active":
+                    raise ObjectiveLifecycleError(
+                        f"implementation-progress found invalid active status in "
+                        f"{source}: {objective_id}"
+                    )
+            elif objective_id in pending:
+                if pending[objective_id].get("Status") != "pending":
+                    raise ObjectiveLifecycleError(
+                        f"implementation-progress found invalid pending status in "
+                        f"{source}: {objective_id}"
+                    )
+            else:
                 raise ObjectiveLifecycleError(
-                    f"implementation-progress found invalid active status in "
+                    f"objective does not exist in operational context {source}: "
                     f"{source}: {objective_id}"
                 )
-        elif objective_id in pending:
-            if pending[objective_id].get("Status") != "pending":
-                raise ObjectiveLifecycleError(
-                    f"implementation-progress found invalid pending status in "
-                    f"{source}: {objective_id}"
-                )
-        else:
-            raise ObjectiveLifecycleError(
-                f"objective does not exist in operational context {source}: "
-                f"{objective_id}"
-            )
 
 
 def resolve_project_root(suite_root: Path, canonical_path: str) -> Path:

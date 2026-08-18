@@ -16,11 +16,21 @@ class ValidationError(RuntimeError):
 
 GLOBAL_PROJECT_CONTEXT = "SBM-SUITE/context/PROJECT_CONTEXT.md"
 GLOBAL_QA_CONTEXT = "SBM-SUITE/context/QA_CONTEXT.md"
-SUMMARY_TABLE_HEADERS = {
+PROJECT_OBJECTIVE_SUMMARY_HEADER = (
     "| Project | Purpose | Active objective | Pending objectives | "
-    "Branch | Main context | QA context | Documentation |",
+    "Branch | Main context | QA context | Documentation |"
+)
+SUMMARY_TABLE_HEADERS = {
+    PROJECT_OBJECTIVE_SUMMARY_HEADER,
     "| Project | QA context | Test count | Passed | Failed | Coverage | "
     "SonarQube status | Last execution | Overall risk | Evidence |",
+}
+PROJECT_OBJECTIVE_SUMMARY_MUTABLE_COLUMNS = {
+    PROJECT_OBJECTIVE_SUMMARY_HEADER: {
+        "Active objective",
+        "Pending objectives",
+        "Branch",
+    },
 }
 SOURCE_AUTHORITY_FIELDS = (
     "contract_version",
@@ -217,14 +227,93 @@ def _markdown_tables(markdown: str) -> dict[str, tuple[str, list[str]]]:
     return tables
 
 
+def _table_cells(row: str) -> list[str]:
+    return [cell.strip() for cell in row.strip()[1:-1].split("|")]
+
+
+def _selected_project_summary_row(
+    row: str,
+    project_name: str,
+    project_directory: str,
+) -> bool:
+    cells = _table_cells(row)
+    if not cells:
+        return False
+    aliases = {project_name.casefold(), project_directory.casefold()}
+    if project_name.casefold() == "sbm-suite-context":
+        aliases |= {"sbm-suite", "sbm-suite/context"}
+    return cells[0].strip("` ").casefold() in aliases
+
+
+def _activation_summary_change_allowed(
+    header: str,
+    original_row: str,
+    patched_rows: list[str],
+    project_name: str,
+    project_directory: str,
+    objectives: list[dict],
+) -> bool:
+    if header not in PROJECT_OBJECTIVE_SUMMARY_MUTABLE_COLUMNS:
+        return False
+    if not _selected_project_summary_row(
+        original_row, project_name, project_directory
+    ):
+        return False
+
+    original_cells = _table_cells(original_row)
+    matches = [
+        row
+        for row in patched_rows
+        if _selected_project_summary_row(row, project_name, project_directory)
+    ]
+    if len(matches) != 1:
+        return False
+    patched_cells = _table_cells(matches[0])
+    headers = _table_cells(header)
+    if len(original_cells) != len(headers) or len(patched_cells) != len(headers):
+        return False
+
+    changed = {
+        column
+        for column, before, after in zip(
+            headers, original_cells, patched_cells, strict=True
+        )
+        if before != after
+    }
+    if not changed <= PROJECT_OBJECTIVE_SUMMARY_MUTABLE_COLUMNS[header]:
+        return False
+
+    objective_ids = [objective["objective_id"] for objective in objectives]
+    values = dict(zip(headers, patched_cells, strict=True))
+    if "Active objective" in changed:
+        active_value = values["Active objective"].replace("`", "")
+        if any(objective_id not in active_value for objective_id in objective_ids):
+            return False
+    if "Branch" in changed:
+        branches = {objective.get("branch") for objective in objectives}
+        if len(branches) != 1 or values["Branch"].strip("` ") not in branches:
+            return False
+    if "Pending objectives" in changed:
+        original_values = dict(zip(headers, original_cells, strict=True))
+        if any(
+            objective_id not in original_values["Pending objectives"]
+            or objective_id in values["Pending objectives"]
+            for objective_id in objective_ids
+        ):
+            return False
+    return True
+
+
 def _validate_preserved_tables(
     original: str,
     patched: str,
     archive_target: str,
     project_name: str,
     project_directory: str,
-    objective_ids: list[str],
+    lifecycle_phase: str,
+    objectives: list[dict],
 ) -> None:
+    objective_ids = [objective["objective_id"] for objective in objectives]
     original_tables = _markdown_tables(original)
     patched_tables = _markdown_tables(patched)
 
@@ -239,10 +328,21 @@ def _validate_preserved_tables(
                 f"Patch changes a table header: {archive_target} {heading}"
             )
 
+        project_objective_summary = (
+            archive_target == GLOBAL_PROJECT_CONTEXT
+            and heading == "## 6. Project objective summaries"
+        )
+        if project_objective_summary and header != PROJECT_OBJECTIVE_SUMMARY_HEADER:
+            raise ValidationError(
+                "PROJECT_CONTEXT project objective summary must use canonical table schema"
+            )
+
         for row in rows:
             requested_objective_row = any(
                 objective_id in row for objective_id in objective_ids
             )
+            if lifecycle_phase == "objective-activation" and project_objective_summary:
+                requested_objective_row = False
             current_project_summary = (
                 archive_target in {GLOBAL_PROJECT_CONTEXT, GLOBAL_QA_CONTEXT}
                 and header in SUMMARY_TABLE_HEADERS
@@ -251,7 +351,29 @@ def _validate_preserved_tables(
                     for marker in (project_name, project_directory)
                 )
             )
-            if not requested_objective_row and not current_project_summary:
+            activation_project_summary = (
+                lifecycle_phase == "objective-activation"
+                and archive_target == GLOBAL_PROJECT_CONTEXT
+                and _activation_summary_change_allowed(
+                    header,
+                    row,
+                    patched_rows,
+                    project_name,
+                    project_directory,
+                    objectives,
+                )
+            )
+            if (
+                lifecycle_phase == "objective-activation"
+                and archive_target == GLOBAL_PROJECT_CONTEXT
+                and header in PROJECT_OBJECTIVE_SUMMARY_MUTABLE_COLUMNS
+            ):
+                current_project_summary = False
+            if (
+                not requested_objective_row
+                and not current_project_summary
+                and not activation_project_summary
+            ):
                 if row not in patched_rows:
                     raise ValidationError(
                         "Patch removes or changes an unrelated table row: "
@@ -353,7 +475,8 @@ def validate(
             target,
             project_name,
             project_directory,
-            objective_ids,
+            upgrade_manifest.get("lifecycle_phase"),
+            objectives,
         )
 
 

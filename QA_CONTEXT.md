@@ -348,8 +348,8 @@ An exception must never be inferred from missing evidence.
 Current suite QA state:
 
 ```text
-Status: PARTIALLY VALIDATED
-Reason: OBJ-CTX-014 closure evidence verifies successful transversal without-Sonar execution across all five project repositories plus successful Context QA. Sonar-enabled transversal execution and deeper cross-project quality gates remain outside this evidence.
+Status: VALIDATED
+Reason: Current canonical full-suite QA passed: Context QA passed and the sequential with-Sonar transversal queue passed for all five registered project repositories.
 ```
 
 Verified `OBJ-CTX-014` implementation-closure evidence:
@@ -416,6 +416,26 @@ Evidence SHA-256: ce4d484d05fe0748e278c64df4d97671aee4f603f0bfd4f9d0d49ca83dbe34
 Reason: no applicable QA workflow is currently defined for sbm-suite-context: scripts/qa-check.sh does not exist
 ```
 
+Verified `OBJ-CTX-041` implementation-closure evidence:
+
+```text
+Project: sbm-suite-context
+Objective: OBJ-CTX-041
+QA status: passed
+QA applicable: true
+QA workflow: QA/qa-full.sh
+Context QA: passed
+Transversal with-Sonar queue: passed
+DP-API: passed
+sbm-ai-assistant: passed
+SBM-API: passed
+SBM-DB: passed
+SBM-MANAGER: passed
+Evidence file: qa-results.md
+Evidence SHA-256: 45494719bb3a927937466346d73d0b0d1ed89eb813f9e601854759d03782dffc
+Reason: full Context and transversal with-Sonar QA evidence verified
+```
+
 ## 17. Pending QA work
 
 1. Define project-specific coverage thresholds.
@@ -428,6 +448,25 @@ Reason: no applicable QA workflow is currently defined for sbm-suite-context: sc
 8. Add AI Tool-to-API authorization tests.
 9. Add API-to-database compatibility tests.
 10. Create QA contexts for remaining projects.
+
+### Planned QA expansion for multi-brand architecture — 2026-08-16
+
+Pending projects must add project-owned QA before production onboarding. Minimum transversal scenarios:
+
+- brand isolation across DP reference, KS, PC and CG;
+- SBM/Franchise/Client/Customer authorization boundaries;
+- Catalog composition/dosage and Package invariants;
+- Price/FX/tax calculation determinism and historical rate reference;
+- SBM-CORE retries, idempotency, scheduler and queue failure handling;
+- SBM-CALCULATION formula/commission/provision reconciliation;
+- PC QR/schedule/customer confirmation and restricted-data access;
+- CG document/plan object authorization and workflow-stage transitions;
+- KS import provision-versus-actual cost reconciliation;
+- privileged control-plane authorization for SBM-CONTROL, SBM-SECURITY and SBM-AI-MANAGER;
+- agent Tool calls preserving caller scope;
+- store/mobile/client apps consuming only canonical APIs.
+
+SonarQube remains an explicit QA step and does not need to run permanently in production.
 
 ## 18. Related documentation
 
@@ -450,26 +489,7 @@ SBM-SUITE/context/documentation/pages/<page>/subpages/<subpage>.md
 
 Specific paths will be added when the documentation format and tree are finalized.
 
-## 19. Planned QA expansion for multi-brand architecture — 2026-08-16
-
-Pending projects must add project-owned QA before production onboarding. Minimum transversal scenarios:
-
-- brand isolation across DP reference, KS, PC and CG;
-- SBM/Franchise/Client/Customer authorization boundaries;
-- Catalog composition/dosage and Package invariants;
-- Price/FX/tax calculation determinism and historical rate reference;
-- SBM-CORE retries, idempotency, scheduler and queue failure handling;
-- SBM-CALCULATION formula/commission/provision reconciliation;
-- PC QR/schedule/customer confirmation and restricted-data access;
-- CG document/plan object authorization and workflow-stage transitions;
-- KS import provision-versus-actual cost reconciliation;
-- privileged control-plane authorization for SBM-CONTROL, SBM-SECURITY and SBM-AI-MANAGER;
-- agent Tool calls preserving caller scope;
-- store/mobile/client apps consuming only canonical APIs.
-
-SonarQube remains an explicit QA step and does not need to run permanently in production.
-
-## 20. Document boundary
+## 19. Document boundary
 
 This file stores transversal QA policy, planned and executed test inventory, summarized project status, quality gates, evidence state, risks and release criteria.
 

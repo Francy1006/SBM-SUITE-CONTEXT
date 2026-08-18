@@ -2,7 +2,7 @@
 
 > **Nota de arquitectura 2026-08-16:** `sbm-comercial` y `sbm-digital-api` se conservan solo como conceptos históricos del roadmap. No son proyectos aprobados para crear actualmente; el diseño vigente prioriza APIs de marca + stores/mobile/client channels directos.
 >
-> **Last updated:** 2026-08-14
+> **Last updated:** 2026-08-18
 >
 > **Purpose:**
 >
@@ -136,6 +136,7 @@ Este cierre corrige el consumo del frontend; no acredita eliminación de endpoin
 | OBJ-CTX-013 | SBM-SUITE | Corregir y validar el workflow de documentación de `SBM-SUITE/context`, incluyendo `documentation-deploy.sh`, `documentation-upgrade.sh` y el flujo completo posterior a `context-upgrade`. | completed | `implementation-closure` y `context-upgrade` completados; Context/Documentation quedaron centralizados bajo `SBM-SUITE/context`, Documentation opera globalmente y QA fue validado estructuralmente como `not-applicable` al no existir `scripts/qa-check.sh`. |
 | OBJ-CTX-001 | SBM-SUITE | Validate and stabilize the expanded context governance model, synchronized section patches and project-tree evidence | completed | Lifecycle-only/no-op closure registrada el 2026-08-13; `implementation-closure` y `context-upgrade` completados. QA fue `not-applicable` porque `scripts/qa-check.sh` no existe para `sbm-suite-context`; no se acreditan cambios de implementación. |
 | SBM-MANAGER-002 | SBM-MANAGER | Corregir SBM-MANAGER para consumir correctamente SBM-API y DP-API según ownership canónico. | completed | Cierre registrado el 2026-08-14; Service, Catalog y Provider consumen `DP-API` mediante `dpApi`, las consultas internas de franquicia permanecen en `SBM-API` mediante `sbmApi`, y QA registró 45/45 tests, coverage 70.14% y Quality Gate `PASSED`. |
+| OBJ-CTX-041 | SBM-SUITE | Permitir que `context-upgrade.sh` acepte exactamente un archivo `input/context-upgrade*.zip` y `documentation-upgrade.sh` exactamente un `documentation/input/documentation-upgrade*.zip`, incluyendo sufijos generados por el cliente como `(32)`, sin renombrado manual; mantener validación de manifest/workflow y rechazo de entradas ambiguas o no válidas. | completed | Cierre registrado el 2026-08-17; la implementación acepta exactamente un ZIP con prefijo de workflow, soporta sufijos del cliente sin renombrado manual, rechaza entradas ambiguas/no válidas y preserva la validación canónica de manifest/workflow. QA completo de Context y la cola transversal con SonarQube pasaron para los cinco repositorios registrados. |
 
 ---
 
@@ -847,6 +848,16 @@ La evidencia de cierre de `SBM-MANAGER-002` del `2026-08-14` registra:
 - server-side Quality Gate `PASSED`;
 - runtime Docker.
 
+### Evidencia de cierre de `OBJ-CTX-041`
+
+La evidencia de cierre registra:
+
+- estado lifecycle `completed`;
+- Context QA `passed`;
+- cola transversal secuencial con SonarQube `passed`;
+- DP-API, sbm-ai-assistant, SBM-API, SBM-DB y SBM-MANAGER `passed`;
+- soporte validado para un único ZIP con prefijo `context-upgrade*` o `documentation-upgrade*`, incluyendo sufijos generados por el cliente sin renombrado manual.
+
 ## 11. Known limitations
 
 Limitaciones y transiciones explícitas en el documento fuente:
@@ -880,7 +891,7 @@ Este objetivo permanece **active**. Su presencia aquí no representa cierre ni i
 | Objective ID | Objective | Status | Priority | Target date | Branch |
 |---|---|---|---:|---|---|
 | OBJ-DOC-001 | Implement the manual documentation deploy and upgrade workflow with dedicated RAG and Qdrant collection | pending | 5 | N/A | FEATURE-adds-documentation-workflow |
-| OBJ-CTX-002 | Habilitar un sistema automatizado para ejecutar flujos transversales sobre uno o varios proyectos. | pending | 5 | N/A | FEATURE-automates-cross-project-flows |
+| OBJ-CTX-002 | Habilitar tooling transversal desde SBM-SUITE/context para crear, comparar, propagar y actualizar artefactos comunes sobre uno, varios o todos los repositorios físicos actuales. | active | 5 | N/A | FEATURE-automates-cross-project-flows |
 | OBJ-CTX-003 | Separar QA y Context mediante una estructura específica por proyecto. | pending | 5 | N/A | FEATURE-separates-qa-context |
 | OBJ-CTX-004 | Crear SBM-CORE para scheduler/cron, PostgreSQL de flags/estado, Celery, Redis, retries/idempotency y Kafka solo donde el patrón event-driven lo justifique; sin lógica financiera ni de seguridad de dominio. | pending | 5 | N/A | FEATURE-enables-sbm-core |
 | OBJ-CTX-005 | Crear SBM-UTIL como servicio reutilizable Java/Spring Boot para email, archivos, APIs externas, conectores determinísticos, transformaciones técnicas y tipos de cambio oficiales consumidos por servicios/agentes. | pending | 5 | N/A | FEATURE-enables-sbm-util |
@@ -890,7 +901,7 @@ Este objetivo permanece **active**. Su presencia aquí no representa cierre ni i
 | OBJ-CTX-009 | Evolucionar la capacidad security-agent hacia la célula nombrada en SBM-AI-ASSISTANT liderada por Batman Agent e integrada por Alfred, Robin, Gotham, Joker, Queen, Darth Maul, Cerberus y Hercules, usando SBM-SECURITY-API y herramientas locales/dockerizadas/externas bajo autorización. | pending | 5 | N/A | FEATURE-enables-security-agents |
 | OBJ-CTX-010 | Crear SBM-AI-MANAGER como frontend/control plane para registrar, visualizar, configurar y operar agentes; tecnología .NET/Blazor queda como candidata a validar al activar. | pending | 5 | N/A | FEATURE-enables-ai-manager |
 | OBJ-CTX-011 | Completar INIT_CONTEXT.md para soportar creación/onboarding de nuevos proyectos SBM. | pending | 5 | N/A | FEATURE-completes-project-onboarding |
-| OBJ-CTX-012 | Separar el flujo del agente en SBM_AGENT_INIT.md, dejando INIT_CONTEXT.md como punto de entrada y orquestación. | pending | 5 | N/A | FEATURE-separates-agent-init-flow |
+| OBJ-CTX-012 | Mantener INIT_CONTEXT.md como contrato operativo y crear SBM_AGENT.md como bootstrap mínimo para chats nuevos sin duplicar reglas. | active | 5 | N/A | FEATURE-separates-agent-init-flow |
 | OBJ-CTX-015 | Crear KS-API clonando/adaptando __BASE-FRANCHISE-API en Python/Django REST para venta/importación KS: Product/Material/Service/Catalog/Ticket, inventario, costos de importación, pricing multimoneda y trazabilidad; arriendo queda fuera del alcance inmediato. | pending | 5 | N/A | FEATURE-enables-ks-api |
 | OBJ-CTX-016 | Crear PC-API clonando/adaptando __BASE-FRANCHISE-API en Python/Django REST para operativos y derivaciones: agendamiento, Client/Customer, QR, confirmación, comisión, conciliación y suscripción mensual. | pending | 5 | N/A | FEATURE-enables-pc-api |
 | OBJ-CTX-017 | Crear CG-API clonando/adaptando __BASE-FRANCHISE-API en Python/Django REST para trámites, documentos, etapas, dependencias, calendarización, proveedores y planos. | pending | 5 | N/A | FEATURE-enables-cg-api |
@@ -914,10 +925,9 @@ Este objetivo permanece **active**. Su presencia aquí no representa cierre ni i
 | OBJ-CTX-035 | Habilitar almacenamiento de objetos/documentos transversal para archivos, planos, assets, evidencias y contenido, con aislamiento, versionado y políticas de acceso. | pending | 5 | N/A | FEATURE-enables-object-storage |
 | OBJ-CTX-036 | Definir despliegue productivo compartido para KS/PC/CG con gateway/reverse proxy, TLS, backups y separación de servicios públicos/internos; SonarQube permanece QA temporal y SBM-SECURITY-API/SECURITY tooling se aísla del runtime de negocio. | pending | 5 | N/A | FEATURE-defines-prod-topology |
 | OBJ-CTX-037 | Corregir objective-git-finalize.sh para preflight multi-repo, commit/push de branch FEATURE/BUGFIX, ejecutar git push --set-upstream origin <branch> cuando la primera publicación no tenga upstream, merge --no-ff a main, push de main y normalización segura; sin force-push ni borrado de ramas. | pending | 5 | N/A | BUGFIX-fixes-git-finalizer |
-| OBJ-CTX-038 | Habilitar Git Flow transversal para repos SBM: main/develop, branches feature/bugfix/hotfix/release, asociación Objective→branch, gates QA/Security, finalización/merge/cleanup multi-repo y migración controlada desde el flujo actual directo a main. | pending | 5 | N/A | FEATURE-enables-git-flow |
+| OBJ-CTX-038 | Estandarizar el lifecycle/Git Flow transversal main-only, batch 1..N multiproyecto, QA completo y Documentation obligatorios, finalización directa y cleanup de branch temporal. | active | 5 | N/A | FEATURE-standardizes-suite-governance |
 | OBJ-CTX-039 | Habilitar el framework de proyectos base __BASE-*: __BASE-FRANCHISE-API, __BASE-STORE, __BASE-MOBILE, __BASE-CLIENT, __BASE-CUSTOMER; creación por clone/adaptación, versionado de origen, tracking de derivados, propagación controlada de cambios, resolución de divergencias y validación por agentes. | pending | 5 | N/A | FEATURE-enables-base-project-inheritance |
 | OBJ-CTX-040 | Crear SBM-SECURITY-API en Go/Gin/PostgreSQL como backend aislado de Security para pentests/scans, tool runs, findings, evidencias, políticas, riesgos y approvals; integra herramientas locales/dockerizadas/externas y usa SBM-CORE solo para scheduling/jobs, sin lógica Security en Core. | pending | 5 | N/A | FEATURE-enables-security-api |
-| OBJ-CTX-041 | Permitir que context-upgrade.sh acepte exactamente un input/context-upgrade*.zip y documentation-upgrade.sh exactamente un documentation/input/documentation-upgrade*.zip, incluyendo sufijos como (32), sin renombrado manual y manteniendo validación estricta de manifest/workflow. | pending | 5 | N/A | BUGFIX-accepts-upgrade-zip-suffixes |
 
 Los objetivos anteriores reflejan literalmente el estado operativo actual de Context; `pending` no acredita implementación.
 
@@ -1554,26 +1564,36 @@ Analytics
 
 SBM Suite busca convertirse en un **sistema operativo empresarial inteligente**, capaz de administrar organizaciones de distintas industrias, conectar sus canales y automatizar progresivamente sus funciones operativas, administrativas y estratégicas, manteniendo seguridad, trazabilidad y supervisión humana.
 
-## 13. Related pages
 
-| Page | Path | Relationship |
-|---|---|---|
-| ☸️ DevOps & Platform Engineering | `documentation/pages/🤖 AI Architect Roadmap/☸️ DevOps & Platform Engineering 3a50bde8acd580c980d3c690e3860045.md` | DevOps, platform engineering and lifecycle workflows used by SBM Suite. |
+### Additional lifecycle records synchronized from Context — 2026-08-17
 
-## 14. Subpages
+| Objective ID | Project | Objective | Status | Priority | Target date | Branch |
+|---|---|---|---|---:|---|---|
+| SBM-MANAGER-004 | SBM-MANAGER | Extender la UI genérica para Equipment, Package obligatorio, composición/dosificación de Catalog y Price multimoneda sin duplicar lógica backend. | pending | 5 | N/A | FEATURE-expands-item-management |
+| SBM-MANAGER-005 | SBM-MANAGER | Habilitar módulo de documentos y planos para CG con editor drag-and-drop, versionado/exportación e integración OCR/IA mediante servicios autorizados. | pending | 5 | N/A | FEATURE-enables-plan-editor |
+| SBM-MANAGER-006 | SBM-MANAGER | Definir navegación y autorización multi-brand/multi-role para SBM User y Brand User, consumiendo SBM-API y Franchise APIs mediante contratos estables sin acoplar la UI a DP-API. | pending | 5 | N/A | FEATURE-enables-multibrand-navigation |
+| SBM-API-001 | SBM-API | Consolidar identidad/autorización multinivel para SBM User, Franchise/Brand User, Client User y Customer User cuando aplique, preservando franchise como alcance canónico de marca y roles/permisos/restricciones backend. | pending | 5 | N/A | FEATURE-expands-identity-model |
+| SBM-API-002 | SBM-API | Renombrar el runtime/container legacy `sbm-core` usado actualmente por SBM-API para liberar el nombre del futuro proyecto `SBM-CORE` y evitar colisión de servicio/red. | pending | 5 | N/A | BUGFIX-renames-sbm-api-runtime |
+| SBM-API-003 | SBM-API | Formalizar el contrato transversal SBM-API ↔ Franchise APIs para autenticación/autorización, franchise/brand scope, propagación de identidad, errores y límites de ownership, evitando dependencias específicas de DP. | pending | 5 | N/A | FEATURE-defines-franchise-api-contract |
+| SBM-DB-003 | SBM-DB | Definir e implementar la topología de datos multimarcas para SBM, DP histórico, KS, PC y CG con aislamiento lógico/credenciales, preservando SBM-DB como autoridad Flyway y no como gateway de consultas. | pending | 5 | N/A | FEATURE-defines-multibrand-data |
+| SBM-DB-004 | SBM-DB | Agregar Equipment como dominio y formalizar Package obligatorio para Product, Material, Service, Equipment, Catalog y Ticket; Service usa un Package lógico no físico. | pending | 5 | N/A | FEATURE-adds-equipment-package |
+| SBM-DB-005 | SBM-DB | Modelar Catalog como composición/BOM configurable con componentes Product, Material, Service y Equipment, cantidades/dosificación/unidades, manteniendo Ticket como unidad vendida/reportada. | pending | 5 | N/A | FEATURE-adds-catalog-components |
+| SBM-DB-006 | SBM-DB | Extender Price para base_net_amount, net_amount, gross, IVA, impuestos adicionales, moneda y tipo de cambio versionado, incluyendo USD observado y futuras monedas/UF. | pending | 5 | N/A | FEATURE-adds-multicurrency-pricing |
+| SBM-DB-007 | SBM-DB | Modelar trazabilidad de adquisición y movimiento: orden de compra, factura, IVA crédito, guía de despacho, traslado interno, venta a cliente/franquiciado, provisión y costo real. | pending | 5 | N/A | FEATURE-adds-procurement-trace |
+| SBM-DB-008 | SBM-DB | Modelar costos de importación KS por compra/unidad: FOB, naviera, embarcador, aduana, desconsolidación, seguros, fletes, bodega, grúas, garantía, reposición y otros servicios instanciados por adquisición. | pending | 5 | N/A | FEATURE-adds-ks-import-costs |
+| SBM-DB-009 | SBM-DB | Modelar PC para operativos y derivaciones: Client/Customer, agendamiento, QR, estados, comisión configurable, conciliación y suscripción mensual por máximo entre valor fijo y pacientes tratados. | pending | 5 | N/A | FEATURE-adds-pc-service-model |
+| SBM-DB-010 | SBM-DB | Modelar CG para trámites, documentos, planos, etapas, dependencias, calendarización y proveedores externos, manteniendo datos/documentos sensibles con clasificación explícita. | pending | 5 | N/A | FEATURE-adds-cg-workflow-model |
+| SBM-DB-011 | SBM-DB | Definir contratos/migraciones compatibles con __BASE-FRANCHISE-API y sus derivados, separando estructuras comunes de extensiones/configuración por franchise y evitando dependencias de datos específicas de DP en la base reusable. | pending | 5 | N/A | FEATURE-defines-base-data-contract |
+| DP-ARCH-001 | DP-API | Estabilizar satisfactoriamente DP-API trabajando con SBM-API como implementación funcional de referencia, preservando datos/comportamiento Ditaly y cerrando contratos de integración antes de extraer cualquier base reusable. | pending | 5 | N/A | FEATURE-stabilizes-dp-sbm-integration |
+| BASE-FRANCHISE-001 | __BASE-FRANCHISE-API | Después de completar DP-ARCH-001, generar __BASE-FRANCHISE-API desde la implementación validada de DP-API, remover/configurar comportamiento específico DP, estandarizar módulos opcionales y registrar DP-API como primer derivado controlado del BASE. | pending | 5 | N/A | FEATURE-creates-franchise-base-from-dp |
+| OBJ-CTX-042 | SBM-SUITE | Integrar Documentation Markdown con Notion mediante sincronización Git→Notion controlada, preservando Git/Markdown como source of truth, estructura de páginas, IDs estables, trazabilidad y detección de cambios; bidireccionalidad queda fuera del alcance inicial. | pending | 5 | N/A | FEATURE-syncs-documentation-to-notion |
+| OBJ-CTX-043 | SBM-SUITE | Integrar Objectives con Jira como backlog organizado por Proyecto→Epic→Issue/Task, manteniendo mapping Objective ID↔Jira ID, estado, prioridad y dependencias sin duplicados; inicialmente operado por SBM Agent/SBM-UTIL y futuramente administrado por Scrum Agent. | pending | 5 | N/A | FEATURE-syncs-objectives-to-jira |
+| OBJ-CTX-044 | SBM-SUITE | Estandarizar contratos Agent↔API/Tool en SBM-AI-ASSISTANT para request/response, scopes/permisos, approvals, auditoría, idempotencia, errores y evidencias, evitando integraciones ad hoc específicas por agente. | pending | 5 | N/A | FEATURE-standardizes-agent-tool-contracts |
 
-| Subpage | Path | Description | Status |
-|---|---|---|---|
+These rows mirror current Context lifecycle state only; `pending` does not imply implementation and no terminal state is inferred.
 
-## 15. Document boundary
 
-Esta página documenta la visión, arquitectura, componentes, estado, validación y roadmap de SBM Suite.
-
-No sustituye los contextos operacionales de `SBM-SUITE/context/`, los contextos de cada proyecto, los contratos de API, los scripts ejecutables ni la evidencia QA original. No contiene secretos ni acredita como completado un objetivo que permanezca `active` o `pending`.
-
----
-
-# 21. Multi-brand SBM baseline — 2026-08-16
+### Multi-brand SBM baseline — 2026-08-16
 
 - DP/Ditaly Pasta: closed, one year of real data, historical/reference implementation.
 - Production targets: Kiseki Tech (KS), PortalConvenios.cl (PC), Consorcio y Gestión (CG).
@@ -1592,8 +1612,25 @@ __BASE-CLIENT        → KS-CLIENT / PC-CLIENT / CG-CLIENT
 __BASE-CUSTOMER      → PC-CUSTOMER
 ```
 
-`OBJ-CTX-037` repairs current finalization/upstream behavior; `OBJ-CTX-038` introduces Git Flow; `OBJ-CTX-039` implements controlled base/derived inheritance; `OBJ-CTX-040` creates the isolated Security API; `OBJ-CTX-041` accepts workflow-prefixed upgrade ZIP filenames with client/download suffixes without manual renaming. `OBJ-CTX-034` governs the named-agent catalog and on-demand activation.
+`OBJ-CTX-038` remains **active** and the current temporary branch contains first-publication upstream handling, the main-only transversal Git policy, minimal `SBM_AGENT.md` bootstrap and allowlisted common-artifact propagation. `OBJ-CTX-041` is **completed** on `FEATURE-standardizes-suite-governance`; its validated workflow-prefixed upgrade ZIP handling is recorded in `Current state`. `OBJ-CTX-039` and `OBJ-CTX-040` remain **pending** and describe planned base/derived inheritance and the isolated Security API respectively. `OBJ-CTX-034` remains planning for the named-agent catalog and on-demand activation.
 
-## Legacy digital roadmap concepts
+### Legacy digital roadmap concepts
 
 `sbm-comercial` and `sbm-digital-api` remain historical roadmap concepts, not current approved project-creation objectives. The current target favors direct brand APIs plus brand stores/client/mobile channels. Reactivate a transversal commercial portal/BFF only if a concrete cross-brand requirement justifies it.
+
+## 13. Related pages
+
+| Page | Path | Relationship |
+|---|---|---|
+| ☸️ DevOps & Platform Engineering | `documentation/pages/🤖 AI Architect Roadmap/☸️ DevOps & Platform Engineering 3a50bde8acd580c980d3c690e3860045.md` | DevOps, platform engineering and lifecycle workflows used by SBM Suite. |
+
+## 14. Subpages
+
+| Subpage | Path | Description | Status |
+|---|---|---|---|
+
+## 15. Document boundary
+
+Esta página documenta la visión, arquitectura, componentes, estado, validación y roadmap de SBM Suite.
+
+No sustituye los contextos operacionales de `SBM-SUITE/context/`, los contextos de cada proyecto, los contratos de API, los scripts ejecutables ni la evidencia QA original. No contiene secretos ni acredita como completado un objetivo que permanezca `active` o `pending`.

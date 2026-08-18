@@ -42,6 +42,20 @@ SBM_SUITE_ROOT_RAW="$(get_env SBM_SUITE_ROOT)"
   exit 1
 }
 
+[[ "${AI_ASSISTANT_URL}" =~ ^https?:// ]] || {
+  echo "ERROR: AI_ASSISTANT_URL debe usar http:// o https://" >&2
+  exit 1
+}
+
+AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS="${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS:-5}"
+AI_ASSISTANT_MAX_TIME_SECONDS="${AI_ASSISTANT_MAX_TIME_SECONDS:-1800}"
+for timeout_value in "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" "${AI_ASSISTANT_MAX_TIME_SECONDS}"; do
+  [[ "${timeout_value}" =~ ^[1-9][0-9]*$ ]] || {
+    echo "ERROR: Los timeouts HTTP deben ser enteros positivos" >&2
+    exit 1
+  }
+done
+
 [[ -n "${SBM_SUITE_ROOT_RAW}" ]] || {
   echo "ERROR: Falta SBM_SUITE_ROOT"
   exit 1
@@ -259,13 +273,31 @@ print(json.dumps({
 PY
 )"
 
+echo "Exportando documentación; timeout HTTP máximo: ${AI_ASSISTANT_MAX_TIME_SECONDS}s."
+
+set +e
 printf '%s' "${PAYLOAD}" \
-  | curl --fail-with-body --silent --show-error \
+  | curl --connect-timeout "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" \
+      --max-time "${AI_ASSISTANT_MAX_TIME_SECONDS}" \
+      --fail-with-body --silent --show-error \
       --request POST \
       "${AI_ASSISTANT_URL%/}/documentation/export" \
       --header "Content-Type: application/json" \
       --data-binary @- \
       --output "${RESPONSE_FILE}"
+CURL_STATUS=$?
+set -e
+
+if [[ "${CURL_STATUS}" -eq 28 ]]; then
+  echo "ERROR: documentation/export superó el timeout HTTP de ${AI_ASSISTANT_MAX_TIME_SECONDS}s." >&2
+  echo "ERROR: El backend puede continuar procesando la exportación después del cierre del cliente; no reejecute el deploy hasta verificar que el proceso backend terminó." >&2
+  exit 28
+fi
+
+if [[ "${CURL_STATUS}" -ne 0 ]]; then
+  echo "ERROR: documentation/export falló con curl status ${CURL_STATUS}." >&2
+  exit "${CURL_STATUS}"
+fi
 
 python3 - "${RESPONSE_FILE}" <<'PY'
 import json

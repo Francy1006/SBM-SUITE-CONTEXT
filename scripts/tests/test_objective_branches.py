@@ -11,6 +11,7 @@ from pathlib import Path
 CONTEXT_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_SOURCE = CONTEXT_ROOT / "scripts" / "objective-branches.sh"
 REPOSITORY_SOURCE = CONTEXT_ROOT / "scripts" / "suite-repositories.py"
+POLICY_SOURCE = CONTEXT_ROOT / "scripts" / "git-flow-policy.py"
 
 
 def _run(*args: str, cwd: Path, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -40,8 +41,10 @@ class BranchEnvironment:
         self.script.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(SCRIPT_SOURCE, self.script)
         shutil.copy2(REPOSITORY_SOURCE, self.helper)
+        shutil.copy2(POLICY_SOURCE, self.script.parent / POLICY_SOURCE.name)
         self.script.chmod(0o755)
         self.helper.chmod(0o755)
+        (self.script.parent / POLICY_SOURCE.name).chmod(0o755)
 
         for repository in self.repositories:
             self._initialize_repository(repository)
@@ -142,6 +145,21 @@ class ObjectiveBranchesTests(unittest.TestCase):
                 ).returncode,
                 0,
             )
+            script_text = SCRIPT_SOURCE.read_text(encoding="utf-8")
+            self.assertNotIn("develop", script_text.casefold())
+
+    def test_hotfix_uses_main_and_release_is_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            env = BranchEnvironment(Path(directory))
+            self.assertEqual(env.execute("prepare", "HOTFIX-repairs-release").returncode, 0)
+            for repository in env.repositories:
+                self.assertEqual(env.branch(repository), "HOTFIX-repairs-release")
+
+        with tempfile.TemporaryDirectory() as directory:
+            env = BranchEnvironment(Path(directory))
+            self.assertEqual(env.execute("prepare", "RELEASE-suite-governance").returncode, 0)
+            for repository in env.repositories:
+                self.assertEqual(env.branch(repository), "RELEASE-suite-governance")
 
     def test_dirty_repository_aborts_before_any_branch_changes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -190,7 +208,7 @@ class ObjectiveBranchesTests(unittest.TestCase):
         self.assertNotRegex(content, r"/(?:Users|home)/[^\s]+")
         self.assertNotRegex(content, r"[A-Za-z]:\\")
 
-    def test_progress_contract_separates_prepare_and_register_commands(self) -> None:
+    def test_progress_contract_separates_verify_and_register_commands(self) -> None:
         contract = (CONTEXT_ROOT / "INIT_CONTEXT.md").read_text(encoding="utf-8")
         progress = contract.split(
             "17. For `implementation-progress`", maxsplit=1
@@ -199,10 +217,10 @@ class ObjectiveBranchesTests(unittest.TestCase):
         )[0]
         bash_blocks = re.findall(r"```bash\n(.*?)```", progress, flags=re.DOTALL)
 
-        self.assertIn("BASH 1 — PREPARAR BRANCHES TRANSVERSALES", progress)
+        self.assertIn("BASH 1 — VERIFICAR BRANCH TRANSVERSAL", progress)
         self.assertIn("BASH 2 — REGISTRAR PROGRESO", progress)
         self.assertEqual(len(bash_blocks), 2)
-        self.assertIn("objective-branches.sh prepare", bash_blocks[0])
+        self.assertIn("objective-branches.sh verify", bash_blocks[0])
         self.assertIn("repos-check.sh", bash_blocks[0])
         self.assertNotIn("context-deploy.sh", bash_blocks[0])
         self.assertIn("objective-branches.sh verify", bash_blocks[1])
@@ -222,31 +240,28 @@ class ObjectiveBranchesTests(unittest.TestCase):
         handoff = contract.split(
             "#### Automatic activation-to-implementation handoff", maxsplit=1
         )[1].split(
-            "#### Transversal Git finalization after closure only",
+            "#### Transversal Git finalization for an objective batch",
             maxsplit=1,
         )[0]
 
         bash_blocks = re.findall(r"```bash\n(.*?)```", handoff, flags=re.DOTALL)
-        self.assertEqual(len(bash_blocks), 2)
-        self.assertIn("objective-branches.sh prepare", bash_blocks[0])
+        self.assertEqual(len(bash_blocks), 1)
+        self.assertIn("objective-branches.sh verify", bash_blocks[0])
         self.assertIn("repos-check.sh", bash_blocks[0])
+        self.assertNotIn("objective-branches.sh prepare", bash_blocks[0])
         self.assertNotIn("context-deploy.sh", bash_blocks[0])
-        self.assertIn("objective-branches.sh verify", bash_blocks[1])
-        self.assertIn("repos-check.sh", bash_blocks[1])
-        self.assertIn("implementation-progress", bash_blocks[1])
-        self.assertIn("<activated-objective-id>", bash_blocks[1])
-        self.assertIn("<frozen-registry_project_name>", bash_blocks[1])
+        self.assertIn("implementation-progress", handoff)
+        self.assertIn("already-prepared temporary branch", handoff)
         for forbidden in ("checkout", "pull", "fetch", "checkout -b", "switch"):
-            self.assertNotIn(forbidden, bash_blocks[1])
+            self.assertNotIn(forbidden, bash_blocks[0])
 
+        self.assertNotIn("Registrar progreso", handoff)
+        self.assertIn("The user then performs the real implementation/artefact changes", handoff)
         self.assertIn(
-            "never ask the user to select `Registrar progreso` after a successful activation",
+            "After `objective-activation` or planning creation as `active` has been applied successfully",
             handoff,
         )
-        self.assertIn(
-            "If this Documentation run continues `objective-activation`, immediately render",
-            contract,
-        )
+        self.assertIn("Do not run Documentation at this point", handoff)
 
 
 if __name__ == "__main__":

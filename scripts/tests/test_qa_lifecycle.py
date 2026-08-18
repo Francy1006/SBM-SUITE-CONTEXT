@@ -15,6 +15,7 @@ sys.path.insert(0, str(CONTEXT_ROOT / "scripts"))
 from qa_lifecycle import (  # noqa: E402
     QAContractError,
     evaluate_progress_qa,
+    evaluate_full_qa,
     evaluate_qa,
     normalize_context_export,
     require_closure_qa,
@@ -23,6 +24,28 @@ from qa_lifecycle import (  # noqa: E402
 
 
 class QALifecycleTests(unittest.TestCase):
+    def test_full_suite_qa_requires_context_and_with_sonar_transversal_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / "QA/output"
+            output.mkdir(parents=True)
+            (output / "context-qa-results.md").write_text(
+                "# Context QA\n\nOverall status: passed\n", encoding="utf-8"
+            )
+            (output / "qa-all-with-sonar-results.md").write_text(
+                "# QA transversal\n\n| Project | Repository | Status | Evidence |\n"
+                "|---|---|---|---|\n| API | `SBM/API` | passed | `evidence.md` |\n",
+                encoding="utf-8",
+            )
+            (output / "qa-all-with-sonar-queue.tsv").write_text(
+                "project\trepository\tmode\tstatus\texit_code\n"
+                "API\tSBM/API\twith-sonar\tpassed\t0\n",
+                encoding="utf-8",
+            )
+            decision, evidence = evaluate_full_qa("sbm-suite-context", root)
+            self.assertEqual(decision.status, "passed")
+            self.assertEqual(decision.workflow_path, "QA/qa-full.sh")
+            self.assertIn("qa-all-with-sonar-results.md", evidence)
     def _write_transversal_evidence(
         self, root: Path, *, status: str = "passed", exit_code: int = 0
     ) -> None:
@@ -302,13 +325,9 @@ class QALifecycleTests(unittest.TestCase):
         self.assertEqual(project_context.read_bytes(), before)
 
         deploy = (CONTEXT_ROOT / "scripts/context-deploy.sh").read_text()
-        self.assertIn(
-            'if [[ "${LIFECYCLE_ROUTE}" == "implementation-closure" ]]; then',
-            deploy,
-        )
-        self.assertIn('evaluate-progress', deploy)
+        self.assertIn('evaluate-full', deploy)
+        self.assertIn('--project-root "${CONTEXT_ROOT}"', deploy)
         self.assertIn('PAYLOAD_QA_MANIFEST_JSON="${QA_MANIFEST_JSON}"', deploy)
-        self.assertIn('QA_MANIFEST_JSON="${PAYLOAD_QA_MANIFEST_JSON}"', deploy)
 
 
 if __name__ == "__main__":

@@ -47,6 +47,20 @@ fi
   exit 1
 }
 
+[[ "${AI_ASSISTANT_URL}" =~ ^https?:// ]] || {
+  echo "ERROR: AI_ASSISTANT_URL debe usar http:// o https://" >&2
+  exit 1
+}
+
+AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS="${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS:-5}"
+AI_ASSISTANT_MAX_TIME_SECONDS="${AI_ASSISTANT_MAX_TIME_SECONDS:-180}"
+for timeout_value in "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" "${AI_ASSISTANT_MAX_TIME_SECONDS}"; do
+  [[ "${timeout_value}" =~ ^[1-9][0-9]*$ ]] || {
+    echo "ERROR: Los timeouts HTTP deben ser enteros positivos" >&2
+    exit 1
+  }
+done
+
 [[ "${CONTEXT_ROOT}" == "${SBM_SUITE_ROOT}/context" ]] || {
   echo "ERROR: CONTEXT_ROOT no corresponde a ${SBM_SUITE_ROOT}/context"
   exit 1
@@ -56,28 +70,20 @@ DOCUMENTATION_ROOT="${CONTEXT_ROOT}/documentation"
 INPUT_DIR="${DOCUMENTATION_ROOT}/input"
 OUTPUT_DIR="${DOCUMENTATION_ROOT}/output"
 BACKUP_DIR="${CONTEXT_ROOT}/backup"
-UPGRADE_ZIP="${INPUT_DIR}/documentation-upgrade.zip"
 RESPONSE_FILE="${OUTPUT_DIR}/documentation-upgrade-response.json"
 
 mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}" "${BACKUP_DIR}"
 rm -f "${RESPONSE_FILE}"
 
-[[ -f "${UPGRADE_ZIP}" ]] || {
-  echo "ERROR: No existe ${UPGRADE_ZIP}"
-  exit 1
-}
-
-ZIP_COUNT="$(
-  find "${INPUT_DIR}" \
-    -maxdepth 1 \
-    -type f \
-    -name '*.zip' \
-    | wc -l \
-    | tr -d ' '
+UPGRADE_INPUT="$(
+  "${SCRIPT_DIR}/resolve-upgrade-input.py" \
+    "${INPUT_DIR}" \
+    "documentation-upgrade" \
+    "documentation-upgrade.zip"
 )"
-
-[[ "${ZIP_COUNT}" == "1" ]] || {
-  echo "ERROR: Debe existir exactamente un ZIP en ${INPUT_DIR}"
+IFS=$'\t' read -r ORIGINAL_UPGRADE_ZIP UPGRADE_ZIP <<< "${UPGRADE_INPUT}"
+[[ -f "${UPGRADE_ZIP}" ]] || {
+  echo "ERROR: No se pudo normalizar ${ORIGINAL_UPGRADE_ZIP} a ${UPGRADE_ZIP}"
   exit 1
 }
 
@@ -115,7 +121,9 @@ PY
 CONTRACT_FILE="$(mktemp)"
 trap 'rm -f "${CONTRACT_FILE}"' EXIT
 HTTP_STATUS="$(
-  curl --silent --show-error \
+  curl --connect-timeout "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" \
+    --max-time "${AI_ASSISTANT_MAX_TIME_SECONDS}" \
+    --silent --show-error \
     --output "${CONTRACT_FILE}" \
     --write-out "%{http_code}" \
     --request GET \
@@ -137,7 +145,9 @@ if not isinstance(projects, dict) or sys.argv[2] not in projects:
 PY
 
 HTTP_STATUS="$(
-  curl --silent --show-error \
+  curl --connect-timeout "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" \
+    --max-time "${AI_ASSISTANT_MAX_TIME_SECONDS}" \
+    --silent --show-error \
     --output "${RESPONSE_FILE}" \
     --write-out "%{http_code}" \
     --request POST \

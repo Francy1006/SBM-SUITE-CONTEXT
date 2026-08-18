@@ -10,6 +10,8 @@ from pathlib import Path
 CONTEXT_ROOT = Path(__file__).resolve().parents[2]
 CLEANUP_SOURCE = CONTEXT_ROOT / "scripts" / "objective-git-cleanup.sh"
 REPOSITORY_SOURCE = CONTEXT_ROOT / "scripts" / "suite-repositories.py"
+POLICY_SOURCE = CONTEXT_ROOT / "scripts" / "git-flow-policy.py"
+STATE_SOURCE = CONTEXT_ROOT / "scripts" / "objective-git-state.py"
 
 
 def _run(*args: str, cwd: Path, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -40,8 +42,12 @@ class CleanupEnvironment:
         scripts.mkdir(parents=True, exist_ok=True)
         shutil.copy2(CLEANUP_SOURCE, scripts / CLEANUP_SOURCE.name)
         shutil.copy2(REPOSITORY_SOURCE, scripts / REPOSITORY_SOURCE.name)
+        shutil.copy2(POLICY_SOURCE, scripts / POLICY_SOURCE.name)
+        shutil.copy2(STATE_SOURCE, scripts / STATE_SOURCE.name)
         (scripts / CLEANUP_SOURCE.name).chmod(0o755)
         (scripts / REPOSITORY_SOURCE.name).chmod(0o755)
+        (scripts / POLICY_SOURCE.name).chmod(0o755)
+        (scripts / STATE_SOURCE.name).chmod(0o755)
         _run("git", "add", ".", cwd=self.context_root)
         _run("git", "commit", "-m", "add cleanup", cwd=self.context_root)
         _run("git", "push", "origin", "main", cwd=self.context_root)
@@ -91,7 +97,7 @@ class CleanupEnvironment:
             "### TEST\n\n"
             "| Objective ID | Project | Objective | Final status | Priority | Branch | Started | Completed | Summary | Validation | Documentation | Proposed commit |\n"
             "|---|---|---|---|---:|---|---|---|---|---|---|---|\n"
-            "| OBJ-CLEAN-001 | TEST | Cleanup | completed | 5 | FEATURE-clean-me | N/A | 2026-08-14 | done | passed | N/A | N/A |\n\n"
+            "| OBJ-CLEAN-001 | TEST | Cleanup | completed | 5 | FEATURE-clean-me | N/A | 2026-08-14 | done | passed | docs/cleanup.md | N/A |\n\n"
             "## 2. Document boundary\n"
         )
         (self.context_root / "COMPLETED_OBJECTIVES.md").write_text(content, encoding="utf-8")
@@ -99,7 +105,7 @@ class CleanupEnvironment:
     def prepare_merged_branches(self) -> None:
         for relative_path in self.repositories:
             repository = self.suite_root / relative_path
-            _run("git", "checkout", "-b", "FEATURE-clean-me", cwd=repository)
+            _run("git", "checkout", "-b", "FEATURE-clean-me", "main", cwd=repository)
             (repository / "branch.txt").write_text("branch\n", encoding="utf-8")
             _run("git", "add", ".", cwd=repository)
             _run("git", "commit", "-m", "branch work", cwd=repository)
@@ -148,7 +154,7 @@ class ObjectiveGitCleanupTests(unittest.TestCase):
             result = env.cleanup()
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("esperada 'main'", result.stderr)
+            self.assertIn("branch actual no es main", result.stderr)
             for relative_path in env.repositories:
                 repository = env.suite_root / relative_path
                 self.assertEqual(

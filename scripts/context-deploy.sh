@@ -6,6 +6,10 @@ usage() {
 Uso:
   ./scripts/context-deploy.sh <project_name> planning-activation '<objectives-json-array>' [user_prompt]
   ./scripts/context-deploy.sh <project_name> objective-activation '<objectives-json-array>' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> objective-registration '<objectives-json-array>' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> objective-completion '<objectives-json-array>' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> objective-deletion '<objectives-json-array>' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> objective-update '<objectives-json-array>' [user_prompt]
   ./scripts/context-deploy.sh <project_name> implementation-progress '<objectives-json-array>' [user_prompt]
   ./scripts/context-deploy.sh <project_name> implementation-closure '<objectives-json-array>' [user_prompt]
 
@@ -14,16 +18,18 @@ planning-activation:
   - cada objetivo requiere: objective_id, objective, status, priority, target_date, branch.
 
 objective-activation:
-  - requiere exactamente un objetivo pending existente;
-  - el payload conserva todos sus campos y solicita status=active.
+  - acepta uno o más objetivos pending existentes en una transacción atómica;
+  - cada payload conserva sus campos y solicita status=active.
 
 implementation-progress:
-  - requiere exactamente un objetivo existente;
+  - acepta uno o más objetivos existentes;
   - conserva su estado operativo y nunca ejecuta cierre.
 
 implementation-closure:
-  - requiere exactamente un objetivo active;
-  - es la única fase que ejecuta cierre.
+  - acepta uno o más objetivos active y ejecuta su cierre atómico.
+
+Toda branch con cambios lifecycle requiere QA completo antes de finalización;
+progress/closure incorporan esa evidencia cuando ya fue ejecutada.
 EOF
 }
 
@@ -49,6 +55,9 @@ case "${LIFECYCLE_PHASE}" in
     ;;
   objective-activation)
     LIFECYCLE_ROUTE="objective-activation"
+    ;;
+  objective-registration|objective-completion|objective-deletion|objective-update)
+    LIFECYCLE_ROUTE="${LIFECYCLE_PHASE}"
     ;;
   implementation-progress)
     LIFECYCLE_ROUTE="implementation-progress"
@@ -117,6 +126,20 @@ fi
   exit 1
 }
 
+[[ "${AI_ASSISTANT_URL}" =~ ^https?:// ]] || {
+  echo "ERROR: AI_ASSISTANT_URL debe usar http:// o https://" >&2
+  exit 1
+}
+
+AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS="${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS:-5}"
+AI_ASSISTANT_MAX_TIME_SECONDS="${AI_ASSISTANT_MAX_TIME_SECONDS:-1800}"
+for timeout_value in "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" "${AI_ASSISTANT_MAX_TIME_SECONDS}"; do
+  [[ "${timeout_value}" =~ ^[1-9][0-9]*$ ]] || {
+    echo "ERROR: Los timeouts HTTP deben ser enteros positivos" >&2
+    exit 1
+  }
+done
+
 [[ -f "${PROMPT_TEMPLATE}" ]] || {
   echo "ERROR: No existe ${PROMPT_TEMPLATE}" >&2
   exit 1
@@ -148,7 +171,7 @@ if not isinstance(objectives, list) or not objectives:
 
 id_pattern = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 branch_pattern = re.compile(
-    r"^(FEATURE|BUGFIX|HOTFIX)-[a-z0-9]+(?:-[a-z0-9]+){0,3}$"
+    r"^(FEATURE|BUGFIX|HOTFIX|RELEASE)-[a-z0-9]+(?:-[a-z0-9]+){0,3}$"
 )
 required_planning = {
     "objective_id",
@@ -170,7 +193,11 @@ for index, objective in enumerate(objectives, start=1):
         raise SystemExit(f"ERROR: objectives[{index}].objective_id inválido")
     ids.append(objective_id)
 
-    if phase in {"planning-activation", "objective-activation"}:
+    full_item_phases = {
+        "planning-activation", "objective-activation", "objective-registration",
+        "objective-completion", "objective-deletion", "objective-update",
+    }
+    if phase in full_item_phases:
         missing = sorted(required_planning - set(objective))
         if missing:
             raise SystemExit(
@@ -185,11 +212,16 @@ for index, objective in enumerate(objectives, start=1):
 
         if not isinstance(description, str) or not description.strip():
             raise SystemExit(f"ERROR: objectives[{index}].objective es obligatorio")
-        allowed_statuses = (
-            {"active"} if phase == "objective-activation" else {"active", "pending"}
-        )
+        allowed_statuses = {
+            "objective-activation": {"active"},
+            "objective-registration": {"registered"},
+            "objective-completion": {"completed"},
+            "objective-deletion": {"deleted"},
+            "objective-update": {"active", "pending"},
+            "planning-activation": {"active", "pending", "completed"},
+        }[phase]
         if status not in allowed_statuses:
-            expected = "active" if phase == "objective-activation" else "active o pending"
+            expected = ", ".join(sorted(allowed_statuses))
             raise SystemExit(
                 f"ERROR: objectives[{index}].status debe ser {expected}"
             )
@@ -209,16 +241,13 @@ for index, objective in enumerate(objectives, start=1):
         if not isinstance(branch, str) or not branch_pattern.fullmatch(branch):
             raise SystemExit(
                 f"ERROR: objectives[{index}].branch debe usar "
-                "FEATURE|BUGFIX|HOTFIX y máximo 4 palabras"
+                "FEATURE|BUGFIX|HOTFIX|RELEASE y máximo 4 palabras"
             )
 
     normalized.append(objective)
 
 if len(ids) != len(set(ids)):
     raise SystemExit("ERROR: objectives contiene objective_id duplicados")
-
-if phase != "planning-activation" and len(normalized) != 1:
-    raise SystemExit(f"ERROR: {phase} actualmente requiere exactamente un objetivo")
 
 print(json.dumps(normalized, ensure_ascii=False, separators=(",", ":")))
 PY
@@ -230,7 +259,9 @@ QA_DECISION_FILE="$(mktemp)"
 trap 'rm -f "${CONTRACT_FILE}" "${META_FILE}" "${QA_DECISION_FILE}"' EXIT
 
 HTTP_STATUS="$(
-  curl --silent --show-error \
+  curl --connect-timeout "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" \
+    --max-time "${AI_ASSISTANT_MAX_TIME_SECONDS}" \
+    --silent --show-error \
     --output "${CONTRACT_FILE}" \
     --write-out "%{http_code}" \
     --request GET \
@@ -246,12 +277,13 @@ python3 - \
   "${CONTRACT_FILE}" \
   "${PROJECT_NAME}" \
   "${LIFECYCLE_PHASE}" \
-  "${META_FILE}" <<'PY'
+  "${META_FILE}" \
+  "${NORMALIZED_OBJECTIVES}" <<'PY'
 import json
 import sys
 from pathlib import Path
 
-contract_path, project, phase, meta_path = sys.argv[1:]
+contract_path, project, phase, meta_path, objectives_json = sys.argv[1:]
 contract = json.loads(Path(contract_path).read_text(encoding="utf-8"))
 
 version = contract.get("contract_version")
@@ -270,17 +302,60 @@ if not isinstance(canonical_project_path, str) or not canonical_project_path:
     raise SystemExit(f"ERROR: mapping canónico inválido para {project}")
 if not isinstance(patches, list):
     raise SystemExit("ERROR: supported_patch_paths inválido")
+objectives = json.loads(objectives_json)
+known_projects = {
+    value.rstrip("/").split("/")[-1].casefold()
+    for value in projects.values()
+    if isinstance(value, str)
+} | {
+    value.rstrip("/").casefold()
+    for value in projects.values()
+    if isinstance(value, str)
+} | {key.casefold() for key in projects}
+if "sbm-suite-context" in {key.casefold() for key in projects}:
+    known_projects |= {"sbm-suite", "sbm-suite/context"}
+requested_projects = {
+    item["project"].casefold()
+    for item in objectives
+    if isinstance(item.get("project"), str)
+}
+unknown_projects = sorted(requested_projects - known_projects)
+if unknown_projects:
+    raise SystemExit("ERROR: objectives contiene proyectos no registrados: " + ", ".join(unknown_projects))
+if len(requested_projects) > 1 and project != "sbm-suite-context":
+    raise SystemExit("ERROR: un batch multiproyecto debe ejecutarse desde sbm-suite-context")
 
-required = {"patches/global-project-context.json"}
-if project != "sbm-suite-context":
-    required.add("patches/project-context.json")
-if phase == "implementation-closure":
+statuses = {item.get("status") for item in objectives if isinstance(item, dict)}
+required = set()
+if phase == "planning-activation":
+    if statuses & {"pending", "active"}:
+        required.add("patches/global-project-context.json")
+        if project != "sbm-suite-context":
+            required.add("patches/project-context.json")
+    if "completed" in statuses:
+        required.add("patches/completed-objectives.json")
+elif phase in {"objective-activation", "objective-update"}:
+    required.add("patches/global-project-context.json")
+    if project != "sbm-suite-context":
+        required.add("patches/project-context.json")
+elif phase == "implementation-closure":
     required |= {
         "patches/completed-objectives.json",
+        "patches/global-project-context.json",
         "patches/global-qa-context.json",
     }
     if project != "sbm-suite-context":
-        required.add("patches/project-qa-context.json")
+        required |= {
+            "patches/project-context.json",
+            "patches/project-qa-context.json",
+        }
+elif phase in {"objective-registration", "objective-completion", "objective-deletion"}:
+    required |= {
+        "patches/completed-objectives.json",
+        "patches/global-project-context.json",
+    }
+    if project != "sbm-suite-context":
+        required.add("patches/project-context.json")
 
 missing = sorted(required - set(patches))
 if missing:
@@ -355,14 +430,14 @@ python3 "${LIFECYCLE_VALIDATOR}" \
 QA_RESULTS=""
 QA_MANIFEST_JSON=""
 PAYLOAD_QA_MANIFEST_JSON=""
-if [[ "${LIFECYCLE_ROUTE}" == "implementation-closure" ]]; then
-  [[ -f "${QA_LIFECYCLE_HELPER}" ]] || {
-    echo "ERROR: No existe ${QA_LIFECYCLE_HELPER}" >&2
-    exit 1
-  }
-  python3 "${QA_LIFECYCLE_HELPER}" evaluate-closure \
+[[ -f "${QA_LIFECYCLE_HELPER}" ]] || {
+  echo "ERROR: No existe ${QA_LIFECYCLE_HELPER}" >&2
+  exit 1
+}
+if [[ "${LIFECYCLE_ROUTE}" == "implementation-progress" || "${LIFECYCLE_ROUTE}" == "implementation-closure" ]]; then
+  python3 "${QA_LIFECYCLE_HELPER}" evaluate-full \
     --project-name "${PROJECT_NAME}" \
-    --project-root "${PROJECT_ROOT}" \
+    --project-root "${CONTEXT_ROOT}" \
     --output "${QA_DECISION_FILE}"
   QA_RESULTS="$(
     python3 - "${QA_DECISION_FILE}" <<'PY'
@@ -384,37 +459,6 @@ print(json.dumps(payload["qa"], ensure_ascii=False, separators=(",", ":")))
 PY
   )"
   PAYLOAD_QA_MANIFEST_JSON="${QA_MANIFEST_JSON}"
-elif [[ "${LIFECYCLE_ROUTE}" == "implementation-progress" && "${PROJECT_NAME}" == "sbm-suite-context" ]]; then
-  [[ -f "${QA_LIFECYCLE_HELPER}" ]] || {
-    echo "ERROR: No existe ${QA_LIFECYCLE_HELPER}" >&2
-    exit 1
-  }
-  python3 "${QA_LIFECYCLE_HELPER}" evaluate-progress \
-    --project-name "${PROJECT_NAME}" \
-    --project-root "${PROJECT_ROOT}" \
-    --output "${QA_DECISION_FILE}"
-  QA_RESULTS="$(
-    python3 - "${QA_DECISION_FILE}" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-print(json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["qa_results"], end="")
-PY
-  )"
-  QA_MANIFEST_JSON="$(
-    python3 - "${QA_DECISION_FILE}" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-qa = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["qa"]
-if qa is not None:
-    print(json.dumps(qa, ensure_ascii=False, separators=(",", ":")))
-PY
-  )"
-elif [[ -f "${QA_RESULTS_FILE}" ]]; then
-  QA_RESULTS="$(cat "${QA_RESULTS_FILE}")"
 fi
 
 mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}"
@@ -525,12 +569,30 @@ print(json.dumps(payload, ensure_ascii=False))
 PY
 )"
 
+echo "Exportando contexto; timeout HTTP máximo: ${AI_ASSISTANT_MAX_TIME_SECONDS}s."
+
+set +e
 printf '%s' "${PAYLOAD}" \
-  | curl --fail-with-body --silent --show-error \
+  | curl --connect-timeout "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" \
+      --max-time "${AI_ASSISTANT_MAX_TIME_SECONDS}" \
+      --fail-with-body --silent --show-error \
       --request POST "${AI_ASSISTANT_URL%/}/contexts/export" \
       --header "Content-Type: application/json" \
       --data-binary @- \
       --output "${RESPONSE_FILE}"
+CURL_STATUS=$?
+set -e
+
+if [[ "${CURL_STATUS}" -eq 28 ]]; then
+  echo "ERROR: contexts/export superó el timeout HTTP de ${AI_ASSISTANT_MAX_TIME_SECONDS}s." >&2
+  echo "ERROR: El backend puede continuar procesando la exportación después del cierre del cliente; no reejecute el deploy hasta verificar que el proceso backend terminó." >&2
+  exit 28
+fi
+
+if [[ "${CURL_STATUS}" -ne 0 ]]; then
+  echo "ERROR: contexts/export falló con curl status ${CURL_STATUS}." >&2
+  exit "${CURL_STATUS}"
+fi
 
 python3 - \
   "${RESPONSE_FILE}" \
