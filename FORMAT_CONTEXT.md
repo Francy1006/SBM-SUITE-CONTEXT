@@ -278,14 +278,17 @@ Required structure:
 ## 20. Context deployment lifecycle
 ## 21. Documentation lifecycle
 ## 22. Related documentation
-## 23. Document boundary
+## 23. Target multi-brand application portfolio — 2026-08-16
+## 24. Runtime responsibility boundaries
+## 25. Canonical item/commercial model target
+## 26. Document boundary
 ```
 
 Required tables:
 
 ```text
-| Brand | Project | Application or service | Type | Description | Language | Framework | Version | Runtime | Owner |
-|---|---|---|---|---|---|---|---|---|---|
+| Brand | Project | Application or service | Type | Description | Runtime state |
+|---|---|---|---|---|---|
 ```
 
 ```text
@@ -310,6 +313,7 @@ Rules:
 - Update for endpoint creation, removal, method, path, request body or response changes.
 - Use tables for inventories and contracts.
 - Store suite relationships and boundaries, not project transcripts.
+- `SUITE_CONTEXT.md` top-level heading names/order and required table schemas must stay synchronized with this contract in the same source change; never add a new top-level suite section without updating this contract first.
 
 ---
 

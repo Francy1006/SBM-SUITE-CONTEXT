@@ -87,12 +87,12 @@ Every 1..N lifecycle batch requires successful complete-suite evidence from `QA/
 
 ## Usage
 
-Use `input/` and `output/` for the global context workflow. Active and pending objectives remain in project and global `PROJECT_CONTEXT.md` files. Completed objectives are stored only in global `COMPLETED_OBJECTIVES.md`. Documentation pages live only below `documentation/pages/<page>/`, with subpages below `documentation/pages/<page>/subpages/`.
+Use `input/` only for Context upgrade ZIP exchange and `output/` only for generated workflow artifacts. Active and pending objectives remain in project and global `PROJECT_CONTEXT.md` files. Completed objectives are stored only in global `COMPLETED_OBJECTIVES.md`. Documentation pages live only below `documentation/pages/<page>/`, with subpages below `documentation/pages/<page>/subpages/`. Full-object lifecycle batches are serialized by SBM Agent, deterministically gzip-compressed (`mtime=0`), standard-base64 encoded, prefixed with `SBM-GZIP-BASE64-V1`, round-trip verified against the frozen batch and then streamed to the existing `context-deploy.sh` through stdin using `-`. Raw JSON paste is not canonical. The script decodes/validates using internal temporary files and removes them automatically.
 
 Execute from the local repository root `SBM-SUITE/context`:
 
 ```bash
-./scripts/context-deploy.sh <project_name> <lifecycle_phase> '<objectives-json-array>' [user_prompt]
+./scripts/context-deploy.sh <project_name> <lifecycle_phase> '<small-objectives-json-array>|-' [user_prompt]
 ./scripts/context-upgrade.sh
 ./scripts/documentation-deploy.sh
 ./scripts/documentation-upgrade.sh

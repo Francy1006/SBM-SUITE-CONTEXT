@@ -17,13 +17,21 @@ COMPLETED_OBJECTIVES_FILE="${CONTEXT_ROOT}/COMPLETED_OBJECTIVES.md"
 REPOSITORY_HELPER="${SCRIPT_DIR}/suite-repositories.py"
 BRANCH_HELPER="${SCRIPT_DIR}/objective-branches.sh"
 POLICY_HELPER="${SCRIPT_DIR}/git-flow-policy.py"
+OBJECTIVE_STATE_HELPER="${SCRIPT_DIR}/objective-git-state.py"
+WORKFLOW_STATE_HELPER="${SCRIPT_DIR}/workflow-state.py"
+CLEANUP_HELPER="${SCRIPT_DIR}/objective-git-cleanup.sh"
+QA_GATE_FILE="${CONTEXT_ROOT}/QA/output/finalization-gate.json"
+DOCUMENTATION_GATE_FILE="${CONTEXT_ROOT}/documentation/output/finalization-gate.json"
 
 for required_file in \
   "${PROJECT_CONTEXT_FILE}" \
   "${COMPLETED_OBJECTIVES_FILE}" \
   "${REPOSITORY_HELPER}" \
   "${BRANCH_HELPER}" \
-  "${POLICY_HELPER}"; do
+  "${POLICY_HELPER}" \
+  "${OBJECTIVE_STATE_HELPER}" \
+  "${WORKFLOW_STATE_HELPER}" \
+  "${CLEANUP_HELPER}"; do
   [[ -f "${required_file}" ]] || {
     echo "ERROR: archivo requerido inexistente: ${required_file}" >&2
     exit 1
@@ -38,94 +46,83 @@ IFS=$'\t' read -r BRANCH_TYPE BASE_BRANCH INTEGRATION_BRANCH FINAL_BRANCH REQUIR
   exit 1
 }
 
-python3 - \
-  "${PROJECT_CONTEXT_FILE}" \
-  "${COMPLETED_OBJECTIVES_FILE}" \
+python3 "${OBJECTIVE_STATE_HELPER}" \
+  --branch "${OBJECTIVE_BRANCH}" \
+  --project-context "${PROJECT_CONTEXT_FILE}" \
+  --completed-objectives "${COMPLETED_OBJECTIVES_FILE}" \
+  "${OBJECTIVE_IDS[@]}"
+
+[[ -f "${QA_GATE_FILE}" ]] || {
+  echo "ERROR: QA gate inexistente: ${QA_GATE_FILE}" >&2
+  exit 1
+}
+[[ -f "${DOCUMENTATION_GATE_FILE}" ]] || {
+  echo "ERROR: Documentation gate inexistente: ${DOCUMENTATION_GATE_FILE}" >&2
+  exit 1
+}
+
+DOCUMENTATION_STATE_SHA256="$(python3 - \
+  "${QA_GATE_FILE}" \
+  "${DOCUMENTATION_GATE_FILE}" \
   "${OBJECTIVE_BRANCH}" \
   "${OBJECTIVE_IDS[@]}" <<'PY'
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
 
-project_path = Path(sys.argv[1])
-completed_path = Path(sys.argv[2])
+qa_path = Path(sys.argv[1])
+doc_path = Path(sys.argv[2])
 branch = sys.argv[3]
 objective_ids = sys.argv[4:]
 
-if not objective_ids or any(not value.strip() for value in objective_ids):
-    raise SystemExit("ERROR: se requiere al menos un objective-id no vacío")
 
-duplicates = sorted({value for value in objective_ids if objective_ids.count(value) > 1})
-if duplicates:
-    raise SystemExit(
-        "ERROR: objective-id duplicado en la solicitud: " + ", ".join(duplicates)
-    )
-
-
-def cells(line: str) -> list[str]:
-    return [value.strip() for value in line[1:-1].split("|")]
+def load(path: Path, label: str) -> dict:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"ERROR: {label} inválido: {path}") from exc
+    if not isinstance(payload, dict):
+        raise SystemExit(f"ERROR: {label} inválido: objeto JSON esperado")
+    return payload
 
 
-def table_records(text: str):
-    headers = None
-    for raw in text.splitlines():
-        line = raw.strip()
-        if not (line.startswith("|") and line.endswith("|")):
-            headers = None
-            continue
-        values = cells(line)
-        if values and all(re.fullmatch(r":?-{3,}:?", value) for value in values):
-            continue
-        if "Objective ID" in values or "ID" in values:
-            headers = values
-            continue
-        if headers is not None and len(values) == len(headers):
-            yield dict(zip(headers, values, strict=True))
-
-
-project_records = list(table_records(project_path.read_text(encoding="utf-8")))
-completed_records = list(table_records(completed_path.read_text(encoding="utf-8")))
-
-for objective_id in objective_ids:
-    operational = [
-        row
-        for row in project_records
-        if row.get("ID") == objective_id
-        and row.get("Status") in {"active", "pending"}
-    ]
-    if operational:
-        states = ", ".join(sorted({row.get("Status", "N/A") for row in operational}))
+def require_common(payload: dict, label: str, expected_status: str) -> None:
+    if payload.get("branch") != branch:
         raise SystemExit(
-            f"ERROR: {objective_id} todavía figura como {states}; finalización requiere completed"
+            f"ERROR: {label}.branch={payload.get('branch')!r}; esperado {branch!r}"
         )
-
-    completed = [
-        row
-        for row in completed_records
-        if row.get("Objective ID") == objective_id
-        and row.get("Final status") == "completed"
-    ]
-    if len(completed) != 1:
+    if payload.get("status") != expected_status:
         raise SystemExit(
-            f"ERROR: {objective_id} debe existir exactamente una vez en "
-            "COMPLETED_OBJECTIVES.md con Final status=completed"
+            f"ERROR: {label}.status={payload.get('status')!r}; esperado {expected_status!r}"
         )
-
-    recorded_branch = completed[0].get("Branch", "").strip("`")
-    if recorded_branch != branch:
+    if payload.get("objectives") != objective_ids:
         raise SystemExit(
-            f"ERROR: Branch de cierre para {objective_id} es "
-            f"'{recorded_branch or 'N/A'}', no '{branch}'"
+            f"ERROR: {label}.objectives no coincide con el batch ordenado solicitado"
         )
+    digest = payload.get("state_sha256")
+    if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+        raise SystemExit(f"ERROR: {label}.state_sha256 inválido")
 
-print(
-    "Lifecycle closure validado: "
-    + ", ".join(objective_ids)
-    + f" / {branch}"
-)
+
+qa = load(qa_path, "QA gate")
+require_common(qa, "QA gate", "passed")
+if qa.get("mode") != "full-suite-with-sonar":
+    raise SystemExit("ERROR: QA gate.mode debe ser full-suite-with-sonar")
+
+doc = load(doc_path, "Documentation gate")
+require_common(doc, "Documentation gate", "updated")
+print(doc["state_sha256"])
 PY
+)"
+
+python3 "${WORKFLOW_STATE_HELPER}" \
+  --suite-root "${SUITE_ROOT}" \
+  --repository-helper "${REPOSITORY_HELPER}" \
+  --scope documentation \
+  --expect "${DOCUMENTATION_STATE_SHA256}" >/dev/null
 
 # Verificación transversal antes de cualquier add/commit/push/merge/checkout a main.
 "${BRANCH_HELPER}" verify "${OBJECTIVE_BRANCH}"
@@ -235,9 +232,8 @@ done < "${REPOSITORIES}"
   exit 1
 }
 
-OBJECTIVE_LABEL="$(IFS=,; echo "${OBJECTIVE_IDS[*]}")"
-COMMIT_MESSAGE="chore(objective): finalize ${OBJECTIVE_LABEL}"
-MERGE_MESSAGE="merge(objective): ${OBJECTIVE_LABEL}"
+COMMIT_MESSAGE="chore: finalize transversal objective batch"
+MERGE_MESSAGE="merge: finalize transversal objective batch"
 
 # Solo los repositorios con cambios reales reciben commit y publicación de la branch.
 while IFS= read -r path; do
@@ -271,7 +267,7 @@ while IFS= read -r path; do
 
 done < "${REPOSITORIES}"
 
-# Verificación final. La branch se conserva para objective-git-cleanup.sh.
+# Verificación final antes del cleanup transversal integrado.
 postflight_failed=0
 while IFS= read -r path; do
   [[ -n "${path}" ]] || continue
@@ -302,5 +298,6 @@ done < "${REPOSITORIES}"
   exit 1
 }
 
-echo "Finalización transversal completada para ${OBJECTIVE_COUNT} objetivo(s) (${BRANCH_TYPE}); repositorios en main."
-echo "Branch temporal preservada para cleanup separado: ${OBJECTIVE_BRANCH}"
+"${CLEANUP_HELPER}" "${OBJECTIVE_IDS[@]}" "${OBJECTIVE_BRANCH}"
+
+echo "Finalización transversal completada para ${OBJECTIVE_COUNT} objetivo(s) (${BRANCH_TYPE}); repositorios en main y branch temporal eliminada."

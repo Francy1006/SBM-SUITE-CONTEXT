@@ -771,6 +771,9 @@ LOTE DE OBJETIVOS
 13. Fast-track `completed` does **not** bypass QA or Documentation. It only skips intermediate lifecycle statuses. The exact branch state must still pass full-suite QA after all Context/implementation mutations and before Documentation/finalization.
 14. Validate the complete 1..N batch before producing any patch. Any invalid/missing/duplicate/colliding item aborts the whole batch with no partial mutation.
 15. The first mutation of a new batch must occur only after the temporary branch has been prepared transversally from synchronized `main`. Never execute lifecycle mutations directly on `main`.
+16. Never transport a full objective object array as a large shell argument or paste the full raw JSON array into a user-facing terminal command. For `planning-activation`, `objective-activation`, `objective-registration`, `objective-completion`, `objective-deletion` and `objective-update`, SBM Agent must serialize the frozen UTF-8 JSON array, encode it as deterministic gzip (`mtime=0`) + standard base64, prepend the literal marker `SBM-GZIP-BASE64-V1`, verify a local decode round-trip against every frozen field, and stream only that compact envelope to the existing `context-deploy.sh` through stdin using `-` as the objectives argument.
+17. `context-deploy.sh` must decode the compact envelope into secure internal `mktemp` files, rely on gzip CRC/integrity plus JSON/lifecycle validation, preserve plain JSON stdin only for backward compatibility, and remove all temporary files automatically on exit. `input/` remains reserved for Context upgrade ZIP exchange and `output/` remains reserved for generated workflow artifacts; objective transport must never create or require a user-managed file.
+18. If a previous attempt already prepared the shared temporary branch successfully but failed before any Context mutation because the command or objective payload was malformed/corrupted, do not run `objective-branches.sh prepare` again. Reuse the frozen branch with `objective-branches.sh verify` plus `repos-check.sh`, regenerate the compact envelope from the same frozen objective array, verify its decode round-trip, then repeat the canonical lifecycle call.
 
 Each creation item must contain:
 
@@ -788,19 +791,20 @@ Each creation item must contain:
 
 Canonical execution:
 
+Render only the compact verified envelope to stdin of the existing deploy script; do not render or paste the raw objective JSON and do not create a transport file:
+
 ```bash
 cd "$(git rev-parse --show-toplevel)" || exit 1
-(
-set -euo pipefail
-
 execution_branch='<shared-temporary-branch>'
 ./scripts/objective-branches.sh prepare "${execution_branch}"
 ./scripts/repos-check.sh
-
-objectives='<frozen-objectives-json-array>'
-./scripts/context-deploy.sh "<resolved-registry_project_name>" planning-activation "${objectives}"
-)
+./scripts/context-deploy.sh "<resolved-registry_project_name>" planning-activation - <<'OBJECTIVES_PAYLOAD'
+SBM-GZIP-BASE64-V1
+<deterministic-gzip-base64-of-frozen-objectives-json-array>
+OBJECTIVES_PAYLOAD
 ```
+
+If the same branch was already prepared successfully by an earlier failed pre-mutation attempt, replace only `prepare` with `verify`; never recreate or rename the branch.
 
 Immediately below every generated command block that contains `context-deploy.sh`, display exactly:
 
@@ -1032,27 +1036,26 @@ Closure          → implementation-closure '[{"objective_id":"<objective_id>"}]
 
 The complete `implementation-progress` command contract is defined in step 17. Do not emit any separate first-pass branch-preparation flow and never require the user to invoke `Registrar progreso` a second time.
 
-For `Activate pending`, the command rendered in any selected execution mode must resolve to this lifecycle call with the complete validated batch payload:
+For `Activate pending`, send the complete validated batch directly to stdin of the existing deploy script. Never create a transport file and never pass the full activation array as one large shell argument. The lifecycle call resolves to:
 
 ```bash
-objectives='[{"objective_id":"<existing-pending-id-1>","objective":"<literal-current-objective-1>","status":"active","priority":<literal-current-priority-1>,"target_date":"<literal-current-target-date-1>","branch":"<explicit-valid-branch-1>"},{"objective_id":"<existing-pending-id-N>","objective":"<literal-current-objective-N>","status":"active","priority":<literal-current-priority-N>,"target_date":"<literal-current-target-date-N>","branch":"<explicit-valid-branch-N>"}]'
-./scripts/context-deploy.sh "<registry_project_name>" objective-activation "${objectives}"
+./scripts/context-deploy.sh "<registry_project_name>" objective-activation - <<'OBJECTIVES_PAYLOAD'
+SBM-GZIP-BASE64-V1
+<deterministic-gzip-base64-of-full-active-objective-array>
+OBJECTIVES_PAYLOAD
 ```
 
 All immediate lifecycle routes use the same temporary-branch template. `implementation-progress` uses the two-stage same-message contract from step 17.
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" || exit 1
-(
-set -euo pipefail
-
 branch="<objective-branch-from-context>"
 ./scripts/objective-branches.sh verify "${branch}"
 ./scripts/repos-check.sh
-
-objectives='<objectives-json-array>'
-./scripts/context-deploy.sh "<registry_project_name>" <lifecycle-phase> "${objectives}" ["<user_prompt>"]
-)
+./scripts/context-deploy.sh "<registry_project_name>" <lifecycle-phase> - ["<user_prompt>"] <<'OBJECTIVES_PAYLOAD'
+SBM-GZIP-BASE64-V1
+<deterministic-gzip-base64-of-full-objective-array>
+OBJECTIVES_PAYLOAD
 ```
 
 For an existing objective, the branch always comes from loaded context. Never ask for or invent it.
@@ -1406,12 +1409,11 @@ Nuevo proyecto SBM
 git clone <git_url> ../SBM/<project>
 
 Contexto
-./scripts/context-deploy.sh "<registry_project_name>" planning-activation '<objectives-json-array>' ["<user_prompt>"]
-./scripts/context-deploy.sh "<registry_project_name>" objective-activation '[<full-objective-with-status-active>]' ["<user_prompt>"]
-./scripts/context-deploy.sh "<registry_project_name>" objective-registration '<objectives-json-array>' ["<user_prompt>"]
-./scripts/context-deploy.sh "<registry_project_name>" objective-completion '<objectives-json-array>' ["<user_prompt>"]
-./scripts/context-deploy.sh "<registry_project_name>" objective-deletion '<objectives-json-array>' ["<user_prompt>"]
-./scripts/context-deploy.sh "<registry_project_name>" objective-update '<objectives-json-array>' ["<user_prompt>"]
+Full-object lifecycle phases (`planning-activation`, `objective-activation`, `objective-registration`, `objective-completion`, `objective-deletion`, `objective-update`) stream the deterministic `SBM-GZIP-BASE64-V1` envelope of the complete frozen JSON array to `context-deploy.sh` through stdin using `-`; never paste the raw full JSON array, never use a user-managed transport file and never pass a large full-object array as one shell argument.
+./scripts/context-deploy.sh "<registry_project_name>" <full-object-lifecycle-phase> - ["<user_prompt>"] <<'OBJECTIVES_PAYLOAD'
+SBM-GZIP-BASE64-V1
+<deterministic-gzip-base64-of-full-objective-array>
+OBJECTIVES_PAYLOAD
 ./scripts/context-deploy.sh "<registry_project_name>" implementation-progress '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
 ./scripts/context-deploy.sh "<registry_project_name>" implementation-closure '[{"objective_id":"<objective_id>"}]' ["<user_prompt>"]
 ./scripts/context-upgrade.sh

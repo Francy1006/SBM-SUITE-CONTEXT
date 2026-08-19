@@ -3,12 +3,16 @@ from __future__ import annotations
 import re
 import sys
 import tempfile
+import base64
+import gzip
 import unittest
 from pathlib import Path
 
 
 CONTEXT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(CONTEXT_ROOT / "scripts"))
+
+from objective_payload import COMPACT_MARKER, ObjectivePayloadError, decode_payload_bytes
 
 from objective_lifecycle import (  # noqa: E402
     LIFECYCLE_ROUTES,
@@ -182,6 +186,66 @@ class LifecycleDispatchTests(unittest.TestCase):
         )
         self.assertIn('{"sbm-suite", "sbm-suite/context"}', deploy)
         self.assertIn("un batch multiproyecto debe ejecutarse desde sbm-suite-context", deploy)
+
+    def test_context_deploy_supports_compact_stdin_objective_transport(self) -> None:
+        deploy = (CONTEXT_ROOT / "scripts" / "context-deploy.sh").read_text(
+            encoding="utf-8"
+        )
+        init_context = (CONTEXT_ROOT / "INIT_CONTEXT.md").read_text(encoding="utf-8")
+        readme = (CONTEXT_ROOT / "README.md").read_text(encoding="utf-8")
+
+        self.assertIn('OBJECTIVES_SOURCE="$3"', deploy)
+        self.assertIn('cat > "${OBJECTIVES_RAW_FILE}"', deploy)
+        self.assertIn('OBJECTIVE_PAYLOAD_HELPER=', deploy)
+        self.assertIn('decode \\', deploy)
+        self.assertIn('--objectives-file "${NORMALIZED_OBJECTIVES_FILE}"', deploy)
+        self.assertIn('--data-binary "@${PAYLOAD_FILE}"', deploy)
+        self.assertIn("<<'OBJECTIVES_PAYLOAD'", init_context)
+        self.assertIn("SBM-GZIP-BASE64-V1", init_context)
+        self.assertIn("SBM-GZIP-BASE64-V1", readme)
+        self.assertNotIn("@input/objectives-batch.json", deploy)
+        self.assertNotIn("input/objectives-batch.json", init_context)
+        self.assertNotIn("input/objectives-batch.json", readme)
+
+    def test_compact_objective_payload_round_trip_and_corruption_detection(self) -> None:
+        raw = (
+            '[{"objective_id":"OBJ-CTX-046","objective":"anti-spoofing/replay",'
+            '"status":"pending","priority":5,"target_date":"N/A",'
+            '"branch":"FEATURE-adds-suite-objectives"}]'
+        ).encode("utf-8")
+        encoded = base64.b64encode(gzip.compress(raw, compresslevel=9, mtime=0))
+        envelope = COMPACT_MARKER + encoded + b"\n"
+
+        self.assertEqual(decode_payload_bytes(envelope), raw)
+        self.assertEqual(decode_payload_bytes(raw), raw)
+
+        corrupted = envelope[:-8] + b"AAAAAAAA"
+        with self.assertRaises(ObjectivePayloadError):
+            decode_payload_bytes(corrupted)
+
+    def test_objective_lifecycle_cli_accepts_objectives_file(self) -> None:
+        lifecycle = (CONTEXT_ROOT / "scripts" / "objective_lifecycle.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('objective_source.add_argument("--objectives-file")', lifecycle)
+        self.assertIn('source.read_text(encoding="utf-8")', lifecycle)
+
+    def test_suite_format_contract_matches_current_suite_context(self) -> None:
+        suite = (CONTEXT_ROOT / "SUITE_CONTEXT.md").read_text(encoding="utf-8")
+        format_contract = (CONTEXT_ROOT / "FORMAT_CONTEXT.md").read_text(encoding="utf-8")
+        suite_contract = format_contract.split(
+            "## 4. Global `SUITE_CONTEXT.md`", maxsplit=1
+        )[1].split("\n---\n", maxsplit=1)[0]
+
+        actual_headings = re.findall(r"^## \d+\. .+$", suite, flags=re.MULTILINE)
+        contract_headings = re.findall(
+            r"^## \d+\. .+$", suite_contract, flags=re.MULTILINE
+        )
+        self.assertEqual(contract_headings, actual_headings)
+        self.assertIn(
+            "| Brand | Project | Application or service | Type | Description | Runtime state |",
+            suite_contract,
+        )
 
     def test_planning_patch_policy_supports_direct_completed_and_mixed_batches(self) -> None:
         pending_required, pending_forbidden = lifecycle_patch_policy(

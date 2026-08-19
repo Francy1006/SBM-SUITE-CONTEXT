@@ -4,14 +4,19 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Uso:
-  ./scripts/context-deploy.sh <project_name> planning-activation '<objectives-json-array>' [user_prompt]
-  ./scripts/context-deploy.sh <project_name> objective-activation '<objectives-json-array>' [user_prompt]
-  ./scripts/context-deploy.sh <project_name> objective-registration '<objectives-json-array>' [user_prompt]
-  ./scripts/context-deploy.sh <project_name> objective-completion '<objectives-json-array>' [user_prompt]
-  ./scripts/context-deploy.sh <project_name> objective-deletion '<objectives-json-array>' [user_prompt]
-  ./scripts/context-deploy.sh <project_name> objective-update '<objectives-json-array>' [user_prompt]
-  ./scripts/context-deploy.sh <project_name> implementation-progress '<objectives-json-array>' [user_prompt]
-  ./scripts/context-deploy.sh <project_name> implementation-closure '<objectives-json-array>' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> planning-activation '<objectives-json-array>|-' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> objective-activation '<objectives-json-array>|-' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> objective-registration '<objectives-json-array>|-' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> objective-completion '<objectives-json-array>|-' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> objective-deletion '<objectives-json-array>|-' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> objective-update '<objectives-json-array>|-' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> implementation-progress '<objectives-json-array>|-' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> implementation-closure '<objectives-json-array>|-' [user_prompt]
+
+Transporte de objectives:
+  - JSON inline queda soportado para payloads cortos/compatibilidad.
+  - Usa '-' para leer el array JSON completo desde stdin sin límites prácticos de argv.
+  - input/ y output/ son directorios de intercambio del workflow; no se usan para transportar objectives.
 
 planning-activation:
   - acepta uno o más objetivos;
@@ -40,7 +45,7 @@ EOF
 
 PROJECT_NAME="$1"
 LIFECYCLE_PHASE="$2"
-OBJECTIVES_JSON="$3"
+OBJECTIVES_SOURCE="$3"
 USER_PROMPT="${4:-}"
 
 if [[ -n "${USER_PROMPT//[[:space:]]/}" ]]; then
@@ -80,7 +85,53 @@ esac
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTEXT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SBM_SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
+OBJECTIVE_PAYLOAD_HELPER="${SCRIPT_DIR}/objective_payload.py"
 cd "${CONTEXT_ROOT}"
+
+OBJECTIVES_RAW_FILE="$(mktemp)"
+DECODED_OBJECTIVES_FILE="$(mktemp)"
+NORMALIZED_OBJECTIVES_FILE="$(mktemp)"
+CONTRACT_FILE="$(mktemp)"
+META_FILE="$(mktemp)"
+QA_DECISION_FILE="$(mktemp)"
+PAYLOAD_FILE="$(mktemp)"
+trap 'rm -f "${OBJECTIVES_RAW_FILE}" "${DECODED_OBJECTIVES_FILE}" "${NORMALIZED_OBJECTIVES_FILE}" "${CONTRACT_FILE}" "${META_FILE}" "${QA_DECISION_FILE}" "${PAYLOAD_FILE}"' EXIT
+
+case "${OBJECTIVES_SOURCE}" in
+  -)
+    [[ ! -t 0 ]] || {
+      echo "ERROR: objectives='-' requiere payload por stdin" >&2
+      exit 1
+    }
+    cat > "${OBJECTIVES_RAW_FILE}"
+    ;;
+  @*)
+    echo "ERROR: Las referencias @file no están soportadas; input/ está reservado para ZIPs de upgrade. Use '-' y envíe objectives por stdin." >&2
+    exit 1
+    ;;
+  *)
+    printf '%s' "${OBJECTIVES_SOURCE}" > "${OBJECTIVES_RAW_FILE}"
+    ;;
+esac
+
+[[ -s "${OBJECTIVES_RAW_FILE}" ]] || {
+  echo "ERROR: objectives está vacío" >&2
+  exit 1
+}
+
+[[ -x "${OBJECTIVE_PAYLOAD_HELPER}" ]] || {
+  echo "ERROR: ${OBJECTIVE_PAYLOAD_HELPER} no está disponible/ejecutable" >&2
+  exit 1
+}
+
+python3 "${OBJECTIVE_PAYLOAD_HELPER}" decode \
+  --input "${OBJECTIVES_RAW_FILE}" \
+  --output "${DECODED_OBJECTIVES_FILE}"
+
+[[ -s "${DECODED_OBJECTIVES_FILE}" ]] || {
+  echo "ERROR: objectives decodificado está vacío" >&2
+  exit 1
+}
 
 INPUT_DIR="${CONTEXT_ROOT}/input"
 OUTPUT_DIR="${CONTEXT_ROOT}/output"
@@ -153,18 +204,19 @@ done
   exit 1
 }
 
-NORMALIZED_OBJECTIVES="$(
-  python3 - "${OBJECTIVES_JSON}" "${LIFECYCLE_PHASE}" <<'PY'
+python3 - "${DECODED_OBJECTIVES_FILE}" "${LIFECYCLE_PHASE}" "${NORMALIZED_OBJECTIVES_FILE}" <<'PY'
 import json
 import re
 import sys
 from datetime import date
+from pathlib import Path
 
-raw, phase = sys.argv[1:]
+raw_path, phase, normalized_path = sys.argv[1:]
 try:
+    raw = Path(raw_path).read_text(encoding="utf-8")
     objectives = json.loads(raw)
-except json.JSONDecodeError as exc:
-    raise SystemExit(f"ERROR: objectives debe ser JSON válido: {exc}") from exc
+except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+    raise SystemExit(f"ERROR: objectives debe ser JSON UTF-8 válido: {exc}") from exc
 
 if not isinstance(objectives, list) or not objectives:
     raise SystemExit("ERROR: objectives debe ser un array no vacío")
@@ -249,14 +301,11 @@ for index, objective in enumerate(objectives, start=1):
 if len(ids) != len(set(ids)):
     raise SystemExit("ERROR: objectives contiene objective_id duplicados")
 
-print(json.dumps(normalized, ensure_ascii=False, separators=(",", ":")))
+Path(normalized_path).write_text(
+    json.dumps(normalized, ensure_ascii=False, separators=(",", ":")),
+    encoding="utf-8",
+)
 PY
-)"
-
-CONTRACT_FILE="$(mktemp)"
-META_FILE="$(mktemp)"
-QA_DECISION_FILE="$(mktemp)"
-trap 'rm -f "${CONTRACT_FILE}" "${META_FILE}" "${QA_DECISION_FILE}"' EXIT
 
 HTTP_STATUS="$(
   curl --connect-timeout "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" \
@@ -278,12 +327,12 @@ python3 - \
   "${PROJECT_NAME}" \
   "${LIFECYCLE_PHASE}" \
   "${META_FILE}" \
-  "${NORMALIZED_OBJECTIVES}" <<'PY'
+  "${NORMALIZED_OBJECTIVES_FILE}" <<'PY'
 import json
 import sys
 from pathlib import Path
 
-contract_path, project, phase, meta_path, objectives_json = sys.argv[1:]
+contract_path, project, phase, meta_path, objectives_path = sys.argv[1:]
 contract = json.loads(Path(contract_path).read_text(encoding="utf-8"))
 
 version = contract.get("contract_version")
@@ -302,7 +351,7 @@ if not isinstance(canonical_project_path, str) or not canonical_project_path:
     raise SystemExit(f"ERROR: mapping canónico inválido para {project}")
 if not isinstance(patches, list):
     raise SystemExit("ERROR: supported_patch_paths inválido")
-objectives = json.loads(objectives_json)
+objectives = json.loads(Path(objectives_path).read_text(encoding="utf-8"))
 known_projects = {
     value.rstrip("/").split("/")[-1].casefold()
     for value in projects.values()
@@ -423,7 +472,7 @@ if [[ "${PROJECT_NAME}" != "sbm-suite-context" ]]; then
 fi
 python3 "${LIFECYCLE_VALIDATOR}" \
   --lifecycle-phase "${LIFECYCLE_ROUTE}" \
-  --objectives-json "${NORMALIZED_OBJECTIVES}" \
+  --objectives-file "${NORMALIZED_OBJECTIVES_FILE}" \
   --completed-context "${CONTEXT_ROOT}/COMPLETED_OBJECTIVES.md" \
   "${LIFECYCLE_CONTEXT_ARGS[@]}"
 
@@ -532,27 +581,28 @@ else
   CHANGE_SUMMARY="No uncommitted changes detected in ${PROJECT_NAME}."
 fi
 
-PAYLOAD="$(
-  PROJECT_NAME="${PROJECT_NAME}" \
-  LIFECYCLE_PHASE="${LIFECYCLE_PHASE}" \
-  EXECUTION_MODE="${EXECUTION_MODE}" \
-  OBJECTIVES_JSON="${NORMALIZED_OBJECTIVES}" \
-  USER_PROMPT="${USER_PROMPT}" \
-  CHANGE_SUMMARY="${CHANGE_SUMMARY}" \
-  CHANGED_FILES="${CHANGED_FILES}" \
-  GIT_DIFF="${GIT_DIFF}" \
-  QA_RESULTS="${QA_RESULTS}" \
-  QA_MANIFEST_JSON="${PAYLOAD_QA_MANIFEST_JSON}" \
-  python3 <<'PY'
+PROJECT_NAME="${PROJECT_NAME}" \
+LIFECYCLE_PHASE="${LIFECYCLE_PHASE}" \
+EXECUTION_MODE="${EXECUTION_MODE}" \
+USER_PROMPT="${USER_PROMPT}" \
+CHANGE_SUMMARY="${CHANGE_SUMMARY}" \
+CHANGED_FILES="${CHANGED_FILES}" \
+GIT_DIFF="${GIT_DIFF}" \
+QA_RESULTS="${QA_RESULTS}" \
+QA_MANIFEST_JSON="${PAYLOAD_QA_MANIFEST_JSON}" \
+python3 - "${NORMALIZED_OBJECTIVES_FILE}" "${PAYLOAD_FILE}" <<'PY'
 import json
 import os
+import sys
+from pathlib import Path
 
+objectives_path, payload_path = sys.argv[1:]
 payload = {
     "project_name": os.environ["PROJECT_NAME"],
     "workflow": "context-deploy",
     "lifecycle_phase": os.environ["LIFECYCLE_PHASE"],
     "execution_mode": os.environ["EXECUTION_MODE"],
-    "objectives": json.loads(os.environ["OBJECTIVES_JSON"]),
+    "objectives": json.loads(Path(objectives_path).read_text(encoding="utf-8")),
     "user_prompt": os.environ["USER_PROMPT"] or None,
     "change_summary": os.environ["CHANGE_SUMMARY"],
     "changed_files": [
@@ -565,20 +615,21 @@ payload = {
 }
 if os.environ["QA_MANIFEST_JSON"]:
     payload["qa"] = json.loads(os.environ["QA_MANIFEST_JSON"])
-print(json.dumps(payload, ensure_ascii=False))
+Path(payload_path).write_text(
+    json.dumps(payload, ensure_ascii=False),
+    encoding="utf-8",
+)
 PY
-)"
 
 echo "Exportando contexto; timeout HTTP máximo: ${AI_ASSISTANT_MAX_TIME_SECONDS}s."
 
 set +e
-printf '%s' "${PAYLOAD}" \
-  | curl --connect-timeout "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" \
+curl --connect-timeout "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" \
       --max-time "${AI_ASSISTANT_MAX_TIME_SECONDS}" \
       --fail-with-body --silent --show-error \
       --request POST "${AI_ASSISTANT_URL%/}/contexts/export" \
       --header "Content-Type: application/json" \
-      --data-binary @- \
+      --data-binary "@${PAYLOAD_FILE}" \
       --output "${RESPONSE_FILE}"
 CURL_STATUS=$?
 set -e
@@ -599,14 +650,14 @@ python3 - \
   "${PROJECT_NAME}" \
   "${LIFECYCLE_PHASE}" \
   "${EXECUTION_MODE}" \
-  "${NORMALIZED_OBJECTIVES}" <<'PY'
+  "${NORMALIZED_OBJECTIVES_FILE}" <<'PY'
 import json
 import sys
 from pathlib import Path
 
 response = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 project, phase, execution_mode = sys.argv[2:5]
-requested = json.loads(sys.argv[5])
+requested = json.loads(Path(sys.argv[5]).read_text(encoding="utf-8"))
 
 if response.get("status") != "completed" or response.get("workflow") != "context-deploy":
     raise SystemExit("ERROR: context-deploy no terminó correctamente")

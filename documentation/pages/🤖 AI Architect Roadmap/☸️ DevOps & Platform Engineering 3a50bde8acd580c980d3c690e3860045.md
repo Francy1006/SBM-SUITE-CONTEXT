@@ -1,6 +1,6 @@
 # ☸️ DevOps & Platform Engineering
 
-> **Last updated:** 2026-08-18
+> **Last updated:** 2026-08-19
 >
 > **Purpose:**
 >
@@ -61,6 +61,9 @@ Current workflow behavior includes:
 - a mandatory `objective_id` for every context export;
 - a literal user prompt requirement for `planning-activation`;
 - context contract preflight before shared exchange cleanup;
+- full-object lifecycle batches use a deterministic `SBM-GZIP-BASE64-V1` gzip+base64 envelope streamed through stdin with objectives argument `-`; raw large JSON paste is non-canonical;
+- `context-deploy.sh` decodes and validates the envelope using internal temporary files, preserves plain JSON stdin only for backward compatibility, removes temporaries automatically, and keeps `input/` reserved for upgrade ZIP exchange and `output/` for generated workflow artifacts;
+- `FORMAT_CONTEXT.md` and `SUITE_CONTEXT.md` suite heading/table contracts are required to remain synchronized in the same source change;
 - bounded QA evidence persisted to `context/qa-results.md`;
 - client-side ZIP manifest and physical-patch preflight before backend context upgrade;
 - upgrade input discovery accepts exactly one workflow-prefixed ZIP (`context-upgrade*.zip` or `documentation-upgrade*.zip`), supports client-generated suffixes such as `(32)` without manual renaming, and rejects ambiguous or invalid ZIP inputs;
@@ -274,6 +277,14 @@ Validated `OBJ-CTX-041` closure evidence:
 - workflow-prefixed Context/Documentation upgrade ZIP handling was validated without manual filename renaming;
 - no QA errors are recorded for the closure evidence.
 
+Validated `FEATURE-adds-suite-objectives` evidence generated on `2026-08-19`:
+
+- full-suite QA completed successfully with SonarQube enabled;
+- DP-API, SBM-AI-ASSISTANT, SBM-API, SBM-DB and SBM-MANAGER all passed their configured QA queue;
+- server-side SonarQube Quality Gates passed for the analyzed projects;
+- lifecycle payload transport tests include compact-envelope round-trip and corruption detection;
+- the four synchronized objectives remain `pending`, so this validation does not claim their planned product capabilities are implemented.
+
 ## 11. Known limitations
 
 - The `2026-08-07` QA run records server-side Quality Gate `OK`; this result applies only to that configured QA execution.
@@ -320,6 +331,18 @@ __BASE-CUSTOMER      → customer apps
 ```
 
 The planned inheritance model tracks base version, last inherited version, synchronization status and explicit divergences, with controlled diff/adaptation and validation instead of ad-hoc copying.
+
+
+### Suite planning objectives synchronized from Context — 2026-08-19
+
+| Objective ID | Objective | Status | Priority | Target date | Branch |
+|---|---|---|---:|---|---|
+| OBJ-CTX-045 | Implementar Xavier Agent como coordinador de conversaciones humanas y reuniones multiagente, gestionando sesiones, participantes, turnos, contexto conversacional, incorporación y retiro dinámico de agentes, permisos y auditoría. | pending | 5 | N/A | FEATURE-adds-suite-objectives |
+| OBJ-CTX-046 | Diseñar e implementar SBM Voice Interface incluyendo STT/TTS, Voice Registry, identidad de voz por agente, wake word, dispositivo físico, integración textual con SBM-MANAGER, autenticación humana/dispositivo, autorización por sesión, anti-spoofing/replay y auditoría. | pending | 5 | N/A | FEATURE-adds-suite-objectives |
+| OBJ-CTX-047 | Diseñar arquitectura Local/Cloud AI Runtime con ejecución local opcional de agentes, RAG, embeddings, Vector DB, context cache y fallback seguro hacia proveedores cloud. | pending | 5 | N/A | FEATURE-adds-suite-objectives |
+| OBJ-CTX-048 | Corregir la integración de Confluence de SBM-AI-ASSISTANT, restaurando y validando credenciales/configuración requeridas para ingestión y sincronización sin modificar innecesariamente la implementación existente. | pending | 5 | N/A | FEATURE-adds-suite-objectives |
+
+These records are planning-only. Their presence in Documentation mirrors current Context lifecycle state and does not certify implementation.
 
 ## 13. Related pages
 

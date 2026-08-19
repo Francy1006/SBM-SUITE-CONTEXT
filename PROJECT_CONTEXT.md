@@ -150,6 +150,10 @@ Rules:
 | OBJ-CTX-042 | SBM-SUITE | Integrar Documentation Markdown con Notion mediante sincronización Git→Notion controlada, preservando Git/Markdown como source of truth, estructura de páginas, IDs estables, trazabilidad y detección de cambios; bidireccionalidad queda fuera del alcance inicial. | pending | 5 | N/A | FEATURE-syncs-documentation-to-notion | N/A |
 | OBJ-CTX-043 | SBM-SUITE | Integrar Objectives con Jira como backlog organizado por Proyecto→Epic→Issue/Task, manteniendo mapping Objective ID↔Jira ID, estado, prioridad y dependencias sin duplicados; inicialmente operado por SBM Agent/SBM-UTIL y futuramente administrado por Scrum Agent. | pending | 5 | N/A | FEATURE-syncs-objectives-to-jira | N/A |
 | OBJ-CTX-044 | SBM-SUITE | Estandarizar contratos Agent↔API/Tool en SBM-AI-ASSISTANT para request/response, scopes/permisos, approvals, auditoría, idempotencia, errores y evidencias, evitando integraciones ad hoc específicas por agente. | pending | 5 | N/A | FEATURE-standardizes-agent-tool-contracts | N/A |
+| OBJ-CTX-045 | SBM-SUITE | Implementar Xavier Agent como coordinador de conversaciones humanas y reuniones multiagente, gestionando sesiones, participantes, turnos, contexto conversacional, incorporación y retiro dinámico de agentes, permisos y auditoría. | pending | 5 | N/A | FEATURE-adds-suite-objectives | N/A |
+| OBJ-CTX-046 | SBM-SUITE | Diseñar e implementar SBM Voice Interface incluyendo STT/TTS, Voice Registry, identidad de voz por agente, wake word, dispositivo físico, integración textual con SBM-MANAGER, autenticación humana/dispositivo, autorización por sesión, anti-spoofing/replay y auditoría. | pending | 5 | N/A | FEATURE-adds-suite-objectives | N/A |
+| OBJ-CTX-047 | SBM-SUITE | Diseñar arquitectura Local/Cloud AI Runtime con ejecución local opcional de agentes, RAG, embeddings, Vector DB, context cache y fallback seguro hacia proveedores cloud. | pending | 5 | N/A | FEATURE-adds-suite-objectives | N/A |
+| OBJ-CTX-048 | SBM-SUITE | Corregir la integración de Confluence de SBM-AI-ASSISTANT, restaurando y validando credenciales/configuración requeridas para ingestión y sincronización sin modificar innecesariamente la implementación existente. | pending | 5 | N/A | FEATURE-adds-suite-objectives | N/A |
 
 Rules:
 
@@ -212,7 +216,7 @@ Only current repositories have canonical filesystem/runtime roots. Planned names
 | SBM-DB | Flyway/DBML/PostgreSQL authority | SBM-DB-001 | `SBM-DB-002`, `SBM-DB-003`, `SBM-DB-004`, `SBM-DB-005`, `SBM-DB-006`, `SBM-DB-007`, `SBM-DB-008`, `SBM-DB-009`, `SBM-DB-010`, `SBM-DB-011` | FEATURE-enables-sbm-db | `SBM/SBM-DB/context/PROJECT_CONTEXT.md` | `SBM/SBM-DB/context/QA_CONTEXT.md` | N/A |
 | SBM-API | Shared identity/platform API | N/A | `SBM-API-001`, `SBM-API-002`, `SBM-API-003` | N/A | `SBM/SBM-API/context/PROJECT_CONTEXT.md` | `SBM/SBM-API/context/QA_CONTEXT.md` | N/A |
 | SBM-AI-ASSISTANT | AI/agent/RAG orchestration | N/A in global table | `OBJ-CTX-034`, `OBJ-CTX-044` | N/A | `SBM/sbm-ai-assistant/context/PROJECT_CONTEXT.md` | `SBM/sbm-ai-assistant/context/QA_CONTEXT.md` | N/A |
-| SBM-SUITE/context | Global governance/orchestration | `OBJ-CTX-038`, `OBJ-CTX-012`, `OBJ-CTX-002` | `OBJ-DOC-001`, `OBJ-CTX-003`, `OBJ-CTX-004`, `OBJ-CTX-005`, `OBJ-CTX-006`, `OBJ-CTX-007`, `OBJ-CTX-008`, `OBJ-CTX-009`, `OBJ-CTX-010`, `OBJ-CTX-011`, `OBJ-CTX-015`, `OBJ-CTX-016`, `OBJ-CTX-017`, `OBJ-CTX-018`, `OBJ-CTX-019`, `OBJ-CTX-020`, `OBJ-CTX-021`, `OBJ-CTX-022`, `OBJ-CTX-023`, `OBJ-CTX-024`, `OBJ-CTX-025`, `OBJ-CTX-026`, `OBJ-CTX-027`, `OBJ-CTX-028`, `OBJ-CTX-029`, `OBJ-CTX-030`, `OBJ-CTX-031`, `OBJ-CTX-032`, `OBJ-CTX-033`, `OBJ-CTX-034`, `OBJ-CTX-035`, `OBJ-CTX-036`, `OBJ-CTX-037`, `OBJ-CTX-039`, `OBJ-CTX-040`, `OBJ-CTX-042`, `OBJ-CTX-043`, `OBJ-CTX-044` | FEATURE-standardizes-suite-governance | `context/PROJECT_CONTEXT.md` | `context/QA_CONTEXT.md` | N/A |
+| SBM-SUITE/context | Global governance/orchestration | `OBJ-CTX-038`, `OBJ-CTX-012`, `OBJ-CTX-002` | `OBJ-DOC-001`, `OBJ-CTX-003`, `OBJ-CTX-004`, `OBJ-CTX-005`, `OBJ-CTX-006`, `OBJ-CTX-007`, `OBJ-CTX-008`, `OBJ-CTX-009`, `OBJ-CTX-010`, `OBJ-CTX-011`, `OBJ-CTX-015`, `OBJ-CTX-016`, `OBJ-CTX-017`, `OBJ-CTX-018`, `OBJ-CTX-019`, `OBJ-CTX-020`, `OBJ-CTX-021`, `OBJ-CTX-022`, `OBJ-CTX-023`, `OBJ-CTX-024`, `OBJ-CTX-025`, `OBJ-CTX-026`, `OBJ-CTX-027`, `OBJ-CTX-028`, `OBJ-CTX-029`, `OBJ-CTX-030`, `OBJ-CTX-031`, `OBJ-CTX-032`, `OBJ-CTX-033`, `OBJ-CTX-034`, `OBJ-CTX-035`, `OBJ-CTX-036`, `OBJ-CTX-037`, `OBJ-CTX-039`, `OBJ-CTX-040`, `OBJ-CTX-042`, `OBJ-CTX-043`, `OBJ-CTX-044`, `OBJ-CTX-045`, `OBJ-CTX-046`, `OBJ-CTX-047`, `OBJ-CTX-048` | FEATURE-standardizes-suite-governance | `context/PROJECT_CONTEXT.md` | `context/QA_CONTEXT.md` | N/A |
 | __BASE-FRANCHISE-API | Reusable Franchise API template | N/A | `BASE-FRANCHISE-001` | N/A | N/A | N/A | N/A |
 | KS | Production-target brand | N/A | `KS-API`, `KS-STORE`, `KS-MOBILE`, `KS-CLIENT`, `KS Agent` derived/governed through canonical bases | N/A | N/A | N/A | N/A |
 | PC | Production-target brand | N/A | `PC-API`, `PC-STORE`, `PC-MOBILE`, `PC-CLIENT`, `PC-CUSTOMER`, `PC Agent` derived/governed through canonical bases | N/A | N/A | N/A | N/A |
@@ -346,10 +350,11 @@ qa-check.sh (when the selected project provides it)
 → run SonarScanner only when configured and applicable
 → persist bounded evidence in the project QA result file
 
-./scripts/context-deploy.sh <project_name> <lifecycle_phase> '<objectives-json-array>' [user_prompt]
+./scripts/context-deploy.sh <project_name> <lifecycle_phase> '<small-objectives-json-array>|-' [user_prompt]
 → execute only from the root of SBM-SUITE/context
 → validate project_name through the backend Project Registry
 → validate the explicit lifecycle phase and objective
+→ accept compact `SBM-GZIP-BASE64-V1` full-object envelopes through stdin with objectives argument `-`, validate gzip CRC/base64/UTF-8/JSON/lifecycle fidelity through internal temporary files and never use `input/`/`output/` as objective transport
 → dispatch lifecycle phases by exact literal equality only
 → request GET /contexts/contract before cleaning exchange directories
 → validate contract version, lifecycle phases, canonical project path and supported patches

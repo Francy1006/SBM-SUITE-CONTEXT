@@ -520,12 +520,22 @@ def resolve_project_root(suite_root: Path, canonical_path: str) -> Path:
 def _main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--lifecycle-phase", required=True, choices=LIFECYCLE_ROUTES)
-    parser.add_argument("--objectives-json", required=True)
+    objective_source = parser.add_mutually_exclusive_group(required=True)
+    objective_source.add_argument("--objectives-json")
+    objective_source.add_argument("--objectives-file")
     parser.add_argument("--operational-context", action="append", required=True)
     parser.add_argument("--completed-context", required=True)
     arguments = parser.parse_args()
     try:
-        objectives = json.loads(arguments.objectives_json)
+        if arguments.objectives_file:
+            source = Path(arguments.objectives_file)
+            if source.is_symlink() or not source.is_file():
+                raise ObjectiveLifecycleError(
+                    f"objectives file is not a regular file: {source}"
+                )
+            objectives = json.loads(source.read_text(encoding="utf-8"))
+        else:
+            objectives = json.loads(arguments.objectives_json)
         route = lifecycle_route(arguments.lifecycle_phase)
         contexts = [Path(value) for value in arguments.operational_context]
         completed = Path(arguments.completed_context)
@@ -535,7 +545,7 @@ def _main() -> int:
             validate_activation(objectives, contexts, completed)
         else:
             validate_existing_objective(objectives, route, contexts, completed)
-    except (json.JSONDecodeError, ObjectiveLifecycleError, OSError) as exc:
+    except (json.JSONDecodeError, UnicodeError, ObjectiveLifecycleError, OSError) as exc:
         raise SystemExit(f"ERROR: {exc}") from exc
     print(f"{route} preflight validated")
     return 0
