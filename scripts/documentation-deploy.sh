@@ -97,6 +97,11 @@ PROJECT_TREE_FILE="${CONTEXT_ROOT}/project-tree.txt"
 RESPONSE_FILE="${OUTPUT_DIR}/documentation-export-response.json"
 PACKAGE_FILE="${OUTPUT_DIR}/documentation-package.zip"
 RECONCILIATION_HELPER="${CONTEXT_ROOT}/scripts/documentation_reconciliation.py"
+QA_GATE_FILE="${CONTEXT_ROOT}/QA/output/finalization-gate.json"
+OBJECTIVE_STATE_HELPER="${CONTEXT_ROOT}/scripts/objective-git-state.py"
+WORKFLOW_STATE_HELPER="${CONTEXT_ROOT}/scripts/workflow-state.py"
+REPOSITORY_HELPER="${CONTEXT_ROOT}/scripts/suite-repositories.py"
+BRANCH_HELPER="${CONTEXT_ROOT}/scripts/objective-branches.sh"
 RECONCILIATION_FILE="$(mktemp)"
 trap 'rm -f "${RECONCILIATION_FILE}"' EXIT
 
@@ -114,6 +119,67 @@ trap 'rm -f "${RECONCILIATION_FILE}"' EXIT
   echo "ERROR: No existe ${RECONCILIATION_HELPER}"
   exit 1
 }
+
+for required_file in \
+  "${QA_GATE_FILE}" \
+  "${OBJECTIVE_STATE_HELPER}" \
+  "${WORKFLOW_STATE_HELPER}" \
+  "${REPOSITORY_HELPER}" \
+  "${BRANCH_HELPER}"; do
+  [[ -f "${required_file}" ]] || {
+    echo "ERROR: archivo requerido inexistente: ${required_file}" >&2
+    exit 1
+  }
+done
+
+IFS=$'\t' read -r QA_BRANCH QA_STATE_SHA256 QA_OBJECTIVE_IDS_CSV < <(
+  python3 - "${QA_GATE_FILE}" <<'PY'
+import json
+import re
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+try:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+    raise SystemExit(f"ERROR: QA gate inválido: {path}") from exc
+
+branch = payload.get("branch")
+status = payload.get("status")
+mode = payload.get("mode")
+objectives = payload.get("objectives")
+digest = payload.get("state_sha256")
+if not isinstance(branch, str) or not branch:
+    raise SystemExit("ERROR: QA gate.branch inválido")
+if status != "passed":
+    raise SystemExit("ERROR: QA gate.status debe ser passed")
+if mode != "full-suite-with-sonar":
+    raise SystemExit("ERROR: QA gate.mode debe ser full-suite-with-sonar")
+if not isinstance(objectives, list) or not objectives or any(
+    not isinstance(value, str) or not value for value in objectives
+):
+    raise SystemExit("ERROR: QA gate.objectives inválido")
+if len(objectives) != len(set(objectives)):
+    raise SystemExit("ERROR: QA gate.objectives contiene duplicados")
+if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+    raise SystemExit("ERROR: QA gate.state_sha256 inválido")
+print(branch + "\t" + digest + "\t" + ",".join(objectives))
+PY
+)
+
+IFS=',' read -r -a QA_OBJECTIVE_IDS <<< "${QA_OBJECTIVE_IDS_CSV}"
+"${BRANCH_HELPER}" verify "${QA_BRANCH}"
+python3 "${OBJECTIVE_STATE_HELPER}" \
+  --branch "${QA_BRANCH}" \
+  --project-context "${CONTEXT_ROOT}/PROJECT_CONTEXT.md" \
+  --completed-objectives "${CONTEXT_ROOT}/COMPLETED_OBJECTIVES.md" \
+  "${QA_OBJECTIVE_IDS[@]}"
+python3 "${WORKFLOW_STATE_HELPER}" \
+  --suite-root "${SBM_SUITE_ROOT}" \
+  --repository-helper "${REPOSITORY_HELPER}" \
+  --scope qa \
+  --expect "${QA_STATE_SHA256}" >/dev/null
 
 mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}"
 

@@ -190,6 +190,8 @@ apply this suite-scoped lifecycle contract. It overrides every generic project-l
 - every lifecycle batch requires canonical `passed` evidence from `QA/qa-full.sh` before Git finalization; `implementation-progress` and `implementation-closure` packages carry that evidence, while creation/activation occur before the mandated post-change QA run;
 - completed history groups each terminal/direct-completed objective under its canonical objective project heading; a suite/multiproject transaction must not collapse unrelated project identities into `### SBM-SUITE`;
 - reusable or structural changes to the suite context use `patches/global-project-context.json` and, when README synchronization is justified, `patches/global-readme.json`;
+- lifecycle descriptions and planned objective scope are not implementation evidence. During `planning-activation`, never generate `patches/suite-context.json`, `patches/global-readme.json`, business/security/data/decisions patches or any other optional structural patch merely because the new objective describes future architecture, services, integrations or runtime behavior;
+- optional non-lifecycle patches during `planning-activation` require independent current Git/runtime evidence that the target file already changed in the branch and that the synchronization is required by this contract; otherwise emit only the lifecycle-required patch set;
 - use only patch paths present in the source manifest `supported_patch_paths`; never reintroduce project-scoped patch paths omitted by the backend.
 
 ### planning-activation
@@ -230,7 +232,9 @@ Required behavior:
 - for `sbm-suite-context`, add each `active`/`pending` objective exactly once to global `PROJECT_CONTEXT.md` only, with `Project = SBM-SUITE`;
 - append each directly `completed` objective exactly once to global `COMPLETED_OBJECTIVES.md` and never insert it into an operational table;
 - preserve every supplied field exactly;
-- update planned QA/README state only when applicable and only as planned work;
+- for lifecycle-only creation with no independent implementation evidence, generate only the patch files required by the lifecycle policy; for `sbm-suite-context` with only `pending`/`active` creations this means `patches/global-project-context.json` only;
+- never treat the objective description itself as evidence authorizing a `SUITE_CONTEXT.md`, README, QA, business, security, data or decisions patch;
+- update planned QA/README state only when separately justified by current source evidence, never merely from future objective scope;
 - do not modify documentation pages;
 - require `patches/completed-objectives.json` only when the batch contains directly `completed` objectives;
 - do not claim implementation or validation.

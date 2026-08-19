@@ -82,7 +82,10 @@ def main() -> int:
         args.scope,
     )
     if args.expect is not None and value != args.expect:
-        raise SystemExit("ERROR: QA gate no corresponde al estado actual de la branch")
+        gate_label = "QA" if args.scope == "qa" else "Documentation"
+        raise SystemExit(
+            f"ERROR: {gate_label} gate no corresponde al estado actual de la branch"
+        )
     print(value)
     return 0
 

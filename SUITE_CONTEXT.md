@@ -504,8 +504,9 @@ QA/qa-full.sh
 → every lifecycle batch requires canonical full-suite successful execution evidence before finalization
 → `not-applicable`, missing, stale or failed evidence blocks finalization
 
-./scripts/context-deploy.sh <project_name> <lifecycle_phase> <objectives-json-array> [user_prompt]
+./scripts/context-deploy.sh <project_name> <lifecycle_phase> <small-objectives-json-array|-> [user_prompt]
 → validate the selected project through the backend Project Registry
+→ accept compact `SBM-GZIP-BASE64-V1` objective envelopes through stdin with objectives argument `-`, validate gzip CRC/base64/UTF-8/JSON/lifecycle fidelity in internal temporary files, preserve plain JSON only for backward compatibility and keep `input/` reserved for upgrade ZIP exchange
 → dispatch planning-activation, objective-activation, objective-registration, objective-completion, objective-deletion, objective-update, implementation-progress and implementation-closure by exact literal equality
 → reserve planning-activation for new objectives
 → reserve objective-activation for one or more existing pending → active transitions validated and applied atomically

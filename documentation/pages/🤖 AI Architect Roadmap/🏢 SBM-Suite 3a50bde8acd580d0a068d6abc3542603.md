@@ -2,7 +2,7 @@
 
 > **Nota de arquitectura 2026-08-16:** `sbm-comercial` y `sbm-digital-api` se conservan solo como conceptos históricos del roadmap. No son proyectos aprobados para crear actualmente; el diseño vigente prioriza APIs de marca + stores/mobile/client channels directos.
 >
-> **Last updated:** 2026-08-18
+> **Last updated:** 2026-08-19
 >
 > **Purpose:**
 >
@@ -1565,7 +1565,7 @@ Analytics
 SBM Suite busca convertirse en un **sistema operativo empresarial inteligente**, capaz de administrar organizaciones de distintas industrias, conectar sus canales y automatizar progresivamente sus funciones operativas, administrativas y estratégicas, manteniendo seguridad, trazabilidad y supervisión humana.
 
 
-### Additional lifecycle records synchronized from Context — 2026-08-17
+### Additional lifecycle records synchronized from Context — 2026-08-19
 
 | Objective ID | Project | Objective | Status | Priority | Target date | Branch |
 |---|---|---|---|---:|---|---|
@@ -1589,8 +1589,12 @@ SBM Suite busca convertirse en un **sistema operativo empresarial inteligente**,
 | OBJ-CTX-042 | SBM-SUITE | Integrar Documentation Markdown con Notion mediante sincronización Git→Notion controlada, preservando Git/Markdown como source of truth, estructura de páginas, IDs estables, trazabilidad y detección de cambios; bidireccionalidad queda fuera del alcance inicial. | pending | 5 | N/A | FEATURE-syncs-documentation-to-notion |
 | OBJ-CTX-043 | SBM-SUITE | Integrar Objectives con Jira como backlog organizado por Proyecto→Epic→Issue/Task, manteniendo mapping Objective ID↔Jira ID, estado, prioridad y dependencias sin duplicados; inicialmente operado por SBM Agent/SBM-UTIL y futuramente administrado por Scrum Agent. | pending | 5 | N/A | FEATURE-syncs-objectives-to-jira |
 | OBJ-CTX-044 | SBM-SUITE | Estandarizar contratos Agent↔API/Tool en SBM-AI-ASSISTANT para request/response, scopes/permisos, approvals, auditoría, idempotencia, errores y evidencias, evitando integraciones ad hoc específicas por agente. | pending | 5 | N/A | FEATURE-standardizes-agent-tool-contracts |
+| OBJ-CTX-045 | SBM-SUITE | Implementar Xavier Agent como coordinador de conversaciones humanas y reuniones multiagente, gestionando sesiones, participantes, turnos, contexto conversacional, incorporación y retiro dinámico de agentes, permisos y auditoría. | pending | 5 | N/A | FEATURE-adds-suite-objectives |
+| OBJ-CTX-046 | SBM-SUITE | Diseñar e implementar SBM Voice Interface incluyendo STT/TTS, Voice Registry, identidad de voz por agente, wake word, dispositivo físico, integración textual con SBM-MANAGER, autenticación humana/dispositivo, autorización por sesión, anti-spoofing/replay y auditoría. | pending | 5 | N/A | FEATURE-adds-suite-objectives |
+| OBJ-CTX-047 | SBM-SUITE | Diseñar arquitectura Local/Cloud AI Runtime con ejecución local opcional de agentes, RAG, embeddings, Vector DB, context cache y fallback seguro hacia proveedores cloud. | pending | 5 | N/A | FEATURE-adds-suite-objectives |
+| OBJ-CTX-048 | SBM-SUITE | Corregir la integración de Confluence de SBM-AI-ASSISTANT, restaurando y validando credenciales/configuración requeridas para ingestión y sincronización sin modificar innecesariamente la implementación existente. | pending | 5 | N/A | FEATURE-adds-suite-objectives |
 
-These rows mirror current Context lifecycle state only; `pending` does not imply implementation and no terminal state is inferred.
+These rows mirror current Context lifecycle state only; `pending` does not imply implementation and no terminal state is inferred. `OBJ-CTX-045` through `OBJ-CTX-048` were synchronized as planning-only records on 2026-08-19; no voice, local-AI or Confluence implementation is claimed by their registration.
 
 
 ### Multi-brand SBM baseline — 2026-08-16

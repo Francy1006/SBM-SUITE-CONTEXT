@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import tempfile
@@ -7,15 +8,16 @@ import unittest
 from pathlib import Path
 
 CONTEXT_ROOT = Path(__file__).resolve().parents[2]
-SOURCES = tuple(
-    CONTEXT_ROOT / "scripts" / name
-    for name in (
-        "objective-git-finalize.sh",
-        "objective-branches.sh",
-        "suite-repositories.py",
-        "git-flow-policy.py",
-    )
+SCRIPT_NAMES = (
+    "objective-git-finalize.sh",
+    "objective-git-cleanup.sh",
+    "objective-branches.sh",
+    "suite-repositories.py",
+    "git-flow-policy.py",
+    "objective-git-state.py",
+    "workflow-state.py",
 )
+SOURCES = tuple(CONTEXT_ROOT / "scripts" / name for name in SCRIPT_NAMES)
 
 
 def run(*args: str, cwd: Path, check: bool = True):
@@ -91,7 +93,7 @@ class Environment:
     def write_completed(self, records):
         rows = "\n".join(
             f"| {oid} | TEST | Objective {oid} | {status} | 5 | {branch} | N/A | "
-            f"2026-08-18 | done | full QA passed | docs/{oid}.md | N/A |"
+            f"2026-08-19 | done | full QA passed | docs/{oid}.md | N/A |"
             for oid, branch, status in records
         )
         text = (
@@ -107,6 +109,45 @@ class Environment:
         for relative in self.repositories:
             run("git", "checkout", "-b", branch, "main", cwd=self.repository(relative))
 
+    def state(self, scope: str) -> str:
+        result = run(
+            "python3",
+            str(self.context / "scripts/workflow-state.py"),
+            "--suite-root",
+            str(self.suite),
+            "--repository-helper",
+            str(self.context / "scripts/suite-repositories.py"),
+            "--scope",
+            scope,
+            cwd=self.context,
+        )
+        return result.stdout.strip()
+
+    def write_gates(self, ids, branch):
+        qa_dir = self.context / "QA/output"
+        doc_dir = self.context / "documentation/output"
+        qa_dir.mkdir(parents=True, exist_ok=True)
+        doc_dir.mkdir(parents=True, exist_ok=True)
+        qa = {
+            "branch": branch,
+            "status": "passed",
+            "mode": "full-suite-with-sonar",
+            "objectives": list(ids),
+            "state_sha256": self.state("qa"),
+        }
+        doc = {
+            "branch": branch,
+            "status": "updated",
+            "objectives": list(ids),
+            "state_sha256": self.state("documentation"),
+        }
+        (qa_dir / "finalization-gate.json").write_text(
+            json.dumps(qa, indent=2) + "\n", encoding="utf-8"
+        )
+        (doc_dir / "finalization-gate.json").write_text(
+            json.dumps(doc, indent=2) + "\n", encoding="utf-8"
+        )
+
     def finalize(self, ids, branch):
         return run(
             str(self.context / "scripts/objective-git-finalize.sh"),
@@ -118,195 +159,129 @@ class Environment:
 
 
 class ObjectiveGitFinalizeTests(unittest.TestCase):
-    def test_completed_objective_finalizes_without_gate_and_preserves_branch(self):
+    def test_pending_batch_finalizes_with_gates_and_deletes_branch(self):
         with tempfile.TemporaryDirectory() as directory:
             env = Environment(Path(directory))
-            branch = "FEATURE-finalizes-objective"
-            objective_id = "OBJ-FINALIZE-001"
+            branch = "FEATURE-finalizes-pending-batch"
+            ids = ("OBJ-PENDING-001", "OBJ-PENDING-002")
             env.prepare(branch)
-            env.write_completed([(objective_id, branch, "completed")])
-            (env.repository("DP/DP-API") / "tracked.txt").write_text(
-                "changed\n", encoding="utf-8"
-            )
+            env.write_context([], [(ids[0], branch), (ids[1], branch)])
+            (env.repository("DP/DP-API") / "tracked.txt").write_text("changed\n", encoding="utf-8")
+            env.write_gates(ids, branch)
 
-            self.assertFalse((env.context / "QA/output/finalization-gate.json").exists())
-            self.assertFalse(
-                (env.context / "documentation/output/finalization-gate.json").exists()
-            )
-
-            result = env.finalize((objective_id,), branch)
+            result = env.finalize(ids, branch)
 
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertNotIn("finalization-gate", result.stderr)
             for relative in env.repositories:
                 repository = env.repository(relative)
-                self.assertEqual(
-                    run("git", "branch", "--show-current", cwd=repository).stdout.strip(),
-                    "main",
-                )
+                self.assertEqual(run("git", "branch", "--show-current", cwd=repository).stdout.strip(), "main")
                 self.assertEqual(run("git", "status", "--porcelain", cwd=repository).stdout, "")
+                self.assertNotIn(branch, run("git", "branch", "--list", branch, cwd=repository).stdout)
                 self.assertEqual(
-                    run(
-                        "git",
-                        "show-ref",
-                        "--verify",
-                        "--quiet",
-                        f"refs/heads/{branch}",
-                        cwd=repository,
-                        check=False,
-                    ).returncode,
-                    0,
-                )
-
-            for relative in ("context", "DP/DP-API"):
-                repository = env.repository(relative)
-                self.assertEqual(
-                    run(
-                        "git",
-                        "merge-base",
-                        "--is-ancestor",
-                        branch,
-                        "main",
-                        cwd=repository,
-                        check=False,
-                    ).returncode,
-                    0,
-                )
-                self.assertNotEqual(
-                    run(
-                        "git",
-                        "ls-remote",
-                        "--heads",
-                        "origin",
-                        branch,
-                        cwd=repository,
-                    ).stdout.strip(),
+                    run("git", "ls-remote", "--heads", "origin", branch, cwd=repository).stdout.strip(),
                     "",
                 )
-                self.assertEqual(
-                    run(
-                        "git",
-                        "log",
-                        branch,
-                        "-1",
-                        "--pretty=%s",
-                        cwd=repository,
-                    ).stdout.strip(),
-                    f"chore(objective): finalize {objective_id}",
-                )
+            self.assertEqual(
+                run("git", "log", "main", "-1", "--pretty=%s", cwd=env.repository("DP/DP-API")).stdout.strip(),
+                "merge: finalize transversal objective batch",
+            )
 
-    def test_active_objective_is_rejected_even_without_gate(self):
+    def test_active_objective_is_supported_with_current_gates(self):
         with tempfile.TemporaryDirectory() as directory:
             env = Environment(Path(directory))
-            branch = "FEATURE-still-active"
-            objective_id = "OBJ-STILL-ACTIVE"
+            branch = "FEATURE-finalizes-active"
+            oid = "OBJ-ACTIVE-001"
             env.prepare(branch)
-            env.write_context([(objective_id, branch)], [])
+            env.write_context([(oid, branch)], [])
+            env.write_gates((oid,), branch)
+            result = env.finalize((oid,), branch)
+            self.assertEqual(result.returncode, 0, result.stderr)
 
-            result = env.finalize((objective_id,), branch)
+    def test_completed_objective_is_supported_with_current_gates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            env = Environment(Path(directory))
+            branch = "BUGFIX-finalizes-completed"
+            oid = "OBJ-COMPLETE-001"
+            env.prepare(branch)
+            env.write_completed([(oid, branch, "completed")])
+            env.write_gates((oid,), branch)
+            result = env.finalize((oid,), branch)
+            self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_missing_documentation_gate_aborts_before_git_mutation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            env = Environment(Path(directory))
+            branch = "FEATURE-missing-doc-gate"
+            oid = "OBJ-GATE-001"
+            env.prepare(branch)
+            env.write_context([], [(oid, branch)])
+            env.write_gates((oid,), branch)
+            (env.context / "documentation/output/finalization-gate.json").unlink()
+            before = run("git", "rev-parse", "HEAD", cwd=env.context).stdout
+            result = env.finalize((oid,), branch)
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("todavía figura como active", result.stderr)
-            for relative in env.repositories:
-                self.assertEqual(
-                    run(
-                        "git", "branch", "--show-current", cwd=env.repository(relative)
-                    ).stdout.strip(),
-                    branch,
-                )
+            self.assertIn("Documentation gate inexistente", result.stderr)
+            self.assertEqual(run("git", "rev-parse", "HEAD", cwd=env.context).stdout, before)
 
-    def test_completed_branch_mismatch_aborts_before_git_mutation(self):
+    def test_stale_documentation_gate_aborts_before_git_mutation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            env = Environment(Path(directory))
+            branch = "FEATURE-stale-doc-gate"
+            oid = "OBJ-STALE-001"
+            env.prepare(branch)
+            env.write_context([], [(oid, branch)])
+            env.write_gates((oid,), branch)
+            (env.repository("DP/DP-API") / "tracked.txt").write_text("changed after gate\n", encoding="utf-8")
+            result = env.finalize((oid,), branch)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Documentation gate no corresponde al estado actual", result.stderr)
+            self.assertEqual(run("git", "branch", "--show-current", cwd=env.context).stdout.strip(), branch)
+
+    def test_gate_batch_order_mismatch_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            env = Environment(Path(directory))
+            branch = "FEATURE-order-mismatch"
+            ids = ("OBJ-ORDER-001", "OBJ-ORDER-002")
+            env.prepare(branch)
+            env.write_context([], [(ids[0], branch), (ids[1], branch)])
+            env.write_gates(tuple(reversed(ids)), branch)
+            result = env.finalize(ids, branch)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("batch ordenado", result.stderr)
+
+    def test_lifecycle_branch_mismatch_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             env = Environment(Path(directory))
             branch = "FEATURE-current-branch"
-            objective_id = "OBJ-BRANCH-MISMATCH"
+            oid = "OBJ-BRANCH-MISMATCH"
             env.prepare(branch)
-            env.write_completed(
-                [(objective_id, "FEATURE-other-branch", "completed")]
-            )
-            before = {
-                relative: run(
-                    "git", "rev-parse", "HEAD", cwd=env.repository(relative)
-                ).stdout
-                for relative in env.repositories
-            }
-
-            result = env.finalize((objective_id,), branch)
-
+            env.write_context([], [(oid, "FEATURE-other-branch")])
+            result = env.finalize((oid,), branch)
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("Branch de cierre", result.stderr)
-            for relative in env.repositories:
-                self.assertEqual(
-                    run("git", "rev-parse", "HEAD", cwd=env.repository(relative)).stdout,
-                    before[relative],
-                )
-
-    def test_non_completed_final_status_is_rejected(self):
-        with tempfile.TemporaryDirectory() as directory:
-            env = Environment(Path(directory))
-            branch = "FEATURE-not-completed"
-            objective_id = "OBJ-NOT-COMPLETED"
-            env.prepare(branch)
-            env.write_completed([(objective_id, branch, "registered")])
-
-            result = env.finalize((objective_id,), branch)
-
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("Final status=completed", result.stderr)
+            self.assertIn("Branch lifecycle", result.stderr)
 
     def test_wrong_repository_branch_aborts_before_any_commit(self):
         with tempfile.TemporaryDirectory() as directory:
             env = Environment(Path(directory))
             branch = "FEATURE-atomic-finalization"
-            objective_id = "OBJ-MUST-ABORT"
+            oid = "OBJ-MUST-ABORT"
             env.prepare(branch)
-            env.write_completed([(objective_id, branch, "completed")])
-            (env.repository("DP/DP-API") / "tracked.txt").write_text(
-                "dirty\n", encoding="utf-8"
-            )
-            before = {
-                relative: run(
-                    "git", "rev-parse", "HEAD", cwd=env.repository(relative)
-                ).stdout
-                for relative in env.repositories
-            }
+            env.write_context([], [(oid, branch)])
+            env.write_gates((oid,), branch)
+            before = {relative: run("git", "rev-parse", "HEAD", cwd=env.repository(relative)).stdout for relative in env.repositories}
             run("git", "checkout", "main", cwd=env.repository("SBM/SBM-API"))
-
-            result = env.finalize((objective_id,), branch)
-
+            result = env.finalize((oid,), branch)
             self.assertNotEqual(result.returncode, 0)
             for relative in env.repositories:
-                self.assertEqual(
-                    run("git", "rev-parse", "HEAD", cwd=env.repository(relative)).stdout,
-                    before[relative],
-                )
+                self.assertEqual(run("git", "rev-parse", "HEAD", cwd=env.repository(relative)).stdout, before[relative])
 
-    def test_completed_batch_remains_supported_without_gate(self):
-        with tempfile.TemporaryDirectory() as directory:
-            env = Environment(Path(directory))
-            branch = "FEATURE-completes-batch"
-            ids = ("OBJ-BATCH-001", "OBJ-BATCH-002")
-            env.prepare(branch)
-            env.write_completed(
-                [(ids[0], branch, "completed"), (ids[1], branch, "completed")]
-            )
-
-            result = env.finalize(ids, branch)
-
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(
-                run("git", "branch", "--show-current", cwd=env.context).stdout.strip(),
-                "main",
-            )
-
-    def test_source_has_no_finalization_gate_dependency(self):
-        source = (CONTEXT_ROOT / "scripts/objective-git-finalize.sh").read_text(
-            encoding="utf-8"
-        )
-        self.assertNotIn("finalization-gate.json", source)
-        self.assertNotIn("verify-finalization-gates", source)
-        self.assertNotIn("QA_GATE_FILE", source)
-        self.assertNotIn("DOCUMENTATION_GATE_FILE", source)
+    def test_source_enforces_gates_and_integrated_cleanup(self):
+        source = (CONTEXT_ROOT / "scripts/objective-git-finalize.sh").read_text(encoding="utf-8")
+        self.assertIn("QA/output/finalization-gate.json", source)
+        self.assertIn("documentation/output/finalization-gate.json", source)
+        self.assertIn("objective-git-state.py", source)
+        self.assertIn("objective-git-cleanup.sh", source)
+        self.assertIn("chore: finalize transversal objective batch", source)
 
 
 if __name__ == "__main__":
