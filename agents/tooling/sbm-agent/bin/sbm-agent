@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+AGENTS_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd)
+CONTEXT_ROOT=$(CDPATH= cd -- "$AGENTS_ROOT/.." && pwd)
+PYTHON_BIN="$CONTEXT_ROOT/.venv/bin/python"
+if [ ! -x "$PYTHON_BIN" ]; then PYTHON_BIN=python3; fi
+PYTHONPATH="$AGENTS_ROOT/tooling/sbm-agent/src${PYTHONPATH:+:$PYTHONPATH}" exec "$PYTHON_BIN" -m sbm_agent_orchestrator.cli "$@"

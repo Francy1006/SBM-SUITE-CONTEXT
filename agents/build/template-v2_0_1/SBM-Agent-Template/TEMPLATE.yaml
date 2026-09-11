@@ -1,0 +1,192 @@
+template_id: SBM-Agent-Template
+template_version: 2.0.1
+standard_id: AGENT_CLONING_STANDARD
+standard_version: 2.0.0
+template_type: AGENT_CANONICAL_TEMPLATE
+supported_creation_modes:
+- NEW
+- CLONE
+supported_migration_types:
+- STANDARD_UPGRADE
+canonical_root: <Agent>/
+required_files:
+- CHECKSUMS.sha256
+- MANIFEST.yaml
+- README.md
+- TEMPLATE.yaml
+- fixtures/clone/fixture.yaml
+- fixtures/deployment_absent/fixture.yaml
+- fixtures/deployment_present/fixture.yaml
+- fixtures/new/fixture.yaml
+- fixtures/standard_upgrade/fixture.yaml
+- qa/ACCEPTANCE_CRITERIA.md
+- qa/TEST_MATRIX.md
+- schemas/AGENT_CONTEXT.schema.yaml
+- schemas/AGENT_DEFINITION.schema.yaml
+- schemas/AGENT_PROPOSAL.schema.yaml
+- schemas/AGENT_SPEC.schema.yaml
+- schemas/APPROVAL_RECORD.schema.yaml
+- schemas/CLONE_LINEAGE.schema.yaml
+- schemas/CONTEXT_CONTRACT.schema.yaml
+- schemas/DEPLOYMENT_PROFILE.schema.yaml
+- schemas/HIERARCHY.schema.yaml
+- schemas/PERMISSIONS.schema.yaml
+- schemas/RELATIONSHIPS.schema.yaml
+- schemas/RUNTIME_PROFILE.schema.yaml
+- schemas/TEMPLATE.schema.yaml
+- scripts/test
+- scripts/validate
+- templates/agent/AGENT_CONTEXT.template.yaml
+- templates/agent/AGENT_DEFINITION.template.yaml
+- templates/agent/AGENT_PROPOSAL.template.yaml
+- templates/agent/AGENT_SPEC.template.yaml
+- templates/agent/INIT.template.md
+- templates/agent/README.template.md
+- templates/agent/approvals/MATERIALIZATION_APPROVAL.template.yaml
+- templates/agent/approvals/PROPOSAL_APPROVAL.template.yaml
+- templates/agent/approvals/SPEC_APPROVAL.template.yaml
+- templates/agent/config/CLONE_LINEAGE.template.yaml
+- templates/agent/config/CONTEXT_CONTRACT.template.yaml
+- templates/agent/config/HIERARCHY.template.yaml
+- templates/agent/config/PERMISSIONS.template.yaml
+- templates/agent/config/RELATIONSHIPS.template.yaml
+- templates/agent/config/RUNTIME_PROFILE.template.yaml
+- templates/agent/deployment/DEPLOYMENT_PROFILE.template.yaml
+- templates/agent/deployment/GPT_INSTRUCTIONS.template.md
+- templates/agent/deployment/GPT_KNOWLEDGE_MANIFEST.template.yaml
+- templates/agent/deployment/GPT_SETUP_CHECKLIST.template.md
+- templates/agent/manifest.template.json
+- templates/agent/qa/ACCEPTANCE_CRITERIA.template.md
+- templates/agent/qa/TEST_MATRIX.template.md
+- templates/agent/scripts/test.template
+- templates/agent/scripts/validate.template
+- tests/test_approvals.py
+- tests/test_context_contract.py
+- tests/test_cross_references.py
+- tests/test_deployment_conditionality.py
+- tests/test_hierarchy.py
+- tests/test_instance_validation.py
+- tests/test_lineage.py
+- tests/test_manifest_checksums.py
+- tests/test_permissions.py
+- tests/test_prohibited_artifacts.py
+- tests/test_relationships.py
+- tests/test_reproducibility.py
+- tests/test_required_files.py
+- tests/test_schema_validity.py
+- tests/test_separation.py
+- tests/test_standard_upgrade.py
+- tests/test_template_tree.py
+optional_file_groups:
+  deployment:
+    scope: GENERATED_AGENT
+    condition: deployment_reference != null
+    paths:
+    - deployment/DEPLOYMENT_PROFILE.yaml
+    - deployment/GPT_INSTRUCTIONS.md
+    - deployment/GPT_KNOWLEDGE_MANIFEST.yaml
+    - deployment/GPT_SETUP_CHECKLIST.md
+prohibited_patterns:
+- __pycache__/
+- .pytest_cache/
+- '*.pyc'
+- '*.pyo'
+- .DS_Store
+- Thumbs.db
+- node_modules/
+- .git/
+- build/
+- dist/
+- context/
+- .sbm/
+- coverage/
+- '*.tmp'
+- '*.temp'
+- '*.swp'
+- '*.swap'
+- '*.log'
+- credentials
+- tokens
+- API keys
+- secrets
+- undeclared files
+schema_references:
+- schemas/AGENT_CONTEXT.schema.yaml
+- schemas/AGENT_DEFINITION.schema.yaml
+- schemas/AGENT_PROPOSAL.schema.yaml
+- schemas/AGENT_SPEC.schema.yaml
+- schemas/APPROVAL_RECORD.schema.yaml
+- schemas/CLONE_LINEAGE.schema.yaml
+- schemas/CONTEXT_CONTRACT.schema.yaml
+- schemas/DEPLOYMENT_PROFILE.schema.yaml
+- schemas/HIERARCHY.schema.yaml
+- schemas/PERMISSIONS.schema.yaml
+- schemas/RELATIONSHIPS.schema.yaml
+- schemas/RUNTIME_PROFILE.schema.yaml
+- schemas/TEMPLATE.schema.yaml
+template_references:
+- templates/agent/AGENT_CONTEXT.template.yaml
+- templates/agent/AGENT_DEFINITION.template.yaml
+- templates/agent/AGENT_PROPOSAL.template.yaml
+- templates/agent/AGENT_SPEC.template.yaml
+- templates/agent/INIT.template.md
+- templates/agent/README.template.md
+- templates/agent/approvals/MATERIALIZATION_APPROVAL.template.yaml
+- templates/agent/approvals/PROPOSAL_APPROVAL.template.yaml
+- templates/agent/approvals/SPEC_APPROVAL.template.yaml
+- templates/agent/config/CLONE_LINEAGE.template.yaml
+- templates/agent/config/CONTEXT_CONTRACT.template.yaml
+- templates/agent/config/HIERARCHY.template.yaml
+- templates/agent/config/PERMISSIONS.template.yaml
+- templates/agent/config/RELATIONSHIPS.template.yaml
+- templates/agent/config/RUNTIME_PROFILE.template.yaml
+- templates/agent/deployment/DEPLOYMENT_PROFILE.template.yaml
+- templates/agent/deployment/GPT_INSTRUCTIONS.template.md
+- templates/agent/deployment/GPT_KNOWLEDGE_MANIFEST.template.yaml
+- templates/agent/deployment/GPT_SETUP_CHECKLIST.template.md
+- templates/agent/manifest.template.json
+- templates/agent/qa/ACCEPTANCE_CRITERIA.template.md
+- templates/agent/qa/TEST_MATRIX.template.md
+- templates/agent/scripts/test.template
+- templates/agent/scripts/validate.template
+qa_references:
+- qa/ACCEPTANCE_CRITERIA.md
+- qa/TEST_MATRIX.md
+- tests/test_approvals.py
+- tests/test_context_contract.py
+- tests/test_cross_references.py
+- tests/test_deployment_conditionality.py
+- tests/test_hierarchy.py
+- tests/test_instance_validation.py
+- tests/test_lineage.py
+- tests/test_manifest_checksums.py
+- tests/test_permissions.py
+- tests/test_prohibited_artifacts.py
+- tests/test_relationships.py
+- tests/test_reproducibility.py
+- tests/test_required_files.py
+- tests/test_schema_validity.py
+- tests/test_separation.py
+- tests/test_standard_upgrade.py
+- tests/test_template_tree.py
+fixture_references:
+  new: fixtures/new/fixture.yaml
+  clone: fixtures/clone/fixture.yaml
+  deployment_absent: fixtures/deployment_absent/fixture.yaml
+  deployment_present: fixtures/deployment_present/fixture.yaml
+  standard_upgrade: fixtures/standard_upgrade/fixture.yaml
+separation_rules:
+  draft_materialization_allowed: false
+  yeoman_can_approve: false
+  scaffold_metadata_packaged: false
+  provisional_scaffold_registered_in_context_agents: false
+  approved_input_origin_affects_output: false
+zip:
+  filename: SBM-Agent-Template-v2_0_1.zip
+  root: SBM-Agent-Template/
+  physical_file_count: 67
+  method: DEFLATE
+  compresslevel: 6
+  timestamp: '2020-01-01T00:00:00Z'
+  file_mode: '0644'
+  path_order: LEXICOGRAPHIC

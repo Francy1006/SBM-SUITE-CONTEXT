@@ -1,0 +1,41 @@
+proposal_id: '{{proposal_id}}'
+proposal_version: '{{proposal_version}}'
+agent_name: '{{agent_name}}'
+agent_description: '{{agent_description}}'
+agent_purpose: '{{agent_purpose}}'
+specific_objectives:
+- '{{specific_objective}}'
+general_context: '{{general_context}}'
+responsibilities:
+- '{{responsibility}}'
+authority:
+- '{{authority}}'
+permissions:
+- '{{permission}}'
+hierarchy: '{{hierarchy}}'
+relationships:
+- '{{relationship}}'
+personality: '{{personality}}'
+communication_style: '{{communication_style}}'
+required_context:
+- '{{required_context}}'
+retrieval_strategy: '{{retrieval_strategy}}'
+embedding_strategy: '{{embedding_strategy}}'
+llm_policy: '{{llm_policy}}'
+execution_modes:
+- '{{execution_mode}}'
+expected_frequency: '{{expected_frequency}}'
+asynchronous_capabilities:
+- '{{asynchronous_capability}}'
+execution_dependencies:
+- '{{execution_dependency}}'
+outputs:
+- '{{output}}'
+escalation_rules:
+- '{{escalation_rule}}'
+deployment: null
+qa_specific:
+- '{{qa_specific}}'
+creation_mode: NEW
+parent_reference: null
+review_status: DRAFT

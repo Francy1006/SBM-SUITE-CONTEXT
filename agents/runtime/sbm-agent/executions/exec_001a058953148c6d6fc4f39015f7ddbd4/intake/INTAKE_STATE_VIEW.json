@@ -1,0 +1,143 @@
+{
+  "defaults": {
+    "asynchronous_capabilities": [
+      "NONE"
+    ],
+    "authority": [
+      "READ",
+      "ANALYZE"
+    ],
+    "communication_style": "Direct",
+    "embedding_strategy": "NONE",
+    "escalation_rules": [
+      "ESCALATE_ON_CONTRADICTION",
+      "ESCALATE_HUMAN_POLICY"
+    ],
+    "execution_dependencies": [
+      "PYTHON"
+    ],
+    "execution_modes": [
+      "SYNC"
+    ],
+    "expected_frequency": "ON_DEMAND",
+    "llm_policy": "NO_LLM_BY_DEFAULT",
+    "material_constraints": [
+      "No functional work before valid context.zip",
+      "sbm-admin is the sole final human authority"
+    ],
+    "outputs": [
+      "RESULT"
+    ],
+    "permissions": [
+      "READ",
+      "ANALYZE"
+    ],
+    "personality": "Professional and deterministic",
+    "qa": [
+      "SCHEMA",
+      "CROSS_REFERENCE",
+      "DETERMINISTIC_REPLAY"
+    ],
+    "relationships": [
+      "sbm-admin final human authority",
+      "Darwin architecture",
+      "Noe independent review"
+    ],
+    "responsibilities": [
+      "EXECUTE_DECLARED_PURPOSE"
+    ],
+    "retrieval_strategy": "DECLARED_ONLY",
+    "runtime": {
+      "context_delivery": "ZIP",
+      "idempotency": "REQUIRED"
+    },
+    "security_boundaries": [
+      "NO_SELF_APPROVAL",
+      "NO_SELF_PROMOTION",
+      "NO_LLM_BY_DEFAULT"
+    ]
+  },
+  "field_source_policy": {
+    "classes": [
+      "DETERMINISTIC",
+      "CANONICAL_DEFAULT",
+      "CURRENT_CONTEXT",
+      "DARWIN_ARCHITECTURAL",
+      "SBM_ADMIN_REQUIRED",
+      "SBM_ADMIN_CONDITIONAL"
+    ],
+    "conditional_required": [],
+    "fields": {
+      "agent_id": "DETERMINISTIC",
+      "agent_name": "DETERMINISTIC",
+      "agent_version": "CANONICAL_DEFAULT",
+      "asynchronous_capabilities": "DARWIN_ARCHITECTURAL",
+      "authority": "DARWIN_ARCHITECTURAL",
+      "communication_style": "SBM_ADMIN_CONDITIONAL",
+      "deployment": "DARWIN_ARCHITECTURAL",
+      "desired_outcome": "SBM_ADMIN_REQUIRED",
+      "embedding_strategy": "DARWIN_ARCHITECTURAL",
+      "escalation_rules": "DARWIN_ARCHITECTURAL",
+      "execution_dependencies": "DARWIN_ARCHITECTURAL",
+      "execution_modes": "DARWIN_ARCHITECTURAL",
+      "factory_binding": "CURRENT_CONTEXT",
+      "generator_binding": "CURRENT_CONTEXT",
+      "governance_binding": "CURRENT_CONTEXT",
+      "hierarchy": "DARWIN_ARCHITECTURAL",
+      "important_relationships": "SBM_ADMIN_CONDITIONAL",
+      "llm_policy": "CANONICAL_DEFAULT",
+      "material_limits": "SBM_ADMIN_CONDITIONAL",
+      "outputs": "DARWIN_ARCHITECTURAL",
+      "permissions": "DARWIN_ARCHITECTURAL",
+      "personality": "SBM_ADMIN_CONDITIONAL",
+      "proposal_id": "DETERMINISTIC",
+      "proposal_version": "DETERMINISTIC",
+      "qa": "DARWIN_ARCHITECTURAL",
+      "relationships": "DARWIN_ARCHITECTURAL",
+      "requested_name": "SBM_ADMIN_REQUIRED",
+      "required_context": "DARWIN_ARCHITECTURAL",
+      "responsibilities": "SBM_ADMIN_CONDITIONAL",
+      "retrieval_strategy": "DARWIN_ARCHITECTURAL",
+      "runtime": "DARWIN_ARCHITECTURAL",
+      "security_boundaries": "DARWIN_ARCHITECTURAL",
+      "specific_objectives": "DETERMINISTIC",
+      "standard_binding": "CURRENT_CONTEXT",
+      "style": "SBM_ADMIN_CONDITIONAL",
+      "template_binding": "CURRENT_CONTEXT"
+    },
+    "policy_id": "SBM-FIELD-SOURCE-POLICY",
+    "questions": {
+      "desired_outcome": "¿Qué resultado concreto quieres que consiga?",
+      "important_relationships": "¿Con qué agente o autoridad debe relacionarse?",
+      "material_limits": "¿Qué límite material debe respetar?",
+      "requested_name": "¿Cómo quieres llamar al agente?",
+      "style": "¿Qué estilo de comunicación necesitas?"
+    },
+    "unknown_field_behavior": "CLASSIFY_THEN_RESOLVE_NEVER_AUTO_ASK",
+    "version": "1.0.0"
+  },
+  "human_authority": "sbm-admin",
+  "material_constraints": [
+    "No functional work before valid context.zip",
+    "sbm-admin is the sole final human authority"
+  ],
+  "naming_rules": {
+    "agent_version_default": "1.0.0",
+    "canonical_agent_id_format": "<slug>-Agent",
+    "canonical_agent_name_format": "<Requested Name> Agent",
+    "requested_name_example": "Roberto",
+    "sequence_policy": "ATOMIC_MONOTONIC_NO_REUSE"
+  },
+  "provenance": {
+    "creation_profile_sha256": "94541cc2ae8f970b62d3c9545ea02af38ef2be80b753433b7d49ef419109a309",
+    "resolver_version": "1.0.0",
+    "snapshot_sha256": "be02fb73d72f7438ec3c7ba8b399156f2f341810fc25c313ebe40b263fb18492"
+  },
+  "relevant_agents": [],
+  "relevant_relationships": [
+    "sbm-admin final human authority",
+    "Darwin architecture",
+    "Noe independent review"
+  ],
+  "unresolved_human_semantic_requirements": []
+}

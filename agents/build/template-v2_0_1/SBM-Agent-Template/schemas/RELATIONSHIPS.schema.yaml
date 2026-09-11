@@ -1,0 +1,33 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  relationships_id: &id001
+    type: string
+    minLength: 1
+  relationships_version: *id001
+  agent_id: *id001
+  relationships:
+    type: array
+    items:
+      type: object
+      properties:
+        actor: *id001
+        relationship_type: *id001
+        direction:
+          enum:
+          - INBOUND
+          - OUTBOUND
+          - BIDIRECTIONAL
+        purpose: *id001
+      required:
+      - actor
+      - relationship_type
+      - direction
+      - purpose
+      additionalProperties: false
+required:
+- relationships_id
+- relationships_version
+- agent_id
+- relationships
+additionalProperties: false

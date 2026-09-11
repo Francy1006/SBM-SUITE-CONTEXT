@@ -1,0 +1,18 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+additionalProperties: false
+required: [factory_id,factory_version,standard_id,standard_version,template_id,template_version,canonical_template_sha256,zip_method,zip_compresslevel,build_root,dist_root,context_root,reproducibility_policy]
+properties:
+  factory_id: {const: SBM-Agent-Factory}
+  factory_version: {const: 1.0.1}
+  standard_id: {const: AGENT_CLONING_STANDARD}
+  standard_version: {const: 2.0.0}
+  template_id: {const: SBM-Agent-Template}
+  template_version: {const: 2.0.1}
+  canonical_template_sha256: {const: f8f3901d23720d34e617a48f7a26956c34afe8fba73fc807eaaa6736323dd663}
+  zip_method: {const: DEFLATE}
+  zip_compresslevel: {const: 6}
+  build_root: {const: build/agents}
+  dist_root: {const: dist/agents}
+  context_root: {const: context/agents}
+  reproducibility_policy: {const: STRICT_BYTE_IDENTICAL}

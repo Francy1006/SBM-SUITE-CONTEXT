@@ -1,0 +1,33 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  approval_id: &id001
+    type: string
+    minLength: 1
+  approval_type:
+    enum:
+    - AGENT_PROPOSAL
+    - AGENT_SPEC
+    - MATERIALIZATION
+    - STANDARD
+    - TEMPLATE
+    - FACTORY
+    - GENERATOR
+  approved_by:
+    const: sbm-admin
+  approved_at: *id001
+  artifact_id: *id001
+  artifact_version: *id001
+  approval_status:
+    enum:
+    - APPROVED
+    - REFUTED
+required:
+- approval_id
+- approval_type
+- approved_by
+- approved_at
+- artifact_id
+- artifact_version
+- approval_status
+additionalProperties: false

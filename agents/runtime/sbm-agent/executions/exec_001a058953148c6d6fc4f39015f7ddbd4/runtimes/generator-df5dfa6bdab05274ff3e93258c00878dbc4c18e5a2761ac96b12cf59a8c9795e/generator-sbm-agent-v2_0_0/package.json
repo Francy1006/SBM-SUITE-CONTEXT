@@ -1,0 +1,36 @@
+{
+  "name": "generator-sbm-agent",
+  "version": "2.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20 <23"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "yeoman-generator": ">=7.5.0 <8",
+    "yaml": "2.7.0"
+  },
+  "devDependencies": {
+    "yeoman-test": ">=9.1.0 <10",
+    "mocha": ">=10.7.0 <12",
+    "chai": ">=5.1.0 <6"
+  },
+  "files": [
+    "generators/",
+    "config/",
+    "schemas/",
+    "qa/",
+    "scripts/",
+    "README.md",
+    "MANIFEST.yaml",
+    "CHECKSUMS.sha256"
+  ],
+  "scripts": {
+    "test": "node scripts/test-package.js",
+    "test:unit": "node scripts/test-package.js unit",
+    "test:integration": "node scripts/test-package.js integration",
+    "test:negative": "node scripts/test-package.js negative",
+    "test:separation": "node scripts/test-package.js separation",
+    "validate": "node scripts/validate-package.js"
+  }
+}

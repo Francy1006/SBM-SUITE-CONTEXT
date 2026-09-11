@@ -1,0 +1,226 @@
+case: CLONE
+proposal:
+  proposal_id: PROP-FixtureClone
+  proposal_version: 1.0.0
+  agent_name: FixtureClone
+  agent_description: Fixture agent
+  agent_purpose: Validate template
+  specific_objectives:
+  - Validate contracts
+  general_context: Fixture context
+  responsibilities:
+  - VALIDATE
+  authority:
+  - READ
+  - VALIDATE
+  permissions:
+  - READ
+  - VALIDATE
+  hierarchy: No inferred hierarchy
+  relationships:
+  - Fixture relationship
+  personality: Deterministic
+  communication_style: Direct
+  required_context:
+  - context.zip
+  retrieval_strategy: DECLARED_ONLY
+  embedding_strategy: NONE
+  llm_policy: NO_LLM_BY_DEFAULT
+  execution_modes:
+  - SYNC
+  expected_frequency: ON_DEMAND
+  asynchronous_capabilities:
+  - NONE
+  execution_dependencies:
+  - PYTHON
+  outputs:
+  - VALIDATION_RESULT
+  escalation_rules:
+  - ESCALATE_ON_CONTRADICTION
+  deployment: null
+  qa_specific:
+  - QA-TEMPLATE
+  creation_mode: CLONE
+  parent_reference: &id001
+    agent_id: FixtureAgent
+    agent_version: 1.0.0
+    spec_id: SPEC-FixtureAgent
+    spec_version: 1.0.0
+  review_status: APPROVED
+spec:
+  spec_id: SPEC-FixtureClone
+  spec_version: 1.0.0
+  agent_id: FixtureClone
+  agent_version: 1.0.0
+  standard_id: AGENT_CLONING_STANDARD
+  standard_version: 2.0.0
+  template_id: SBM-Agent-Template
+  template_version: 2.0.1
+  proposal_reference:
+    proposal_id: PROP-FixtureClone
+    proposal_version: 1.0.0
+  component_references:
+    AGENT_DEFINITION:
+      artifact_id: DEF-FixtureClone
+      artifact_version: 1.0.0
+    AGENT_CONTEXT:
+      artifact_id: AGENT_CONTEXT-FixtureClone
+      artifact_version: 1.0.0
+    CONTEXT_CONTRACT:
+      artifact_id: CTX-FixtureClone
+      artifact_version: 1.0.0
+    RUNTIME_PROFILE:
+      artifact_id: RUN-FixtureClone
+      artifact_version: 1.0.0
+    CLONE_LINEAGE:
+      artifact_id: LINEAGE-FixtureClone
+      artifact_version: 1.0.0
+    PERMISSIONS:
+      artifact_id: PERM-FixtureClone
+      artifact_version: 1.0.0
+    HIERARCHY:
+      artifact_id: FixtureClone
+      artifact_version: 1.0.0
+    RELATIONSHIPS:
+      artifact_id: REL-FixtureClone
+      artifact_version: 1.0.0
+  qa_reference:
+    artifact_id: QA-TEMPLATE
+    artifact_version: 2.0.1
+  deployment_reference: null
+  approval_reference:
+    approval_id: APP-FixtureClone
+    artifact_version: 1.0.0
+  migration_reference: null
+  creation_mode: CLONE
+  parent_reference: *id001
+definition:
+  agent_definition_id: DEF-FixtureClone
+  agent_definition_version: 1.0.0
+  agent_id: FixtureClone
+  agent_version: 1.0.0
+  identity: FixtureClone
+  purpose: Validate template
+  role: VALIDATOR
+  description: Fixture definition
+  responsibilities:
+  - VALIDATE
+  personality: Deterministic
+  essential_behavior:
+  - DO_NOT_INFER
+  communication_style: Direct
+  authority:
+  - READ
+  - VALIDATE
+  essential_constraints:
+  - NO_CREATIVE_COMPLETION
+agent_context:
+  agent_id: FixtureClone
+  agent_version: 1.0.0
+  context_version: 1.0.0
+  general_context: Fixture operational context
+  specific_objectives:
+  - Validate template
+  current_scope:
+  - TEMPLATE
+  domain_context: SBM
+  relevant_entities:
+  - SBM-Agent-Template
+  operational_assumptions:
+  - Inputs approved
+  context_sources:
+  - context.zip
+  updated_at: '2026-08-21T00:00:00Z'
+context_contract:
+  context_contract_id: CTX-FixtureClone
+  context_contract_version: 1.0.0
+  agent_id: FixtureClone
+  context_zip_required: true
+  required_context:
+  - context.zip
+  optional_context:
+  - documentation.zip
+  retrieval_sources:
+  - SBM-SUITE
+  context_artifact_types:
+  - context.zip
+  context_validation_policy: FULL_CURRENT_CONTEXT
+runtime_profile:
+  runtime_profile_id: RUN-FixtureClone
+  runtime_profile_version: 1.0.0
+  agent_id: FixtureClone
+  execution_modes:
+  - SYNC
+  context_delivery: ZIP
+  retrieval_strategy: DECLARED_ONLY
+  embedding_strategy: NONE
+  llm_invocation_policy: NO_LLM_BY_DEFAULT
+  deterministic_capabilities:
+  - VALIDATE
+  asynchronous_capabilities:
+  - NONE
+  scheduling_requirements:
+  - NONE
+  cost_control_policy: NO_LLM_BY_DEFAULT
+  caching_policy: DISABLED
+  idempotency_policy: REQUIRED
+  retry_policy: NO_IMPLICIT_RETRY
+  timeout_policy: BOUNDED
+  concurrency_policy: SERIAL
+  execution_dependencies:
+  - PYTHON
+  observability_requirements:
+  - RESULT
+  runtime_reference: null
+permissions:
+  permissions_id: PERM-FixtureClone
+  permissions_version: 1.0.0
+  agent_id: FixtureClone
+  allowed_actions:
+  - READ
+  - VALIDATE
+  denied_actions:
+  - WRITE_STANDARD
+  approval_required_actions:
+  - MATERIALIZE
+  escalation_rules:
+  - ESCALATE_ON_CONTRADICTION
+hierarchy:
+  agent_id: FixtureClone
+  hierarchy_version: 1.0.0
+  reports_to: sbm-admin
+  can_request_from:
+  - Darwin
+  - Noe
+  can_instruct: []
+  requires_approval_from:
+  - sbm-admin
+  escalation_target: sbm-admin
+relationships:
+  relationships_id: REL-FixtureClone
+  relationships_version: 1.0.0
+  agent_id: FixtureClone
+  relationships:
+  - actor: sbm-admin
+    relationship_type: APPROVER
+    direction: INBOUND
+    purpose: Authorize materialization
+lineage:
+  clone_lineage_id: LINEAGE-FixtureClone
+  agent_id: FixtureClone
+  agent_version: 1.0.0
+  is_clone: true
+  clone_id: CLONE-FixtureClone
+  parent_agent_id: FixtureAgent
+  parent_agent_version: 1.0.0
+  parent_spec_id: SPEC-FixtureAgent
+  parent_spec_version: 1.0.0
+approval:
+  approval_id: APP-FixtureClone
+  approval_type: AGENT_SPEC
+  approved_by: sbm-admin
+  approved_at: '2026-08-21T00:00:00Z'
+  artifact_id: SPEC-FixtureClone
+  artifact_version: 1.0.0
+  approval_status: APPROVED
+deployment: null

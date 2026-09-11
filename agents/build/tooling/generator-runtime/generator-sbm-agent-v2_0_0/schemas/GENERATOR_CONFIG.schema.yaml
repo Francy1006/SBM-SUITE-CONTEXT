@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "generator_id",
+    "generator_version",
+    "standard_id",
+    "standard_version",
+    "template_id",
+    "template_version",
+    "template_sha256",
+    "factory_id",
+    "factory_version",
+    "factory_sha256",
+    "scaffold_root",
+    "proposal_review_status",
+    "draft_input_schema_role",
+    "draft_input_schema_path",
+    "pinned_schema_role",
+    "pinned_schema_source_of_truth",
+    "pinned_schema_source_artifact",
+    "pinned_schema_source_artifact_sha256",
+    "pinned_schema_source_archive_entry",
+    "pinned_schema_source_path",
+    "pinned_schema_path",
+    "pinned_schema_sha256",
+    "pinned_schema_size",
+    "pinned_schema_dialect",
+    "pinned_schema_ref_count",
+    "pinned_schema_dependency_closure",
+    "validator_engine",
+    "validator_version",
+    "validator_implementation",
+    "validator_import",
+    "yaml_version",
+    "zip_method",
+    "zip_compresslevel",
+    "atomicity_policy",
+    "crash_durability_guaranteed",
+    "stale_lock_recovery"
+  ],
+  "properties": {
+    "generator_id": {
+      "const": "generator-sbm-agent"
+    },
+    "generator_version": {
+      "const": "2.0.0"
+    },
+    "standard_id": {
+      "const": "AGENT_CLONING_STANDARD"
+    },
+    "standard_version": {
+      "const": "2.0.0"
+    },
+    "template_id": {
+      "const": "SBM-Agent-Template"
+    },
+    "template_version": {
+      "const": "2.0.0"
+    },
+    "template_sha256": {
+      "const": "c0ad9729f21b31f5ef859f60169691c9eacee5cda0accc7abb130e954488d272"
+    },
+    "factory_id": {
+      "const": "SBM-Agent-Factory"
+    },
+    "factory_version": {
+      "const": "1.0.0"
+    },
+    "factory_sha256": {
+      "const": "70e155afcb31cd5207bee9fd75b8c1a07d2de97b4b818678efb2f687aaa29239"
+    },
+    "scaffold_root": {
+      "const": "build/scaffolds"
+    },
+    "proposal_review_status": {
+      "const": "DRAFT"
+    },
+    "draft_input_schema_role": {
+      "const": "GENERATOR_OWNED_INPUT_CONTRACT"
+    },
+    "draft_input_schema_path": {
+      "const": "schemas/DRAFT_INPUT.schema.yaml"
+    },
+    "pinned_schema_role": {
+      "const": "PINNED_CANONICAL_SCHEMA_SNAPSHOT"
+    },
+    "pinned_schema_source_of_truth": {
+      "const": false
+    },
+    "pinned_schema_source_artifact": {
+      "const": "SBM-Agent-Template-v2_0_0.zip"
+    },
+    "pinned_schema_source_artifact_sha256": {
+      "const": "c0ad9729f21b31f5ef859f60169691c9eacee5cda0accc7abb130e954488d272"
+    },
+    "pinned_schema_source_archive_entry": {
+      "const": "SBM-Agent-Template/schemas/AGENT_PROPOSAL.schema.yaml"
+    },
+    "pinned_schema_source_path": {
+      "const": "schemas/AGENT_PROPOSAL.schema.yaml"
+    },
+    "pinned_schema_path": {
+      "const": "schemas/pinned/SBM-Agent-Template-v2_0_0/AGENT_PROPOSAL.schema.yaml"
+    },
+    "pinned_schema_sha256": {
+      "const": "cac183a89c78224dce6739f77ccbb081849c69f2f1137c0a0b587c6d7d3d0cd5"
+    },
+    "pinned_schema_size": {
+      "const": 2290
+    },
+    "pinned_schema_dialect": {
+      "const": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "pinned_schema_ref_count": {
+      "const": 0
+    },
+    "pinned_schema_dependency_closure": {
+      "const": "SELF_CONTAINED"
+    },
+    "validator_engine": {
+      "const": "ajv"
+    },
+    "validator_version": {
+      "const": "8.20.0"
+    },
+    "validator_implementation": {
+      "const": "Ajv2020"
+    },
+    "validator_import": {
+      "const": "ajv/dist/2020"
+    },
+    "yaml_version": {
+      "const": "2.7.0"
+    },
+    "zip_method": {
+      "const": "DEFLATE"
+    },
+    "zip_compresslevel": {
+      "const": 6
+    },
+    "atomicity_policy": {
+      "const": "NAMESPACE_PROCESS_ATOMICITY_ONLY"
+    },
+    "crash_durability_guaranteed": {
+      "const": false
+    },
+    "stale_lock_recovery": {
+      "const": "NONE"
+    }
+  }
+}

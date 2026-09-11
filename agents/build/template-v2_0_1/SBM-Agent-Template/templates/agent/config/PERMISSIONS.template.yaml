@@ -1,0 +1,11 @@
+permissions_id: '{{permissions_id}}'
+permissions_version: '{{permissions_version}}'
+agent_id: '{{agent_id}}'
+allowed_actions:
+- '{{allowed_action}}'
+denied_actions:
+- '{{denied_action}}'
+approval_required_actions:
+- '{{approval_required_action}}'
+escalation_rules:
+- '{{escalation_rule}}'

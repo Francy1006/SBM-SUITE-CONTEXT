@@ -1,6 +1,6 @@
 # SUITE_CONTEXT.md
 
-> **Last updated:** 2026-08-16
+> **Last updated:** 2026-09-10
 >
 > **Purpose**
 >
@@ -334,18 +334,76 @@ Future KS/PC/CG repositories must not be treated as canonical integrations until
 
 ## 13. Infrastructure and containers
 
-| Component | Container or service | Internal port | Host port | Network | Status |
-|---|---|---:|---:|---|---|
-| SBM-MANAGER | app / sbm_manager | 8080 | 8080 | sbm-network | active |
-| DP-API | dp-core | 8000 | 8081 | sbm-network | active |
-| SBM-API | `SBM-CORE` (legacy runtime name; rename pending) | 8000 | 8082 | sbm-network | active |
-| SBM-AI-ASSISTANT | backend | 8000 | 8000 | sbm-network | active |
-| Qdrant | qdrant | 6333 | 6333 | sbm-network | active |
-| PostgreSQL | postgres | 5432 | 5432 | sbm-network | active |
-| Flyway | flyway | N/A | N/A | sbm-network | active |
-| SonarQube | sonarqube | N/A | N/A | independent/shared as configured | QA-only/on-demand |
+Canonical host-port policy:
 
-Do not assume current names, ports or versions without checking the project Compose files.
+- container-internal ports remain project-native and may repeat between isolated containers;
+- host ports are assigned centrally to avoid collisions across the suite;
+- **Mode A — home:** the Windows PC runs the initial single-user production-like/pilot runtime; application/API/control-plane host ports use the `8xxx` range;
+- **Mode B — away/development:** the Mac M2 runs development containers locally; corresponding application/API/control-plane host ports use the Mode A allocation plus `10000`, producing the `18xxx` range;
+- service-to-service container traffic must use Docker DNS/service names and internal ports rather than host ports;
+- Compose host mappings should remain environment-configurable while using these allocations as canonical defaults;
+- a reserved port does not imply that the corresponding project is already implemented.
+
+Application, API and control-plane allocation:
+
+| Component | Container or service | Internal port | Mode A PC host port | Mode B Mac DEV host port | Allocation state |
+|---|---|---:|---:|---:|---|
+| SBM-AI-ASSISTANT | backend | 8000 | 8000 | 18000 | assigned |
+| SBM-API | `SBM-CORE` (legacy runtime name; rename pending) | 8000 | 8001 | 18001 | assigned |
+| SBM-UTIL | sbm-util-dev | 8080 | 8002 | 18002 | assigned |
+| SBM-CORE | future async runtime | N/A | 8003 | 18003 | reserved |
+| SBM-CALCULATION | future calculation API | N/A | 8004 | 18004 | reserved |
+| SBM-SECURITY-API | future Security API | N/A | 8005 | 18005 | reserved |
+| SBM-MARKETING | future Marketing API | N/A | 8006 | 18006 | reserved |
+| SBM-CONTENT | future Content API | N/A | 8007 | 18007 | reserved |
+| KS-API | future brand API | N/A | 8101 | 18101 | reserved |
+| PC-API | future brand API | N/A | 8102 | 18102 | reserved |
+| CG-API | future brand API | N/A | 8103 | 18103 | reserved |
+| DP-API | dp-core | 8000 | 8199 | 18199 | historical/reference allocation |
+| SBM-MANAGER | app / sbm_manager | 8080 | 8200 | 18200 | assigned |
+| SBM-AI-MANAGER | future agent control plane | N/A | 8201 | 18201 | reserved |
+| SBM-SECURITY | future Security control plane | N/A | 8202 | 18202 | reserved |
+| SBM-CONTROL | future operations control plane | N/A | 8203 | 18203 | reserved |
+| SBM-SUITE/context agent tooling | Node/Yeoman CLI container | N/A | N/A | N/A | no host port required |
+
+Static store preview allocation:
+
+| Store | Production hosting | Mode A PC preview port | Mode B Mac DEV preview port | Notes |
+|---|---|---:|---:|---|
+| KS-STORE | Cloudflare Pages | 8301 | 18301 | preview only; no persistent production host port |
+| PC-STORE | Cloudflare Pages | 8302 | 18302 | preview only; no persistent production host port |
+| CG-STORE | Cloudflare Pages | 8303 | 18303 | preview only; no persistent production host port |
+
+Shared infrastructure allocation:
+
+| Component | Internal/default port | Mode A PC host port | Mode B Mac DEV host port | Runtime rule |
+|---|---:|---:|---:|---|
+| PostgreSQL / SBM-DB | 5432 | 5432 | 15432 | private infrastructure; not public ingress |
+| Qdrant | 6333 | 6333 | 16333 | private infrastructure; not public ingress |
+| Redis | 6379 | 6379 | 16379 | reserved when SBM-CORE is implemented |
+| Kafka | 9092 | 9092 | 19092 | optional/reserved; only when event-stream semantics justify it |
+| SonarQube | 9000 | 9000 | 19000 | QA-only/on-demand |
+| Flyway | N/A | N/A | N/A | migration runner; no host port required |
+
+Port-range intent:
+
+```text
+8000-8099   shared backend/API services on Mode A PC
+8100-8199   brand/reference APIs on Mode A PC
+8200-8299   web/control-plane services on Mode A PC
+8300-8399   optional static-store previews on Mode A PC
+18000-18999 corresponding Mac development allocations
+```
+
+The initial Mode A runtime is a trusted-home, single-user pilot and must not expose these backend or infrastructure ports directly to the public Internet. When a second human user or external access is enabled, public ingress must move behind a gateway/reverse proxy with TLS on `443` (`80` only for redirect if required), while API, database, vector, cache and broker ports remain private.
+
+Known Docker network remains:
+
+```text
+sbm-network
+```
+
+Development stacks may use a separate `sbm-dev-network` when multiple local project containers need shared DNS on the Mac; the network name does not change the canonical host-port allocation.
 
 Runtime naming constraint:
 
@@ -360,6 +418,7 @@ Shared configuration rules:
 
 - secrets and `.env` values must remain outside Git and ZIP packages;
 - project-specific environment files own local runtime values;
+- host-port mappings are machine/environment configuration and must use the canonical allocations from `## 13. Infrastructure and containers` without hardcoded absolute machine paths;
 - `SBM-MANAGER` uses canonical repository root `SBM-SUITE/sbm/SBM-MANAGER/` and runtime root `/suite/sbm/SBM-MANAGER`;
 - `SBM-DB` uses canonical repository root `SBM-SUITE/sbm/SBM-DB/` and runtime root `/suite/sbm/SBM-DB`;
 - project context scripts resolve the absolute suite root from `SBM_SUITE_ROOT`;
@@ -420,21 +479,44 @@ The transversal Git Flow policy is implemented once in `scripts/git-flow-policy.
 Current stage:
 
 ```text
-manual validated workflow
+Mode A — home
+Windows PC
+→ initial single-user production-like/pilot runtime
+→ SBM shared services + brand APIs as they become available
+
+Mac M2
+→ SBM-SUITE/context and agent-generation tooling
+→ development containers
 ```
 
-Future stage:
+The Mode A PC runtime is an interim approximately three-month pilot/marcha blanca before migration to a real VPS/cloud production environment when budget and operational need justify it.
 
 ```text
-database configuration flags
-→ asynchronous orchestration
-→ automatic context and documentation processing
+Mode B — away
+Mac M2
+→ development containers run locally
+→ no dependency on the home PC runtime for normal development
+```
+
+Static `*-STORE` applications remain deployed to Cloudflare Pages during the current stage and therefore do not consume persistent production host ports. Their `83xx/183xx` allocations are only for optional local preview servers.
+
+Multi-user/external transition:
+
+```text
+second human user or external access
+→ gateway / reverse proxy
+→ TLS ingress on 443
+→ internal APIs and infrastructure remain private
+→ later migrate the runtime from the home PC to VPS/cloud
 ```
 
 Current deployment principles:
 
 - one validated step at a time;
 - Docker-based local services;
+- canonical host-port allocation from `## 13. Infrastructure and containers`;
+- internal container communication uses Docker service names and internal ports;
+- backend/database/vector/cache/broker ports are not public Internet ingress;
 - backup before replacement;
 - manifest and hash validation;
 - atomic application or rollback;

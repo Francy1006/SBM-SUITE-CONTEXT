@@ -1,0 +1,28 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  context_contract_id: &id001
+    type: string
+    minLength: 1
+  context_contract_version: *id001
+  agent_id: *id001
+  context_zip_required:
+    type: boolean
+  required_context: &id002
+    type: array
+    items: *id001
+  optional_context: *id002
+  retrieval_sources: *id002
+  context_artifact_types: *id002
+  context_validation_policy: *id001
+required:
+- context_contract_id
+- context_contract_version
+- agent_id
+- context_zip_required
+- required_context
+- optional_context
+- retrieval_sources
+- context_artifact_types
+- context_validation_policy
+additionalProperties: false

@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-08-31T16:09:27.624292Z",
+  "creation_fingerprint": {
+    "creation_profile_sha256": "94541cc2ae8f970b62d3c9545ea02af38ef2be80b753433b7d49ef419109a309",
+    "fingerprint_sha256": "83ccca38832a215b54e0d0049db063ae34247ec194eb01f5cb2c0257987aa4da",
+    "registry_revision": 0,
+    "registry_sha256": "86c59d2b2a4616aab0741d19fe64366c729fe45904cd9fa59fa874bd796e84e5",
+    "relevant_final_agents_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "reservation_ledger_revision": 0,
+    "reservation_ledger_sha256": "7b54c6314036089176991c0d84046ac2523063a89fcf7a54c16546f608dc59fe"
+  },
+  "creation_snapshot_path": "/Users/franciscomendoza/Documents/DEV/SBM-SUITE/context/agents/runtime/sbm-agent/executions/exec_001a058953148c6d6fc4f39015f7ddbd4/snapshots/creation-context-001.json",
+  "creation_snapshot_sha256": "be02fb73d72f7438ec3c7ba8b399156f2f341810fc25c313ebe40b263fb18492",
+  "execution_id": "exec_001a058953148c6d6fc4f39015f7ddbd4",
+  "idempotency_key": "create_request_001a058953147297d865d11f48eab1e10",
+  "identity": {
+    "agent_version": "1.0.0",
+    "canonical_agent_id": "CEO-Agent",
+    "canonical_agent_name": "CEO Agent",
+    "execution_id": "exec_001a058953148c6d6fc4f39015f7ddbd4",
+    "reservation_id": "res_001a05895314f0a671aee165e7aef6e23",
+    "sequence": 1,
+    "state": "RESERVED",
+    "timestamp": "2026-08-31T16:09:27.631850Z"
+  },
+  "intake_adapter": "Darwin",
+  "intake_creation_fingerprint": {
+    "creation_profile_sha256": "94541cc2ae8f970b62d3c9545ea02af38ef2be80b753433b7d49ef419109a309",
+    "fingerprint_sha256": "83ccca38832a215b54e0d0049db063ae34247ec194eb01f5cb2c0257987aa4da",
+    "registry_revision": 0,
+    "registry_sha256": "86c59d2b2a4616aab0741d19fe64366c729fe45904cd9fa59fa874bd796e84e5",
+    "relevant_final_agents_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "reservation_ledger_revision": 0,
+    "reservation_ledger_sha256": "7b54c6314036089176991c0d84046ac2523063a89fcf7a54c16546f608dc59fe"
+  },
+  "intake_mode": "DARWIN_TEMPORARY_INTAKE",
+  "intake_provenance": {
+    "intake_adapter": "Darwin",
+    "intake_mode": "DARWIN_TEMPORARY_INTAKE",
+    "semantic_source": "sbm-admin"
+  },
+  "intake_state_view_path": "/Users/franciscomendoza/Documents/DEV/SBM-SUITE/context/agents/runtime/sbm-agent/executions/exec_001a058953148c6d6fc4f39015f7ddbd4/intake/INTAKE_STATE_VIEW.json",
+  "intake_state_view_sha256": "a9133bd859e9f1ceceee08007d971521ba9710d1d9f3c5b5f86438254ddd2bf1",
+  "intent_brief_path": "/Users/franciscomendoza/Documents/DEV/SBM-SUITE/context/agents/runtime/sbm-agent/executions/exec_001a058953148c6d6fc4f39015f7ddbd4/intake/INTENT_BRIEF.json",
+  "intent_brief_sha256": "af97b07d5820861e5291d69378c45f7c880aa450f7851d316ea439a41ce4d0e1",
+  "intent_revision": 1,
+  "last_error": {
+    "code": "GENERATOR_FAILED",
+    "message": "{\"code\": \"GENERATOR_FAILED\", \"details\": {\"stderr\": \"Cannot connect to the Docker daemon at unix:///Users/franciscomendoza/.docker/run/docker.sock. Is the docker daemon running?\\n\"}, \"message\": \"Generator 2.0.0 failed\", \"status\": \"BLOCKED\"}"
+  },
+  "principal": "sbm-admin",
+  "relevant_agent_ids": [],
+  "semantic_request_sha256": "b7fcb788cad0d74e0e70d012963838768eef14f492495e9378384f1ac86070c5",
+  "semantic_source": "sbm-admin",
+  "state": "BLOCKED",
+  "unresolved_human_semantic_requirements": [],
+  "updated_at": "2026-08-31T16:09:28.104913Z"
+}

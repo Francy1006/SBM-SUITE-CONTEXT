@@ -1,0 +1,155 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  spec_id: &id001
+    type: string
+    minLength: 1
+  spec_version: *id001
+  agent_id: *id001
+  agent_version: *id001
+  standard_id:
+    const: AGENT_CLONING_STANDARD
+  standard_version: *id001
+  template_id:
+    const: SBM-Agent-Template
+  template_version:
+    const: 2.0.1
+  proposal_reference:
+    type: object
+    properties:
+      proposal_id: *id001
+      proposal_version: *id001
+    required:
+    - proposal_id
+    - proposal_version
+    additionalProperties: false
+  component_references:
+    type: object
+    properties:
+      AGENT_DEFINITION: &id002
+        type: object
+        properties:
+          artifact_id: *id001
+          artifact_version: *id001
+        required:
+        - artifact_id
+        - artifact_version
+        additionalProperties: false
+      AGENT_CONTEXT: *id002
+      CONTEXT_CONTRACT: *id002
+      RUNTIME_PROFILE: *id002
+      CLONE_LINEAGE: *id002
+      PERMISSIONS: *id002
+      HIERARCHY: *id002
+      RELATIONSHIPS: *id002
+      DEPLOYMENT_PROFILE: *id002
+    required:
+    - AGENT_DEFINITION
+    - AGENT_CONTEXT
+    - CONTEXT_CONTRACT
+    - RUNTIME_PROFILE
+    - CLONE_LINEAGE
+    - PERMISSIONS
+    - HIERARCHY
+    - RELATIONSHIPS
+    additionalProperties: false
+  qa_reference: *id002
+  deployment_reference:
+    oneOf:
+    - type: 'null'
+    - *id002
+  approval_reference:
+    type: object
+    properties:
+      approval_id: *id001
+      artifact_version: *id001
+    required:
+    - approval_id
+    - artifact_version
+    additionalProperties: false
+  migration_reference:
+    oneOf:
+    - type: 'null'
+    - type: object
+      properties:
+        source_agent_id: *id001
+        source_agent_version: *id001
+        source_standard_version: *id001
+        migration_type:
+          const: STANDARD_UPGRADE
+      required:
+      - source_agent_id
+      - source_agent_version
+      - source_standard_version
+      - migration_type
+      additionalProperties: false
+  creation_mode:
+    enum:
+    - NEW
+    - CLONE
+  parent_reference:
+    oneOf:
+    - type: 'null'
+    - &id003
+      type: object
+      properties:
+        agent_id: *id001
+        agent_version: *id001
+        spec_id: *id001
+        spec_version: *id001
+      required:
+      - agent_id
+      - agent_version
+      - spec_id
+      - spec_version
+      additionalProperties: false
+required:
+- spec_id
+- spec_version
+- agent_id
+- agent_version
+- standard_id
+- standard_version
+- template_id
+- template_version
+- proposal_reference
+- component_references
+- qa_reference
+- deployment_reference
+- approval_reference
+- migration_reference
+- creation_mode
+- parent_reference
+additionalProperties: false
+allOf:
+- if:
+    properties:
+      creation_mode:
+        const: CLONE
+  then:
+    properties:
+      parent_reference: *id003
+      migration_reference:
+        type: 'null'
+- if:
+    properties:
+      creation_mode:
+        const: NEW
+    required:
+    - creation_mode
+  then:
+    properties:
+      parent_reference:
+        type: 'null'
+- if:
+    properties:
+      migration_reference:
+        type: object
+    required:
+    - migration_reference
+  then:
+    properties:
+      creation_mode:
+        const: NEW
+      parent_reference:
+        type: 'null'

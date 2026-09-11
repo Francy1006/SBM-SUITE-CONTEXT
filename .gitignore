@@ -28,3 +28,6 @@ project-tree.txt
 .env.prod
 
 .venv
+
+
+.pytest_cache

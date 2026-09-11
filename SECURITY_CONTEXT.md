@@ -1,6 +1,6 @@
 # SECURITY_CONTEXT.md
 
-> **Last updated:** 2026-08-16
+> **Last updated:** 2026-09-10
 >
 > **Purpose**
 >
@@ -191,6 +191,15 @@ Known local shared network:
 ```text
 sbm-network
 ```
+
+Current network exposure baseline:
+
+- Mode A Windows PC host ports are for local/trusted-home access only during the single-user pilot; they must not be forwarded directly to the public Internet;
+- Mode B Mac `18xxx` mappings are development-only host ports;
+- service-to-service traffic should use Docker network DNS and container-internal ports instead of host-exposed ports;
+- PostgreSQL, Qdrant, Redis and Kafka must remain private infrastructure and must never become direct public ingress;
+- when a second human user or external access is enabled, expose only the approved gateway/reverse proxy through TLS `443` (`80` only for redirect when required) and keep internal API/control-plane/infrastructure ports behind the private network/firewall;
+- migration from the interim home PC runtime to VPS/cloud must preserve the same public/private boundary even if underlying host mappings change.
 
 ## 11. Dependency security
 

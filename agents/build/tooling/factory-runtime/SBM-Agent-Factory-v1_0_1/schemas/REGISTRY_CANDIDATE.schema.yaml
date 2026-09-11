@@ -1,0 +1,22 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+additionalProperties: false
+required: [agent_id,agent_name,description,agent_version,spec_version,standard_version,factory_id,factory_version,template_id,template_version,template_sha256,status,deployment_targets,package_path,package_sha256,context_path,updated_at]
+properties:
+  agent_id: {type: string}
+  agent_name: {type: string}
+  description: {type: string}
+  agent_version: {type: string}
+  spec_version: {type: string}
+  standard_version: {type: string}
+  factory_id: {const: SBM-Agent-Factory}
+  factory_version: {const: 1.0.1}
+  template_id: {const: SBM-Agent-Template}
+  template_version: {const: 2.0.1}
+  template_sha256: {const: f8f3901d23720d34e617a48f7a26956c34afe8fba73fc807eaaa6736323dd663}
+  status: {const: CANDIDATE}
+  deployment_targets: {type: array, items: {type: string}}
+  package_path: {type: string}
+  package_sha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+  context_path: {type: string}
+  updated_at: {type: string}

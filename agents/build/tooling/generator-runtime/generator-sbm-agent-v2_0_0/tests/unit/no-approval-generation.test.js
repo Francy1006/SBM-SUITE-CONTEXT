@@ -1,0 +1,2 @@
+import assert from 'node:assert/strict';import {proposalCandidateFromInput} from '../../generators/app/index.js';import {validInput,exactRuntimeDependenciesAvailable} from './prompt-mapping.test.js';
+export const gates=[];export async function run(){if(!exactRuntimeDependenciesAvailable())return {pending:['REGRESSION-NO-APPROVAL-GENERATION'],reason:'ajv/yaml unavailable'};const p=proposalCandidateFromInput(validInput());for(const k of ['approval','approval_record','approved_by','AGENT_SPEC'])assert.equal(k in p,false);}

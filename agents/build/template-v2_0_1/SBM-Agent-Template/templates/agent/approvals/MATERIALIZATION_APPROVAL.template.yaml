@@ -1,0 +1,7 @@
+approval_id: '{{approval_id}}'
+approval_type: MATERIALIZATION
+approved_by: sbm-admin
+approved_at: '{{approved_at}}'
+artifact_id: '{{artifact_id}}'
+artifact_version: '{{artifact_version}}'
+approval_status: APPROVED

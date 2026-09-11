@@ -1,0 +1,46 @@
+spec_id: '{{spec_id}}'
+spec_version: '{{spec_version}}'
+agent_id: '{{agent_id}}'
+agent_version: '{{agent_version}}'
+standard_id: AGENT_CLONING_STANDARD
+standard_version: '{{standard_version}}'
+template_id: SBM-Agent-Template
+template_version: 2.0.1
+proposal_reference:
+  proposal_id: '{{proposal_id}}'
+  proposal_version: '{{proposal_version}}'
+component_references:
+  AGENT_DEFINITION:
+    artifact_id: '{{agent_definition_id}}'
+    artifact_version: '{{agent_definition_version}}'
+  AGENT_CONTEXT:
+    artifact_id: '{{agent_context_id}}'
+    artifact_version: '{{agent_context_version}}'
+  CONTEXT_CONTRACT:
+    artifact_id: '{{context_contract_id}}'
+    artifact_version: '{{context_contract_version}}'
+  RUNTIME_PROFILE:
+    artifact_id: '{{runtime_profile_id}}'
+    artifact_version: '{{runtime_profile_version}}'
+  CLONE_LINEAGE:
+    artifact_id: '{{clone_lineage_id}}'
+    artifact_version: '{{agent_version}}'
+  PERMISSIONS:
+    artifact_id: '{{permissions_id}}'
+    artifact_version: '{{permissions_version}}'
+  HIERARCHY:
+    artifact_id: '{{agent_id}}'
+    artifact_version: '{{hierarchy_version}}'
+  RELATIONSHIPS:
+    artifact_id: '{{relationships_id}}'
+    artifact_version: '{{relationships_version}}'
+qa_reference:
+  artifact_id: '{{qa_id}}'
+  artifact_version: '{{qa_version}}'
+deployment_reference: null
+approval_reference:
+  approval_id: '{{approval_id}}'
+  artifact_version: '{{approval_artifact_version}}'
+migration_reference: null
+creation_mode: NEW
+parent_reference: null

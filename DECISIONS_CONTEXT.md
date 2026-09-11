@@ -1,6 +1,6 @@
 # DECISIONS_CONTEXT.md
 
-> **Last updated:** 2026-08-16
+> **Last updated:** 2026-09-10
 >
 > **Purpose**
 >
@@ -97,6 +97,7 @@ Rules:
 | ADR-039 | 2026-08-16 | accepted | New-chat bootstrap uses a minimal `SBM_AGENT.md` that consumes `INIT_CONTEXT.md`; INIT_CONTEXT remains the operational contract | A clean ChatGPT session needs a small stable entry artifact without duplicating the large lifecycle specification | Rename/remove INIT_CONTEXT; keep planned SBM_AGENT_INIT; duplicate full prompt | Separates bootstrap from lifecycle contract and reduces drift | SBM-SUITE/context, SBM-AI-ASSISTANT | Context workflow |
 | ADR-040 | 2026-08-16 | accepted | Common suite artifacts use an explicit allowlist and a central check/apply tool backed by dynamic physical-repository discovery | Repeated manual edits drift while full Context files remain project-specific | Copy whole Context directories; hardcode repositories; manual propagation | Enables one/several/all selection, preflight-before-write and managed-content protection without a second repository inventory | Current physical repositories | Context governance |
 | ADR-041 | 2026-08-17 | accepted | Use `main` as the sole stable/integration destination; every temporary branch starts from `main`, supports an atomic 1..N multiproject objective batch, requires full-suite QA and Documentation, merges directly to `main`, then is removed | The intermediate integration model duplicated branch states, constrained lifecycle cardinality and did not make QA/Documentation universal | Keep ADR-036; allow per-project manual flows | Centralizes preflight and gates, preserves current shared branch work, enables fast-track lifecycle without QA bypass, and returns every repository deterministically to `main` | All Git repositories | DevOps / Context / Documentation |
+| ADR-042 | 2026-09-10 | accepted | Standardize SBM Suite host-port allocation by operating mode: Mode A Windows PC uses `8xxx`, Mode B Mac development uses the corresponding `18xxx` allocation, container-internal ports remain project-native, and future external/multi-user access enters only through TLS `443` | Development is split between a home Windows PC production-like pilot and a Mac M2 development environment; future projects require deterministic reservations without host-port collisions | Ad hoc per-project host ports; globally changing internal container ports; exposing each service directly | Provides predictable Compose/environment defaults, portable machine-specific mappings and room for future services; reserved ports do not imply implementation and internal services remain private when external access is introduced | All SBM runtime projects and brand APIs/stores | DevOps / Cloud / SBM Suite |
 
 ## 3. Proposed decisions
 
@@ -150,6 +151,7 @@ Rules:
 | ADR-035 | named on-demand agents | automated specialist workflows | least privilege/activation governance | audited agent state | agent/eval tests | controlled activation |
 | ADR-036 | superseded Git Flow target | historical only | replaced by ADR-041 | Git metadata only | no new implementation | retained for decision history |
 | ADR-041 | main-only transversal lifecycle | atomic 1..N multiproject work | QA + Documentation gates before protected merge | Context objective batch + Git metadata | lifecycle/Git/backend regression suites | direct temporary-branch → main governance |
+| ADR-042 | deterministic dual-mode runtime port plan | supports single-user pilot and later multi-user transition | public ingress restricted to TLS gateway; internal ports remain private | infrastructure services keep controlled/private ports | Compose and collision checks use canonical allocations | Mode A `8xxx`, Mode B `18xxx`, future public ingress `443` |
 | ADR-037 | workflow-prefixed upgrade ZIP discovery | no business impact | strict one-file + manifest validation | no source-of-truth change | filename-discovery regression tests | no manual rename required |
 | ADR-014 | Git→Notion documentation projection | shared documentation visibility | controlled API credentials/scopes | Git remains canonical | sync/idempotency tests | downstream Notion publication |
 | ADR-038 | Context→Jira backlog synchronization | operational backlog visibility | scoped Jira permissions/audit | stable Objective↔Jira mapping | sync/duplicate regression tests | future Scrum Agent operation |

@@ -1,0 +1,7 @@
+{
+  "create_request_token": "create_request_001a058953147297d865d11f48eab1e10",
+  "created_at": "2026-08-31T16:09:27.623324Z",
+  "principal": "sbm-admin",
+  "semantic_request_sha256": "e86734e7d06860e41b47fe14ee03ea8508faa84e1b6da7858aa8b042fb0cdef0",
+  "status": "PENDING"
+}

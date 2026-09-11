@@ -1,0 +1,31 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  agent_id: &id001
+    type: string
+    minLength: 1
+  agent_version: *id001
+  context_version: *id001
+  general_context: *id001
+  specific_objectives: &id002
+    type: array
+    items: *id001
+  current_scope: *id002
+  domain_context: *id001
+  relevant_entities: *id002
+  operational_assumptions: *id002
+  context_sources: *id002
+  updated_at: *id001
+required:
+- agent_id
+- agent_version
+- context_version
+- general_context
+- specific_objectives
+- current_scope
+- domain_context
+- relevant_entities
+- operational_assumptions
+- context_sources
+- updated_at
+additionalProperties: false

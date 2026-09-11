@@ -1,0 +1,13 @@
+factory_id: SBM-Agent-Factory
+factory_version: 1.0.1
+standard_id: AGENT_CLONING_STANDARD
+standard_version: 2.0.0
+template_id: SBM-Agent-Template
+template_version: 2.0.1
+canonical_template_sha256: f8f3901d23720d34e617a48f7a26956c34afe8fba73fc807eaaa6736323dd663
+zip_method: DEFLATE
+zip_compresslevel: 6
+build_root: build/agents
+dist_root: dist/agents
+context_root: context/agents
+reproducibility_policy: STRICT_BYTE_IDENTICAL

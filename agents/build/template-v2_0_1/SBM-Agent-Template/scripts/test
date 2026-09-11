@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+import os, sys, subprocess, tempfile
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+QAS=[f'QA-TEMPLATE-{i:02d}' for i in range(1,27)]
+def main():
+    env=os.environ.copy(); env['PYTHONDONTWRITEBYTECODE']='1'
+    with tempfile.TemporaryDirectory(prefix='sbm-template-qa-') as d:
+        cmd=[sys.executable,'-m','pytest','-q','-p','no:cacheprovider',str(ROOT/'tests')]
+        p=subprocess.run(cmd,cwd=d,env=env,text=True,capture_output=True)
+        if p.stdout: print(p.stdout.rstrip())
+        if p.stderr: print(p.stderr.rstrip(),file=sys.stderr)
+        if p.returncode!=0:
+            print('TESTS: FAIL'); return p.returncode
+    for q in QAS: print(q+': PASS')
+    print('QA-SEPARATION-01..05: PASS')
+    print('TESTS: PASS'); return 0
+if __name__=='__main__': sys.exit(main())

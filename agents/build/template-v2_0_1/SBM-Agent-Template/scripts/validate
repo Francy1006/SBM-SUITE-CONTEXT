@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+import sys, hashlib, fnmatch
+from pathlib import Path
+import yaml
+from jsonschema import Draft202012Validator
+ROOT=Path(__file__).resolve().parents[1]
+PROHIBITED_NAMES={'.DS_Store','Thumbs.db'}
+PROHIBITED_DIRS={'__pycache__','.pytest_cache','node_modules','.git','build','dist','context','.sbm','coverage'}
+PROHIBITED_PATTERNS=['*.pyc','*.pyo','*.tmp','*.temp','*.swp','*.swap','*.log']
+COMP_SCHEMAS={
+'proposal':'AGENT_PROPOSAL','spec':'AGENT_SPEC','definition':'AGENT_DEFINITION','agent_context':'AGENT_CONTEXT','context_contract':'CONTEXT_CONTRACT','runtime_profile':'RUNTIME_PROFILE','permissions':'PERMISSIONS','hierarchy':'HIERARCHY','relationships':'RELATIONSHIPS','lineage':'CLONE_LINEAGE','approval':'APPROVAL_RECORD','deployment':'DEPLOYMENT_PROFILE'}
+
+def files(): return sorted(p.relative_to(ROOT).as_posix() for p in ROOT.rglob('*') if p.is_file())
+def y(rel):
+    with (ROOT/rel).open('r',encoding='utf-8') as f: return yaml.safe_load(f)
+def sha(rel): return hashlib.sha256((ROOT/rel).read_bytes()).hexdigest()
+def invalid(msg): print('INVALID '+msg); return 1
+def validate(obj,schema,label):
+    errs=sorted(Draft202012Validator(schema).iter_errors(obj),key=lambda e:list(e.path))
+    if errs:
+        e=errs[0]; path='.'.join(str(x) for x in e.path) or '<root>'; raise ValueError(f'{label} schema violation at {path}: {e.message}')
+def refeq(ref,aid,aver,label):
+    if ref.get('artifact_id')!=aid or ref.get('artifact_version')!=aver: raise ValueError(label+' reference mismatch')
+def cross(f,label):
+    s=f['spec']; aid=s['agent_id']; av=s['agent_version']
+    for k in ['definition','agent_context','context_contract','runtime_profile','permissions','hierarchy','relationships','lineage']:
+        if f[k]['agent_id']!=aid: raise ValueError(f'{label} agent_id mismatch: {k}')
+    if f['definition']['agent_version']!=av or f['agent_context']['agent_version']!=av or f['lineage']['agent_version']!=av: raise ValueError(label+' agent_version mismatch')
+    c=s['component_references']
+    refeq(c['AGENT_DEFINITION'],f['definition']['agent_definition_id'],f['definition']['agent_definition_version'],label+' AGENT_DEFINITION')
+    refeq(c['AGENT_CONTEXT'],'AGENT_CONTEXT-'+aid,f['agent_context']['context_version'],label+' AGENT_CONTEXT')
+    refeq(c['CONTEXT_CONTRACT'],f['context_contract']['context_contract_id'],f['context_contract']['context_contract_version'],label+' CONTEXT_CONTRACT')
+    refeq(c['RUNTIME_PROFILE'],f['runtime_profile']['runtime_profile_id'],f['runtime_profile']['runtime_profile_version'],label+' RUNTIME_PROFILE')
+    refeq(c['CLONE_LINEAGE'],f['lineage']['clone_lineage_id'],av,label+' CLONE_LINEAGE')
+    refeq(c['PERMISSIONS'],f['permissions']['permissions_id'],f['permissions']['permissions_version'],label+' PERMISSIONS')
+    refeq(c['HIERARCHY'],aid,f['hierarchy']['hierarchy_version'],label+' HIERARCHY')
+    refeq(c['RELATIONSHIPS'],f['relationships']['relationships_id'],f['relationships']['relationships_version'],label+' RELATIONSHIPS')
+    pr=s['proposal_reference'];
+    if pr!={'proposal_id':f['proposal']['proposal_id'],'proposal_version':f['proposal']['proposal_version']}: raise ValueError(label+' proposal_reference mismatch')
+    ar=s['approval_reference'];
+    if ar!={'approval_id':f['approval']['approval_id'],'artifact_version':f['approval']['artifact_version']}: raise ValueError(label+' approval_reference mismatch')
+    if f['approval']['artifact_id']!=s['spec_id'] or f['approval']['artifact_version']!=s['spec_version'] or f['approval']['approval_type']!='AGENT_SPEC' or f['approval']['approved_by']!='sbm-admin': raise ValueError(label+' approval target mismatch')
+    allowed=set(f['permissions']['allowed_actions']); denied=set(f['permissions']['denied_actions']); authority=set(f['definition']['authority'])
+    if allowed & denied: raise ValueError(label+' allowed_actions intersects denied_actions')
+    if not allowed <= authority: raise ValueError(label+' permissions exceed AGENT_DEFINITION.authority')
+    mode=s['creation_mode']; lin=f['lineage']; parent=s['parent_reference']; mig=s['migration_reference']
+    if mode=='NEW':
+        if parent is not None or lin['is_clone'] is not False or any(lin[x] is not None for x in ['clone_id','parent_agent_id','parent_agent_version','parent_spec_id','parent_spec_version']): raise ValueError(label+' NEW lineage mismatch')
+    elif mode=='CLONE':
+        if mig is not None or parent is None or lin['is_clone'] is not True: raise ValueError(label+' CLONE semantics mismatch')
+        if (lin['parent_agent_id'],lin['parent_agent_version'],lin['parent_spec_id'],lin['parent_spec_version']) != (parent['agent_id'],parent['agent_version'],parent['spec_id'],parent['spec_version']): raise ValueError(label+' CLONE parent mismatch')
+    if mig is not None:
+        if mig['migration_type']!='STANDARD_UPGRADE' or mode!='NEW' or lin['is_clone'] or parent is not None: raise ValueError(label+' STANDARD_UPGRADE clone semantics')
+        if mig['source_agent_id']!=aid or mig['source_agent_version']==av or mig['source_standard_version']==s['standard_version']: raise ValueError(label+' STANDARD_UPGRADE invariant mismatch')
+    dep=f.get('deployment'); dr=s['deployment_reference']; rr=f['runtime_profile']['runtime_reference']
+    if dep is None:
+        if dr is not None or 'DEPLOYMENT_PROFILE' in c or rr is not None: raise ValueError(label+' deployment absent mismatch')
+    else:
+        if dep['agent_id']!=aid or dep['agent_version']!=av: raise ValueError(label+' deployment identity mismatch')
+        refeq(dr,dep['deployment_profile_id'],dep['deployment_profile_version'],label+' deployment')
+        refeq(c['DEPLOYMENT_PROFILE'],dep['deployment_profile_id'],dep['deployment_profile_version'],label+' component deployment')
+        if rr!={'target':dep['target'],'deployment_profile_id':dep['deployment_profile_id'],'deployment_profile_version':dep['deployment_profile_version']}: raise ValueError(label+' runtime/deployment mismatch')
+
+def main():
+  try:
+    physical=files(); t=y('TEMPLATE.yaml'); required=sorted(t['required_files'])
+    if len(physical)!=67 or physical!=required: return invalid('physical_files != required_files or count != 67')
+    for rel in physical:
+      parts=Path(rel).parts
+      if any(x in PROHIBITED_DIRS for x in parts[:-1]) or Path(rel).name in PROHIBITED_NAMES or any(fnmatch.fnmatch(Path(rel).name,p) for p in PROHIBITED_PATTERNS): return invalid('prohibited artifact: '+rel)
+    schemas={}
+    for rel in sorted(x for x in physical if x.startswith('schemas/') and x.endswith('.yaml')):
+      obj=y(rel); Draft202012Validator.check_schema(obj); schemas[Path(rel).stem.replace('.schema','')]=obj
+    validate(t,schemas['TEMPLATE'],'TEMPLATE.yaml')
+    m=y('MANIFEST.yaml'); entries=m.get('files') or []
+    if m.get('template_id')!='SBM-Agent-Template' or m.get('template_version')!='2.0.1' or m.get('generated_by')!='gepetto': return invalid('manifest metadata')
+    if len(entries)!=67 or sorted(e['path'] for e in entries)!=physical: return invalid('manifest inventory')
+    by={e['path']:e for e in entries}
+    if by['MANIFEST.yaml'].get('sha256') is not None or by['CHECKSUMS.sha256'].get('sha256') is not None: return invalid('manifest null hash rule')
+    lines=(ROOT/'CHECKSUMS.sha256').read_text(encoding='utf-8').splitlines(); cmap={}
+    for line in lines:
+      if not line.strip(): continue
+      h,rel=line.split('  ',1)
+      if rel in cmap: return invalid('duplicate checksum: '+rel)
+      cmap[rel]=h
+    expected=[x for x in physical if x!='CHECKSUMS.sha256']
+    if sorted(cmap)!=expected or len(cmap)!=66: return invalid('checksum coverage')
+    for rel in expected:
+      a=sha(rel)
+      if cmap[rel]!=a: return invalid('checksum mismatch: '+rel)
+      if rel!='MANIFEST.yaml' and by[rel].get('sha256')!=a: return invalid('manifest hash mismatch: '+rel)
+    for rel in sorted(x for x in physical if x.startswith('fixtures/') and x.endswith('/fixture.yaml')):
+      f=y(rel)
+      for key,sn in COMP_SCHEMAS.items():
+        if key in f and f[key] is not None: validate(f[key],schemas[sn],rel+'.'+key)
+      cross(f,rel)
+      case=f['case']
+      if case=='DEPLOYMENT_ABSENT' and f.get('generated_deployment_present') is not False: raise ValueError(rel+' deployment absent flag')
+      if case=='DEPLOYMENT_PRESENT' and f.get('generated_deployment_present') is not True: raise ValueError(rel+' deployment present flag')
+      if case=='STANDARD_UPGRADE' and f['spec']['migration_reference'] is None: raise ValueError(rel+' missing migration_reference')
+    print('VALID'); return 0
+  except FileNotFoundError as e: return invalid('missing required file: '+str(e.filename))
+  except (ValueError,KeyError,TypeError,AssertionError,yaml.YAMLError) as e: return invalid(str(e))
+  except Exception as e: return invalid(f'{type(e).__name__}: {e}')
+if __name__=='__main__': sys.exit(main())

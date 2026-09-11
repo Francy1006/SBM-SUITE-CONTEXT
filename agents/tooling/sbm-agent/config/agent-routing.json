@@ -1,0 +1,25 @@
+{
+  "mode": "MANUAL_CHAT",
+  "Gepetto": {
+    "agent_id": "gepetto",
+    "agent_version": "1.0.0",
+    "path": "Gepetto-v1.0.1-r3.zip",
+    "sha256": "99dc7d6f30872f5a0fb27f48acc309b6b9b31fb3ffe641305b86362c8e09d2a0",
+    "capabilities": [],
+    "intake_disabled_reason": "Physical package prohibits inference and ambiguity resolution"
+  },
+  "Darwin": {
+    "agent_id": "darwin",
+    "agent_version": "1.2.0",
+    "path": "Darwin-v0_1_0.zip",
+    "sha256": "45661d31e355f428bc2ac8cbbb5a5196d2f1606c6644fc35078c6840722d3c86",
+    "capabilities": ["DARWIN_ARCHITECTURE_REQUEST/v1", "SPEC_DECISIONS/v1", "AGENT_REVIEW_REQUEST/v1", "AGENT_REVIEW_RESPONSE/v1"]
+  },
+  "Noe": {
+    "agent_id": "noe",
+    "agent_version": "0.1.0",
+    "path": "Noe-v0_1_0.zip",
+    "sha256": "d788d89c19e06f2a2aa685478501641bf50de6b0685cffe7893848a06c00ec8d",
+    "capabilities": ["AGENT_REVIEW_REQUEST/v1", "AGENT_REVIEW_RESPONSE/v1"]
+  }
+}

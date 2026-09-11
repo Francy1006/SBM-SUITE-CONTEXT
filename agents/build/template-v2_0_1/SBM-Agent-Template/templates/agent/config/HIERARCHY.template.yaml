@@ -1,0 +1,10 @@
+agent_id: '{{agent_id}}'
+hierarchy_version: '{{hierarchy_version}}'
+reports_to: null
+can_request_from:
+- '{{actor}}'
+can_instruct:
+- '{{actor}}'
+requires_approval_from:
+- '{{actor}}'
+escalation_target: null

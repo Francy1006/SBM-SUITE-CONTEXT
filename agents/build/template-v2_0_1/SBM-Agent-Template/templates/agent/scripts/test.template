@@ -1,0 +1,3 @@
+#!/usr/bin/env python3
+# Deterministic agent QA runner template.
+{{test_body}}

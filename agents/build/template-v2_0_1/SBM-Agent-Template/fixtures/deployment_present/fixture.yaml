@@ -1,0 +1,239 @@
+case: DEPLOYMENT_PRESENT
+proposal:
+  proposal_id: PROP-FixtureDeploy
+  proposal_version: 1.0.0
+  agent_name: FixtureDeploy
+  agent_description: Fixture agent
+  agent_purpose: Validate template
+  specific_objectives:
+  - Validate contracts
+  general_context: Fixture context
+  responsibilities:
+  - VALIDATE
+  authority:
+  - READ
+  - VALIDATE
+  permissions:
+  - READ
+  - VALIDATE
+  hierarchy: No inferred hierarchy
+  relationships:
+  - Fixture relationship
+  personality: Deterministic
+  communication_style: Direct
+  required_context:
+  - context.zip
+  retrieval_strategy: DECLARED_ONLY
+  embedding_strategy: NONE
+  llm_policy: NO_LLM_BY_DEFAULT
+  execution_modes:
+  - SYNC
+  expected_frequency: ON_DEMAND
+  asynchronous_capabilities:
+  - NONE
+  execution_dependencies:
+  - PYTHON
+  outputs:
+  - VALIDATION_RESULT
+  escalation_rules:
+  - ESCALATE_ON_CONTRADICTION
+  deployment:
+    artifact_id: DEP-FixtureDeploy
+    artifact_version: 1.0.0
+  qa_specific:
+  - QA-TEMPLATE
+  creation_mode: NEW
+  parent_reference: null
+  review_status: APPROVED
+spec:
+  spec_id: SPEC-FixtureDeploy
+  spec_version: 1.0.0
+  agent_id: FixtureDeploy
+  agent_version: 1.0.0
+  standard_id: AGENT_CLONING_STANDARD
+  standard_version: 2.0.0
+  template_id: SBM-Agent-Template
+  template_version: 2.0.1
+  proposal_reference:
+    proposal_id: PROP-FixtureDeploy
+    proposal_version: 1.0.0
+  component_references:
+    AGENT_DEFINITION:
+      artifact_id: DEF-FixtureDeploy
+      artifact_version: 1.0.0
+    AGENT_CONTEXT:
+      artifact_id: AGENT_CONTEXT-FixtureDeploy
+      artifact_version: 1.0.0
+    CONTEXT_CONTRACT:
+      artifact_id: CTX-FixtureDeploy
+      artifact_version: 1.0.0
+    RUNTIME_PROFILE:
+      artifact_id: RUN-FixtureDeploy
+      artifact_version: 1.0.0
+    CLONE_LINEAGE:
+      artifact_id: LINEAGE-FixtureDeploy
+      artifact_version: 1.0.0
+    PERMISSIONS:
+      artifact_id: PERM-FixtureDeploy
+      artifact_version: 1.0.0
+    HIERARCHY:
+      artifact_id: FixtureDeploy
+      artifact_version: 1.0.0
+    RELATIONSHIPS:
+      artifact_id: REL-FixtureDeploy
+      artifact_version: 1.0.0
+    DEPLOYMENT_PROFILE:
+      artifact_id: DEP-FixtureDeploy
+      artifact_version: 1.0.0
+  qa_reference:
+    artifact_id: QA-TEMPLATE
+    artifact_version: 2.0.1
+  deployment_reference:
+    artifact_id: DEP-FixtureDeploy
+    artifact_version: 1.0.0
+  approval_reference:
+    approval_id: APP-FixtureDeploy
+    artifact_version: 1.0.0
+  migration_reference: null
+  creation_mode: NEW
+  parent_reference: null
+definition:
+  agent_definition_id: DEF-FixtureDeploy
+  agent_definition_version: 1.0.0
+  agent_id: FixtureDeploy
+  agent_version: 1.0.0
+  identity: FixtureDeploy
+  purpose: Validate template
+  role: VALIDATOR
+  description: Fixture definition
+  responsibilities:
+  - VALIDATE
+  personality: Deterministic
+  essential_behavior:
+  - DO_NOT_INFER
+  communication_style: Direct
+  authority:
+  - READ
+  - VALIDATE
+  essential_constraints:
+  - NO_CREATIVE_COMPLETION
+agent_context:
+  agent_id: FixtureDeploy
+  agent_version: 1.0.0
+  context_version: 1.0.0
+  general_context: Fixture operational context
+  specific_objectives:
+  - Validate template
+  current_scope:
+  - TEMPLATE
+  domain_context: SBM
+  relevant_entities:
+  - SBM-Agent-Template
+  operational_assumptions:
+  - Inputs approved
+  context_sources:
+  - context.zip
+  updated_at: '2026-08-21T00:00:00Z'
+context_contract:
+  context_contract_id: CTX-FixtureDeploy
+  context_contract_version: 1.0.0
+  agent_id: FixtureDeploy
+  context_zip_required: true
+  required_context:
+  - context.zip
+  optional_context:
+  - documentation.zip
+  retrieval_sources:
+  - SBM-SUITE
+  context_artifact_types:
+  - context.zip
+  context_validation_policy: FULL_CURRENT_CONTEXT
+runtime_profile:
+  runtime_profile_id: RUN-FixtureDeploy
+  runtime_profile_version: 1.0.0
+  agent_id: FixtureDeploy
+  execution_modes:
+  - SYNC
+  context_delivery: ZIP
+  retrieval_strategy: DECLARED_ONLY
+  embedding_strategy: NONE
+  llm_invocation_policy: NO_LLM_BY_DEFAULT
+  deterministic_capabilities:
+  - VALIDATE
+  asynchronous_capabilities:
+  - NONE
+  scheduling_requirements:
+  - NONE
+  cost_control_policy: NO_LLM_BY_DEFAULT
+  caching_policy: DISABLED
+  idempotency_policy: REQUIRED
+  retry_policy: NO_IMPLICIT_RETRY
+  timeout_policy: BOUNDED
+  concurrency_policy: SERIAL
+  execution_dependencies:
+  - PYTHON
+  observability_requirements:
+  - RESULT
+  runtime_reference:
+    target: CHATGPT_CUSTOM_GPT
+    deployment_profile_id: DEP-FixtureDeploy
+    deployment_profile_version: 1.0.0
+permissions:
+  permissions_id: PERM-FixtureDeploy
+  permissions_version: 1.0.0
+  agent_id: FixtureDeploy
+  allowed_actions:
+  - READ
+  - VALIDATE
+  denied_actions:
+  - WRITE_STANDARD
+  approval_required_actions:
+  - MATERIALIZE
+  escalation_rules:
+  - ESCALATE_ON_CONTRADICTION
+hierarchy:
+  agent_id: FixtureDeploy
+  hierarchy_version: 1.0.0
+  reports_to: sbm-admin
+  can_request_from:
+  - Darwin
+  - Noe
+  can_instruct: []
+  requires_approval_from:
+  - sbm-admin
+  escalation_target: sbm-admin
+relationships:
+  relationships_id: REL-FixtureDeploy
+  relationships_version: 1.0.0
+  agent_id: FixtureDeploy
+  relationships:
+  - actor: sbm-admin
+    relationship_type: APPROVER
+    direction: INBOUND
+    purpose: Authorize materialization
+lineage:
+  clone_lineage_id: LINEAGE-FixtureDeploy
+  agent_id: FixtureDeploy
+  agent_version: 1.0.0
+  is_clone: false
+  clone_id: null
+  parent_agent_id: null
+  parent_agent_version: null
+  parent_spec_id: null
+  parent_spec_version: null
+approval:
+  approval_id: APP-FixtureDeploy
+  approval_type: AGENT_SPEC
+  approved_by: sbm-admin
+  approved_at: '2026-08-21T00:00:00Z'
+  artifact_id: SPEC-FixtureDeploy
+  artifact_version: 1.0.0
+  approval_status: APPROVED
+deployment:
+  deployment_profile_id: DEP-FixtureDeploy
+  deployment_profile_version: 1.0.0
+  agent_id: FixtureDeploy
+  agent_version: 1.0.0
+  target: CHATGPT_CUSTOM_GPT
+  enabled: true
+generated_deployment_present: true

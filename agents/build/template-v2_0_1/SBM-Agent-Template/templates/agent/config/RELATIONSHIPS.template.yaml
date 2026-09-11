@@ -1,0 +1,8 @@
+relationships_id: '{{relationships_id}}'
+relationships_version: '{{relationships_version}}'
+agent_id: '{{agent_id}}'
+relationships:
+- actor: '{{actor}}'
+  relationship_type: '{{relationship_type}}'
+  direction: '{{direction}}'
+  purpose: '{{purpose}}'
