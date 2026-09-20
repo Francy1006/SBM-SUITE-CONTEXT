@@ -1,0 +1,24 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  deployment_profile_id: &id001
+    type: string
+    minLength: 1
+  deployment_profile_version: *id001
+  agent_id: *id001
+  agent_version: *id001
+  target:
+    enum:
+    - CHATGPT_CUSTOM_GPT
+    - OPENAI_API
+    - ANTHROPIC_API
+  enabled:
+    type: boolean
+required:
+- deployment_profile_id
+- deployment_profile_version
+- agent_id
+- agent_version
+- target
+- enabled
+additionalProperties: false

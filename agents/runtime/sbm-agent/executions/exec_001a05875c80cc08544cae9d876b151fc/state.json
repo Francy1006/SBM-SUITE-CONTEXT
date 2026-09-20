@@ -1,0 +1,36 @@
+{
+  "created_at": "2026-08-31T15:35:09.068779Z",
+  "creation_fingerprint": {
+    "creation_profile_sha256": "94541cc2ae8f970b62d3c9545ea02af38ef2be80b753433b7d49ef419109a309",
+    "fingerprint_sha256": "83ccca38832a215b54e0d0049db063ae34247ec194eb01f5cb2c0257987aa4da",
+    "registry_revision": 0,
+    "registry_sha256": "86c59d2b2a4616aab0741d19fe64366c729fe45904cd9fa59fa874bd796e84e5",
+    "relevant_final_agents_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "reservation_ledger_revision": 0,
+    "reservation_ledger_sha256": "7b54c6314036089176991c0d84046ac2523063a89fcf7a54c16546f608dc59fe"
+  },
+  "creation_snapshot_path": "/Users/franciscomendoza/Documents/DEV/SBM-SUITE/context/agents/runtime/sbm-agent/executions/exec_001a05875c80cc08544cae9d876b151fc/snapshots/creation-context-001.json",
+  "creation_snapshot_sha256": "2d449cc93b30efc5576bd6fafcc4caa847202e91a2c883d3f4e7ae2becc9cdc1",
+  "execution_id": "exec_001a05875c80cc08544cae9d876b151fc",
+  "idempotency_key": "create_request_001a05875c80cf253fe1bbba86a232e8f",
+  "intake_creation_fingerprint": {
+    "creation_profile_sha256": "94541cc2ae8f970b62d3c9545ea02af38ef2be80b753433b7d49ef419109a309",
+    "fingerprint_sha256": "83ccca38832a215b54e0d0049db063ae34247ec194eb01f5cb2c0257987aa4da",
+    "registry_revision": 0,
+    "registry_sha256": "86c59d2b2a4616aab0741d19fe64366c729fe45904cd9fa59fa874bd796e84e5",
+    "relevant_final_agents_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "reservation_ledger_revision": 0,
+    "reservation_ledger_sha256": "7b54c6314036089176991c0d84046ac2523063a89fcf7a54c16546f608dc59fe"
+  },
+  "intake_state_view_path": "/Users/franciscomendoza/Documents/DEV/SBM-SUITE/context/agents/runtime/sbm-agent/executions/exec_001a05875c80cc08544cae9d876b151fc/intake/INTAKE_STATE_VIEW.json",
+  "intake_state_view_sha256": "40fbf6e2275f6778d1de0b87cb4fd89da5853ac3e79880d1ddade12ea3e178b9",
+  "last_error": {
+    "code": "AGENT_CAPABILITY_UNSUPPORTED",
+    "message": "{\"code\": \"AGENT_CAPABILITY_UNSUPPORTED\", \"details\": {}, \"message\": \"gepetto package binding does not support GEPETTO_INTAKE_REQUEST/v1\", \"status\": \"BLOCKED\"}"
+  },
+  "principal": "sbm-admin",
+  "relevant_agent_ids": [],
+  "semantic_request_sha256": "ba7174b94afa30a58422cbd92813fa411bcd17816ba4dd81862c74caf50523c5",
+  "state": "BLOCKED",
+  "updated_at": "2026-08-31T15:35:09.086288Z"
+}

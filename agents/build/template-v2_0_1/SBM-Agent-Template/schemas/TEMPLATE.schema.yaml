@@ -1,0 +1,298 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  template_id:
+    const: SBM-Agent-Template
+  template_version:
+    const: 2.0.1
+  standard_id:
+    const: AGENT_CLONING_STANDARD
+  standard_version:
+    const: 2.0.0
+  template_type:
+    const: AGENT_CANONICAL_TEMPLATE
+  supported_creation_modes:
+    type: array
+    const:
+    - NEW
+    - CLONE
+  supported_migration_types:
+    type: array
+    const:
+    - STANDARD_UPGRADE
+  canonical_root:
+    const: <Agent>/
+  required_files:
+    type: array
+    const:
+    - CHECKSUMS.sha256
+    - MANIFEST.yaml
+    - README.md
+    - TEMPLATE.yaml
+    - fixtures/clone/fixture.yaml
+    - fixtures/deployment_absent/fixture.yaml
+    - fixtures/deployment_present/fixture.yaml
+    - fixtures/new/fixture.yaml
+    - fixtures/standard_upgrade/fixture.yaml
+    - qa/ACCEPTANCE_CRITERIA.md
+    - qa/TEST_MATRIX.md
+    - schemas/AGENT_CONTEXT.schema.yaml
+    - schemas/AGENT_DEFINITION.schema.yaml
+    - schemas/AGENT_PROPOSAL.schema.yaml
+    - schemas/AGENT_SPEC.schema.yaml
+    - schemas/APPROVAL_RECORD.schema.yaml
+    - schemas/CLONE_LINEAGE.schema.yaml
+    - schemas/CONTEXT_CONTRACT.schema.yaml
+    - schemas/DEPLOYMENT_PROFILE.schema.yaml
+    - schemas/HIERARCHY.schema.yaml
+    - schemas/PERMISSIONS.schema.yaml
+    - schemas/RELATIONSHIPS.schema.yaml
+    - schemas/RUNTIME_PROFILE.schema.yaml
+    - schemas/TEMPLATE.schema.yaml
+    - scripts/test
+    - scripts/validate
+    - templates/agent/AGENT_CONTEXT.template.yaml
+    - templates/agent/AGENT_DEFINITION.template.yaml
+    - templates/agent/AGENT_PROPOSAL.template.yaml
+    - templates/agent/AGENT_SPEC.template.yaml
+    - templates/agent/INIT.template.md
+    - templates/agent/README.template.md
+    - templates/agent/approvals/MATERIALIZATION_APPROVAL.template.yaml
+    - templates/agent/approvals/PROPOSAL_APPROVAL.template.yaml
+    - templates/agent/approvals/SPEC_APPROVAL.template.yaml
+    - templates/agent/config/CLONE_LINEAGE.template.yaml
+    - templates/agent/config/CONTEXT_CONTRACT.template.yaml
+    - templates/agent/config/HIERARCHY.template.yaml
+    - templates/agent/config/PERMISSIONS.template.yaml
+    - templates/agent/config/RELATIONSHIPS.template.yaml
+    - templates/agent/config/RUNTIME_PROFILE.template.yaml
+    - templates/agent/deployment/DEPLOYMENT_PROFILE.template.yaml
+    - templates/agent/deployment/GPT_INSTRUCTIONS.template.md
+    - templates/agent/deployment/GPT_KNOWLEDGE_MANIFEST.template.yaml
+    - templates/agent/deployment/GPT_SETUP_CHECKLIST.template.md
+    - templates/agent/manifest.template.json
+    - templates/agent/qa/ACCEPTANCE_CRITERIA.template.md
+    - templates/agent/qa/TEST_MATRIX.template.md
+    - templates/agent/scripts/test.template
+    - templates/agent/scripts/validate.template
+    - tests/test_approvals.py
+    - tests/test_context_contract.py
+    - tests/test_cross_references.py
+    - tests/test_deployment_conditionality.py
+    - tests/test_hierarchy.py
+    - tests/test_instance_validation.py
+    - tests/test_lineage.py
+    - tests/test_manifest_checksums.py
+    - tests/test_permissions.py
+    - tests/test_prohibited_artifacts.py
+    - tests/test_relationships.py
+    - tests/test_reproducibility.py
+    - tests/test_required_files.py
+    - tests/test_schema_validity.py
+    - tests/test_separation.py
+    - tests/test_standard_upgrade.py
+    - tests/test_template_tree.py
+  optional_file_groups:
+    type: object
+    properties:
+      deployment:
+        type: object
+        properties:
+          scope:
+            const: GENERATED_AGENT
+          condition:
+            const: deployment_reference != null
+          paths:
+            type: array
+            const:
+            - deployment/DEPLOYMENT_PROFILE.yaml
+            - deployment/GPT_INSTRUCTIONS.md
+            - deployment/GPT_KNOWLEDGE_MANIFEST.yaml
+            - deployment/GPT_SETUP_CHECKLIST.md
+        required:
+        - scope
+        - condition
+        - paths
+        additionalProperties: false
+    required:
+    - deployment
+    additionalProperties: false
+  prohibited_patterns:
+    type: array
+    const:
+    - __pycache__/
+    - .pytest_cache/
+    - '*.pyc'
+    - '*.pyo'
+    - .DS_Store
+    - Thumbs.db
+    - node_modules/
+    - .git/
+    - build/
+    - dist/
+    - context/
+    - .sbm/
+    - coverage/
+    - '*.tmp'
+    - '*.temp'
+    - '*.swp'
+    - '*.swap'
+    - '*.log'
+    - credentials
+    - tokens
+    - API keys
+    - secrets
+    - undeclared files
+  schema_references:
+    type: array
+    const:
+    - schemas/AGENT_CONTEXT.schema.yaml
+    - schemas/AGENT_DEFINITION.schema.yaml
+    - schemas/AGENT_PROPOSAL.schema.yaml
+    - schemas/AGENT_SPEC.schema.yaml
+    - schemas/APPROVAL_RECORD.schema.yaml
+    - schemas/CLONE_LINEAGE.schema.yaml
+    - schemas/CONTEXT_CONTRACT.schema.yaml
+    - schemas/DEPLOYMENT_PROFILE.schema.yaml
+    - schemas/HIERARCHY.schema.yaml
+    - schemas/PERMISSIONS.schema.yaml
+    - schemas/RELATIONSHIPS.schema.yaml
+    - schemas/RUNTIME_PROFILE.schema.yaml
+    - schemas/TEMPLATE.schema.yaml
+  template_references:
+    type: array
+    const:
+    - templates/agent/AGENT_CONTEXT.template.yaml
+    - templates/agent/AGENT_DEFINITION.template.yaml
+    - templates/agent/AGENT_PROPOSAL.template.yaml
+    - templates/agent/AGENT_SPEC.template.yaml
+    - templates/agent/INIT.template.md
+    - templates/agent/README.template.md
+    - templates/agent/approvals/MATERIALIZATION_APPROVAL.template.yaml
+    - templates/agent/approvals/PROPOSAL_APPROVAL.template.yaml
+    - templates/agent/approvals/SPEC_APPROVAL.template.yaml
+    - templates/agent/config/CLONE_LINEAGE.template.yaml
+    - templates/agent/config/CONTEXT_CONTRACT.template.yaml
+    - templates/agent/config/HIERARCHY.template.yaml
+    - templates/agent/config/PERMISSIONS.template.yaml
+    - templates/agent/config/RELATIONSHIPS.template.yaml
+    - templates/agent/config/RUNTIME_PROFILE.template.yaml
+    - templates/agent/deployment/DEPLOYMENT_PROFILE.template.yaml
+    - templates/agent/deployment/GPT_INSTRUCTIONS.template.md
+    - templates/agent/deployment/GPT_KNOWLEDGE_MANIFEST.template.yaml
+    - templates/agent/deployment/GPT_SETUP_CHECKLIST.template.md
+    - templates/agent/manifest.template.json
+    - templates/agent/qa/ACCEPTANCE_CRITERIA.template.md
+    - templates/agent/qa/TEST_MATRIX.template.md
+    - templates/agent/scripts/test.template
+    - templates/agent/scripts/validate.template
+  qa_references:
+    type: array
+    const:
+    - qa/ACCEPTANCE_CRITERIA.md
+    - qa/TEST_MATRIX.md
+    - tests/test_approvals.py
+    - tests/test_context_contract.py
+    - tests/test_cross_references.py
+    - tests/test_deployment_conditionality.py
+    - tests/test_hierarchy.py
+    - tests/test_instance_validation.py
+    - tests/test_lineage.py
+    - tests/test_manifest_checksums.py
+    - tests/test_permissions.py
+    - tests/test_prohibited_artifacts.py
+    - tests/test_relationships.py
+    - tests/test_reproducibility.py
+    - tests/test_required_files.py
+    - tests/test_schema_validity.py
+    - tests/test_separation.py
+    - tests/test_standard_upgrade.py
+    - tests/test_template_tree.py
+  fixture_references:
+    type: object
+    properties:
+      new:
+        const: fixtures/new/fixture.yaml
+      clone:
+        const: fixtures/clone/fixture.yaml
+      deployment_absent:
+        const: fixtures/deployment_absent/fixture.yaml
+      deployment_present:
+        const: fixtures/deployment_present/fixture.yaml
+      standard_upgrade:
+        const: fixtures/standard_upgrade/fixture.yaml
+    required:
+    - new
+    - clone
+    - deployment_absent
+    - deployment_present
+    - standard_upgrade
+    additionalProperties: false
+  separation_rules:
+    type: object
+    properties:
+      draft_materialization_allowed:
+        const: false
+      yeoman_can_approve:
+        const: false
+      scaffold_metadata_packaged:
+        const: false
+      provisional_scaffold_registered_in_context_agents:
+        const: false
+      approved_input_origin_affects_output:
+        const: false
+    required:
+    - draft_materialization_allowed
+    - yeoman_can_approve
+    - scaffold_metadata_packaged
+    - provisional_scaffold_registered_in_context_agents
+    - approved_input_origin_affects_output
+    additionalProperties: false
+  zip:
+    type: object
+    properties:
+      filename:
+        const: SBM-Agent-Template-v2_0_1.zip
+      root:
+        const: SBM-Agent-Template/
+      physical_file_count:
+        const: 67
+      method:
+        const: DEFLATE
+      compresslevel:
+        const: 6
+      timestamp:
+        const: '2020-01-01T00:00:00Z'
+      file_mode:
+        const: '0644'
+      path_order:
+        const: LEXICOGRAPHIC
+    required:
+    - filename
+    - root
+    - physical_file_count
+    - method
+    - compresslevel
+    - timestamp
+    - file_mode
+    - path_order
+    additionalProperties: false
+required:
+- template_id
+- template_version
+- standard_id
+- standard_version
+- template_type
+- supported_creation_modes
+- supported_migration_types
+- canonical_root
+- required_files
+- optional_file_groups
+- prohibited_patterns
+- schema_references
+- template_references
+- qa_references
+- fixture_references
+- separation_rules
+- zip
+additionalProperties: false

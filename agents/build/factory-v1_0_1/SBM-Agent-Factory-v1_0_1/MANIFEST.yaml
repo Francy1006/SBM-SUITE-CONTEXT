@@ -1,0 +1,275 @@
+factory_id: SBM-Agent-Factory
+factory_version: 1.0.1
+files:
+- path: CHECKSUMS.sha256
+  purpose: package artifact
+  required: true
+  sha256: null
+- path: MANIFEST.yaml
+  purpose: package artifact
+  required: true
+  sha256: null
+- path: README.md
+  purpose: package artifact
+  required: true
+  sha256: 14fd8fd67aabc417c834dab48d60e3cf51ba3a726920c8f92ed860c3fae888fc
+- path: config/FACTORY_CONFIG.yaml
+  purpose: package artifact
+  required: true
+  sha256: 4dc266374676c15ca5085ed6ca7deb116afefc03dff1aa00db5bb2f20dafc036
+- path: pyproject.toml
+  purpose: package artifact
+  required: true
+  sha256: 7c195ad915189ed7b59086d31db8d986efe9f59ed49af98699269509114eb013
+- path: qa/ACCEPTANCE_CRITERIA.md
+  purpose: package artifact
+  required: true
+  sha256: 668787a769419c4d76df83f7e6ebee3e7c7f1adb61894eefd9803e73ad8d3eb9
+- path: qa/TEST_MATRIX.md
+  purpose: package artifact
+  required: true
+  sha256: 10a7effd3ca9ca7ab076f1402380a8a7fd00872f5246563b86847a3222929884
+- path: schemas/EXECUTION_EVIDENCE.schema.yaml
+  purpose: package artifact
+  required: true
+  sha256: b58f7e8acaa97ede10b4b157a526fec426d98244c8108ab728a6c1b71696189c
+- path: schemas/FACTORY_CONFIG.schema.yaml
+  purpose: package artifact
+  required: true
+  sha256: 5c45590e3a1d4aa435038dc3ae6a2e255d53c3f88c52c60e248b82711e07288b
+- path: schemas/REGISTRY_CANDIDATE.schema.yaml
+  purpose: package artifact
+  required: true
+  sha256: 9a09c75002e6959350283bf297203bfd33a22f000615f02f3a78ddee2108a78a
+- path: schemas/STRUCTURED_ERROR.schema.yaml
+  purpose: package artifact
+  required: true
+  sha256: 68e95d757e942a898369a3ee42c13e237a0c5575812b7011b1cf462c8b3ce71e
+- path: scripts/clone-agent.sh
+  purpose: package artifact
+  required: true
+  sha256: 0b88ac424f8b3c171166caa10bf859e8be707cb9b2840675cc77638f7996b308
+- path: scripts/create-agent.sh
+  purpose: package artifact
+  required: true
+  sha256: 8ac1c3a63624a65d9046cf2810fca1c777cfc0ed41a3fa963e58d0ea60e6fd32
+- path: scripts/package-agent.sh
+  purpose: package artifact
+  required: true
+  sha256: bc6e6a4ba0dab323c6a94b0166c0c4a4339946ae13b42b80cd91fddb45b21635
+- path: scripts/test-agent.sh
+  purpose: package artifact
+  required: true
+  sha256: 02403ec75a4f26895d703845156ef6a0b81b242b980f9ec05608e2658b79c78a
+- path: scripts/validate-agent.sh
+  purpose: package artifact
+  required: true
+  sha256: 990bf947a7e3b8b4424fc17dcf7a2f91f34e53ee34b6bd78eae82c8c39785dfb
+- path: src/sbm_agent_factory/__init__.py
+  purpose: package artifact
+  required: true
+  sha256: 7784076264bfdf48f484f37c36634f9d0fd9d13a610d16eee0cb508fd713f5ef
+- path: src/sbm_agent_factory/approvals.py
+  purpose: package artifact
+  required: true
+  sha256: 1fdc13e5ee50bd7a8e454743ab105be3c437c342f9d2e832fc7d6873d80c14ed
+- path: src/sbm_agent_factory/checksum.py
+  purpose: package artifact
+  required: true
+  sha256: a36f599b6e80d429fb51decd8ec7475a4e4aaa2f66322a3fe7c6935941b809d4
+- path: src/sbm_agent_factory/cli.py
+  purpose: package artifact
+  required: true
+  sha256: 9e45be908e2706aee035453f08736d8101c4311b7e6ece9bf13d876ab95ee755
+- path: src/sbm_agent_factory/clone.py
+  purpose: package artifact
+  required: true
+  sha256: b676a2b30413a59178abed05c4d580e3785dd2f191368c798700374140339742
+- path: src/sbm_agent_factory/context.py
+  purpose: package artifact
+  required: true
+  sha256: 9a1fe6345771ac4909bf180499725e65b7c1a69b202b7648e0b13883e9048719
+- path: src/sbm_agent_factory/create.py
+  purpose: package artifact
+  required: true
+  sha256: 5f2a79139716d166c2fb9a5e87187d03e5583f7ccb1382557810e4b905aab6ae
+- path: src/sbm_agent_factory/documentation.py
+  purpose: package artifact
+  required: true
+  sha256: b543d6a765c58f37e2ed57ede52771dd0db79022b9384ecb9f9d77dfcd4a7662
+- path: src/sbm_agent_factory/errors.py
+  purpose: package artifact
+  required: true
+  sha256: e6739fb610f678e2c7cb95036c4435eaf3100486c203255bb12c4988684b77d7
+- path: src/sbm_agent_factory/hierarchy.py
+  purpose: package artifact
+  required: true
+  sha256: 721c7dea1bcfd931036285910c8204e2fd1f46456fd50a002c77ec9d93efcf5d
+- path: src/sbm_agent_factory/lineage.py
+  purpose: package artifact
+  required: true
+  sha256: 200378e84058731843885a66ea5afae50da360107ac93d5f237d7f6ca3e35b7e
+- path: src/sbm_agent_factory/manifest.py
+  purpose: package artifact
+  required: true
+  sha256: bbf69a3f4aec80b91e4a090a7aa515140d8ff8c04f6ad12bd8144694ae72e467
+- path: src/sbm_agent_factory/package.py
+  purpose: package artifact
+  required: true
+  sha256: 9f4731f02e7366722f40af0897cfa671c853a56484741fe3f3d52f0e549589a3
+- path: src/sbm_agent_factory/permissions.py
+  purpose: package artifact
+  required: true
+  sha256: 0a24907e2edfa80634000087bc2d52780d4e6044f7c890285e755a504493def1
+- path: src/sbm_agent_factory/qa.py
+  purpose: package artifact
+  required: true
+  sha256: 416c2ae57b0b9dda6cd12bbb7ec4effe3e50053400c984564898b8512c48acd9
+- path: src/sbm_agent_factory/registry.py
+  purpose: package artifact
+  required: true
+  sha256: 16c44a14068dce587eaf2fb93f26652798c1ee1466c017643e75f01fc7e5891a
+- path: src/sbm_agent_factory/relationships.py
+  purpose: package artifact
+  required: true
+  sha256: 52c80ac108ca1de3d3b637722082c5e37ee00344106ad934ff6f63c0ff97eef6
+- path: src/sbm_agent_factory/reproducibility.py
+  purpose: package artifact
+  required: true
+  sha256: e0b08ce92c89c504004f3d08f712254a316a40b41161aab93e6c15218decb5f7
+- path: src/sbm_agent_factory/runtime.py
+  purpose: package artifact
+  required: true
+  sha256: 2be9707a8f2e7da0f33c3904b705f1cb44c9dc287c2f7192f9bce1d427a00cec
+- path: src/sbm_agent_factory/template_engine.py
+  purpose: package artifact
+  required: true
+  sha256: 781a42191c77b5cd1ff8b46593a31243fe16535591acba5511c6875b93f05335
+- path: src/sbm_agent_factory/validate.py
+  purpose: package artifact
+  required: true
+  sha256: 72abe489ca0247c9327232f32f5d5b87891c5014ddc1c4446d5661180c8e3aca
+- path: templates/EXECUTION_EVIDENCE.template.yaml
+  purpose: package artifact
+  required: true
+  sha256: c6d3915157204973a73a531cac400adb5f264e398dcbc90f7e017d96e7f73343
+- path: templates/FACTORY_CONFIG.template.yaml
+  purpose: package artifact
+  required: true
+  sha256: 4dc266374676c15ca5085ed6ca7deb116afefc03dff1aa00db5bb2f20dafc036
+- path: templates/REGISTRY_CANDIDATE.template.yaml
+  purpose: package artifact
+  required: true
+  sha256: c9df5efc8e083a1cb20224903429c044f97a552a7b5eb0c630ca30fa44674218
+- path: tests/e2e/test_clone_to_zip.py
+  purpose: package artifact
+  required: true
+  sha256: 4b5ab8d66f7157c19b076b35451d0684d58f3cba20d7f4ed1338ff6b67a7a759
+- path: tests/e2e/test_new_to_zip.py
+  purpose: package artifact
+  required: true
+  sha256: d0861dc5bc97451bbcebce4d1a08a2a529240058037633805b571bf49aa77172
+- path: tests/e2e/test_rebuild_same_sha.py
+  purpose: package artifact
+  required: true
+  sha256: acc90118ae3b259e94e2c90b29122d0c26a919a03c4124bcff1d37117f1a3ebc
+- path: tests/e2e/test_standard_upgrade_to_zip.py
+  purpose: package artifact
+  required: true
+  sha256: f6eeda664a31623d445fed77ce76050b88b8760f5d1ff8b27b7bb097cede7fac
+- path: tests/integration/test_clone.py
+  purpose: package artifact
+  required: true
+  sha256: c4f79ade745304409f825e748e50d45fbde6ef438029f4b0e4fee1978bb55bbf
+- path: tests/integration/test_create.py
+  purpose: package artifact
+  required: true
+  sha256: 59b08ef3d2ecae00fea6b5e061e1b42b2b8c9749b3c8cc6bd94bfda0329d3d1c
+- path: tests/integration/test_deployment_conditionality.py
+  purpose: package artifact
+  required: true
+  sha256: 68248df507dfafd4062c51463d4ff33f139d8462e3acde8ed2fa77c7787d22ce
+- path: tests/integration/test_registry_candidate.py
+  purpose: package artifact
+  required: true
+  sha256: 7148a6570e3726b628eac5d5d7aa1bae398427c8b66a771a0b10e1869690c74d
+- path: tests/integration/test_standard_upgrade.py
+  purpose: package artifact
+  required: true
+  sha256: 08737cd7577b739fb28791d82cd5a7798d37cbba41a6b9315c26a2197f7b1759
+- path: tests/negative/test_approval_mismatch.py
+  purpose: package artifact
+  required: true
+  sha256: 75a4c636f75383ed56637ca5b8835ccbf0793214c3342d6757746f539b61b603
+- path: tests/negative/test_draft_blocked.py
+  purpose: package artifact
+  required: true
+  sha256: 2339c4dcd1fc78088651546599c100b734f5b05102f73401c65af71f34458b86
+- path: tests/negative/test_extra_file.py
+  purpose: package artifact
+  required: true
+  sha256: 0c6e187f8933452733644c09e2872ea015c25655123df5a9961701a34e7cf3ae
+- path: tests/negative/test_hierarchy_invalid.py
+  purpose: package artifact
+  required: true
+  sha256: ddd7a365c55161dcd3ba3e67e265a0be0d1cfc643735689a2c25a128e7fda928
+- path: tests/negative/test_lineage_invalid.py
+  purpose: package artifact
+  required: true
+  sha256: 7d2aea57151186b7e25a3be29c2a9d2502b3d794f16c13c5240613145ccb7594
+- path: tests/negative/test_permissions_invalid.py
+  purpose: package artifact
+  required: true
+  sha256: 9e089f196835d62dd309058e6c5f4637bf3df99c1bd709af12f68644f25bde09
+- path: tests/negative/test_prohibited_artifact.py
+  purpose: package artifact
+  required: true
+  sha256: 25b2cce55ab8d69a552367fb5a13540343c853ad0f81d584ebb22ab63555cf92
+- path: tests/negative/test_relationships_invalid.py
+  purpose: package artifact
+  required: true
+  sha256: eb75e74be1ecb0981e0c795739461e6221b987159b03d137995abca6f64d1134
+- path: tests/negative/test_spec_mismatch.py
+  purpose: package artifact
+  required: true
+  sha256: d3b3265204405251678a17c50f90862217a02599d17bc9b95123e38196776443
+- path: tests/negative/test_template_sha_mismatch.py
+  purpose: package artifact
+  required: true
+  sha256: cbc8b878e90e183430f08daafca0a8be35c0822eba1fe31d903288066b8fac9a
+- path: tests/negative/test_version_mismatch.py
+  purpose: package artifact
+  required: true
+  sha256: 5f6055ef6678b7ca75aab11d068faa0f3e96667863ac998eb000b1863f3b2edd
+- path: tests/unit/test_approvals.py
+  purpose: package artifact
+  required: true
+  sha256: f1e2217971548cb588ae311468e8561d6f30274c9d80cace6378dff4d8cc0cee
+- path: tests/unit/test_hierarchy.py
+  purpose: package artifact
+  required: true
+  sha256: 5f041c442c360fb28fae31eaea7430c8b4b00bfdb71224c7fe2ce4362a77ff7b
+- path: tests/unit/test_lineage.py
+  purpose: package artifact
+  required: true
+  sha256: ab0376c9fef1fb18db682e79376698c056592329e784603577f5647d1b2784fb
+- path: tests/unit/test_manifest_checksums.py
+  purpose: package artifact
+  required: true
+  sha256: b379561a88f4ceb30b1655b5f79eebdb66751b6f5af4b2d35ec49cd5dae7fb88
+- path: tests/unit/test_permissions.py
+  purpose: package artifact
+  required: true
+  sha256: 729b28e27cf4db8082fb707e424b696f0a99a4f287095a5045e6b996c85b1b5a
+- path: tests/unit/test_relationships.py
+  purpose: package artifact
+  required: true
+  sha256: 180d48a9bbdae85d0e036a4d92a9bbe4c46806f67ca5563ae66cdd5e7569ef30
+- path: tests/unit/test_reproducibility.py
+  purpose: package artifact
+  required: true
+  sha256: 2ed70504061be30d32c42bdd04378cc8645f31c756c30d2ec9f9d94a955004bc
+- path: tests/unit/test_template_engine.py
+  purpose: package artifact
+  required: true
+  sha256: c0b0ebd47d5ac6978988d01eed81cbae6144dd11743dd4fb761d9cdea1eba0f6

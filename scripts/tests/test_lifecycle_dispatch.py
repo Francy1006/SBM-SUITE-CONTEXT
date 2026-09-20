@@ -247,6 +247,72 @@ class LifecycleDispatchTests(unittest.TestCase):
             suite_contract,
         )
 
+    def test_all_global_context_structures_match_format_contract(self) -> None:
+        format_contract = (CONTEXT_ROOT / "FORMAT_CONTEXT.md").read_text(encoding="utf-8")
+        section_pattern = re.compile(r'^## \d+\. Global `([^`]+)`\n', re.MULTILINE)
+        structure_pattern = re.compile(
+            r'Required structure:\s*\n```text\n(.*?)\n```',
+            re.DOTALL,
+        )
+        heading_pattern = re.compile(r'^#{1,2} .+$')
+
+        def visible_headings(document: str) -> list[str]:
+            headings: list[str] = []
+            in_fence = False
+            for line in document.splitlines():
+                if line.startswith("```"):
+                    in_fence = not in_fence
+                    continue
+                if not in_fence and heading_pattern.fullmatch(line):
+                    headings.append(line)
+            return headings
+
+        validated = []
+        for match in section_pattern.finditer(format_contract):
+            filename = match.group(1)
+            section_start = match.end()
+            separator = re.search(r'^---$', format_contract[section_start:], re.MULTILINE)
+            section_end = (
+                section_start + separator.start()
+                if separator
+                else len(format_contract)
+            )
+            section = format_contract[section_start:section_end]
+            structure = structure_pattern.search(section)
+            if structure is None:
+                continue
+            required = [
+                line
+                for line in structure.group(1).splitlines()
+                if heading_pattern.fullmatch(line)
+            ]
+            if not required:
+                continue
+            path = CONTEXT_ROOT / filename
+            self.assertTrue(path.is_file(), filename)
+            self.assertEqual(
+                required,
+                visible_headings(path.read_text(encoding="utf-8")),
+                filename,
+            )
+            validated.append(filename)
+
+        self.assertIn("SECURITY_CONTEXT.md", validated)
+        self.assertIn("BUSINESS_CONTEXT.md", validated)
+        self.assertIn("DATA_CONTEXT.md", validated)
+        self.assertIn("SYS_PROMPT.md", validated)
+
+    def test_context_deploy_runs_global_format_preflight_before_export(self) -> None:
+        deploy = (CONTEXT_ROOT / "scripts" / "context-deploy.sh").read_text(
+            encoding="utf-8"
+        )
+        preflight = 'Contextos globales validados contra FORMAT_CONTEXT.md'
+        export_call = '${AI_ASSISTANT_URL%/}/contexts/export'
+        self.assertIn(preflight, deploy)
+        self.assertIn('section_pattern = re.compile', deploy)
+        self.assertIn('actual != required', deploy)
+        self.assertLess(deploy.index(preflight), deploy.index(export_call))
+
     def test_planning_patch_policy_supports_direct_completed_and_mixed_batches(self) -> None:
         pending_required, pending_forbidden = lifecycle_patch_policy(
             "planning-activation",

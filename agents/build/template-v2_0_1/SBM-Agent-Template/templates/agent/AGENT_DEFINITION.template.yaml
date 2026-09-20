@@ -1,0 +1,18 @@
+agent_definition_id: '{{agent_definition_id}}'
+agent_definition_version: '{{agent_definition_version}}'
+agent_id: '{{agent_id}}'
+agent_version: '{{agent_version}}'
+identity: '{{identity}}'
+purpose: '{{purpose}}'
+role: '{{role}}'
+description: '{{description}}'
+responsibilities:
+- '{{responsibility}}'
+personality: '{{personality}}'
+essential_behavior:
+- '{{behavior}}'
+communication_style: '{{communication_style}}'
+authority:
+- '{{authority}}'
+essential_constraints:
+- '{{constraint}}'

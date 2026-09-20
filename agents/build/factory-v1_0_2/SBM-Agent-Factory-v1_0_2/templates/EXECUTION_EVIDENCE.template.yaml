@@ -1,0 +1,22 @@
+execution_id: "{{ execution_id }}"
+factory_id: SBM-Agent-Factory
+factory_version: 1.0.2
+command: "{{ command }}"
+status: "{{ status }}"
+input_references: []
+proposal_reference: null
+spec_reference: null
+approval_references: []
+template_id: SBM-Agent-Template
+template_version: 2.0.1
+template_sha256: f8f3901d23720d34e617a48f7a26956c34afe8fba73fc807eaaa6736323dd663
+validation_result: "{{ validation_result }}"
+qa_result: "{{ qa_result }}"
+agent_validate_exit_code: {{ agent_validate_exit_code }}
+agent_test_exit_code: {{ agent_test_exit_code }}
+package_path: null
+package_sha256: null
+registry_candidate_path: null
+started_at: "{{ started_at }}"
+completed_at: "{{ completed_at }}"
+errors: []

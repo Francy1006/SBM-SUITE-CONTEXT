@@ -1,0 +1,2 @@
+import assert from 'node:assert/strict';import {proposalCandidateFromInput} from '../../generators/app/index.js';import {validInput,exactRuntimeDependenciesAvailable} from '../unit/prompt-mapping.test.js';
+export const gates=[];export async function run(){if(!exactRuntimeDependenciesAvailable())return {pending:['REGRESSION-DRAFT-ONLY-OUTPUT'],reason:'ajv/yaml unavailable'};const p=proposalCandidateFromInput(validInput());assert.equal(p.review_status,'DRAFT');assert.notEqual(p.review_status,'APPROVED');assert.notEqual(p.review_status,'APROBABLE');}

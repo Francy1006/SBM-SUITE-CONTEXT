@@ -1,0 +1,16 @@
+{
+  "next_sequence": 2,
+  "reservations": [
+    {
+      "agent_version": "1.0.0",
+      "canonical_agent_id": "CEO-Agent",
+      "canonical_agent_name": "CEO Agent",
+      "execution_id": "exec_001a058953148c6d6fc4f39015f7ddbd4",
+      "reservation_id": "res_001a05895314f0a671aee165e7aef6e23",
+      "sequence": 1,
+      "state": "RESERVED",
+      "timestamp": "2026-08-31T16:09:27.631850Z"
+    }
+  ],
+  "revision": 1
+}

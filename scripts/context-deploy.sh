@@ -199,6 +199,71 @@ done
   echo "ERROR: No existe ${FORMAT_CONTEXT_FILE}" >&2
   exit 1
 }
+
+python3 - "${FORMAT_CONTEXT_FILE}" "${CONTEXT_ROOT}" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+format_path = Path(sys.argv[1])
+context_root = Path(sys.argv[2])
+format_text = format_path.read_text(encoding="utf-8")
+
+section_pattern = re.compile(r'^## \d+\. Global `([^`]+)`\n', re.MULTILINE)
+structure_pattern = re.compile(
+    r'Required structure:\s*\n```text\n(.*?)\n```',
+    re.DOTALL,
+)
+heading_pattern = re.compile(r'^#{1,2} .+$')
+
+def visible_headings(text: str) -> list[str]:
+    headings: list[str] = []
+    in_fence = False
+    for line in text.splitlines():
+        if line.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if not in_fence and heading_pattern.fullmatch(line):
+            headings.append(line)
+    return headings
+
+validated = 0
+for match in section_pattern.finditer(format_text):
+    filename = match.group(1)
+    section_start = match.end()
+    separator = re.search(r'^---$', format_text[section_start:], re.MULTILINE)
+    section_end = section_start + separator.start() if separator else len(format_text)
+    section = format_text[section_start:section_end]
+    structure = structure_pattern.search(section)
+    if structure is None:
+        continue
+
+    required = [
+        line
+        for line in structure.group(1).splitlines()
+        if heading_pattern.fullmatch(line)
+    ]
+    if not required:
+        continue
+
+    candidate = context_root / filename
+    if not candidate.is_file():
+        raise SystemExit(f"ERROR: FORMAT_CONTEXT.md requiere {candidate}")
+
+    actual = visible_headings(candidate.read_text(encoding="utf-8"))
+    if actual != required:
+        raise SystemExit(
+            f"ERROR: {filename} no cumple FORMAT_CONTEXT.md; "
+            f"estructura requerida={required!r}; estructura actual={actual!r}"
+        )
+    validated += 1
+
+if validated == 0:
+    raise SystemExit("ERROR: FORMAT_CONTEXT.md no publica estructuras globales validables")
+
+print(f"Contextos globales validados contra FORMAT_CONTEXT.md: {validated}")
+PY
+
 [[ -x "${PROJECT_TREE_SCRIPT}" ]] || {
   echo "ERROR: ${PROJECT_TREE_SCRIPT} no está disponible/ejecutable" >&2
   exit 1

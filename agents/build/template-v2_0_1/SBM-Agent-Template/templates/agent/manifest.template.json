@@ -1,0 +1,7 @@
+{
+  "agent_id": "{{agent_id}}",
+  "agent_version": "{{agent_version}}",
+  "standard_id": "AGENT_CLONING_STANDARD",
+  "standard_version": "{{standard_version}}",
+  "entrypoint": "INIT.md"
+}

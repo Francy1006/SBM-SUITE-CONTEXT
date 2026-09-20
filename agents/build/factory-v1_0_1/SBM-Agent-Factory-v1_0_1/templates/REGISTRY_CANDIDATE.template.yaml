@@ -1,0 +1,17 @@
+agent_id: "{{ agent_id }}"
+agent_name: "{{ agent_name }}"
+description: "{{ description }}"
+agent_version: "{{ agent_version }}"
+spec_version: "{{ spec_version }}"
+standard_version: "{{ standard_version }}"
+factory_id: SBM-Agent-Factory
+factory_version: 1.0.1
+template_id: SBM-Agent-Template
+template_version: "{{ template_version }}"
+template_sha256: f8f3901d23720d34e617a48f7a26956c34afe8fba73fc807eaaa6736323dd663
+status: CANDIDATE
+deployment_targets: []
+package_path: "{{ package_path }}"
+package_sha256: "{{ package_sha256 }}"
+context_path: "{{ context_path }}"
+updated_at: "{{ updated_at }}"

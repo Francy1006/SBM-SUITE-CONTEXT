@@ -1,0 +1,4 @@
+#!/usr/bin/env python3
+# Deterministic agent validator template.
+# Inputs are restricted to the approved materialized agent package.
+{{validate_body}}

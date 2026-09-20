@@ -1,0 +1,12 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+additionalProperties: false
+required: [code,status,message,artifact,path,details,remediation]
+properties:
+  code: {type: string}
+  status: {enum: [VALID, INVALID, BLOCKED, PENDING, RUNNING, SUCCEEDED, FAILED]}
+  message: {type: string}
+  artifact: {type: [string, 'null']}
+  path: {type: [string, 'null']}
+  details: {type: [object, 'null']}
+  remediation: {type: [string, 'null']}

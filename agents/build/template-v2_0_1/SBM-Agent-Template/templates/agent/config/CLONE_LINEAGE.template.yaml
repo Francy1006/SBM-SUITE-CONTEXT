@@ -1,0 +1,9 @@
+clone_lineage_id: '{{clone_lineage_id}}'
+agent_id: '{{agent_id}}'
+agent_version: '{{agent_version}}'
+is_clone: false
+clone_id: null
+parent_agent_id: null
+parent_agent_version: null
+parent_spec_id: null
+parent_spec_version: null

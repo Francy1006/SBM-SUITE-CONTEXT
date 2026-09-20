@@ -1,0 +1,13 @@
+context_contract_id: '{{context_contract_id}}'
+context_contract_version: '{{context_contract_version}}'
+agent_id: '{{agent_id}}'
+context_zip_required: true
+required_context:
+- '{{required_context}}'
+optional_context:
+- '{{optional_context}}'
+retrieval_sources:
+- '{{retrieval_source}}'
+context_artifact_types:
+- context.zip
+context_validation_policy: '{{context_validation_policy}}'

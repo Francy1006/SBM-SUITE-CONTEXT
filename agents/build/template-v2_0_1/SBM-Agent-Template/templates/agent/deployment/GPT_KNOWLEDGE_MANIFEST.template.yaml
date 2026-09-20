@@ -1,0 +1,2 @@
+agent_id: '{{agent_id}}'
+files: '{{knowledge_files}}'

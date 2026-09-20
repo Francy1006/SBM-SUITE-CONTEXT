@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+PACKAGE_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+AGENTS_ROOT=$(CDPATH= cd -- "$PACKAGE_ROOT/../.." && pwd)
+CONTEXT_ROOT=$(CDPATH= cd -- "$AGENTS_ROOT/.." && pwd)
+PYTHON_BIN="$CONTEXT_ROOT/.venv/bin/python"
+if [ ! -x "$PYTHON_BIN" ]; then PYTHON_BIN=python3; fi
+PYTHONDONTWRITEBYTECODE=1 exec "$PYTHON_BIN" "$SCRIPT_DIR/machine_e2e.py"

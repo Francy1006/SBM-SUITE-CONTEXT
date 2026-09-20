@@ -1,0 +1,369 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sbm:generator-sbm-agent:2.0.0:draft-input",
+  "title": "generator-sbm-agent v2 DRAFT_INPUT",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "execution_id",
+    "proposal_id",
+    "proposal_version",
+    "agent_name",
+    "agent_description",
+    "agent_purpose",
+    "general_context",
+    "hierarchy",
+    "personality",
+    "communication_style",
+    "retrieval_strategy",
+    "embedding_strategy",
+    "llm_policy",
+    "expected_frequency",
+    "specific_objectives",
+    "responsibilities",
+    "authority",
+    "permissions",
+    "relationships",
+    "required_context",
+    "execution_modes",
+    "asynchronous_capabilities",
+    "execution_dependencies",
+    "outputs",
+    "escalation_rules",
+    "qa_specific",
+    "deployment",
+    "creation_mode",
+    "review_status"
+  ],
+  "properties": {
+    "execution_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "proposal_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "proposal_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agent_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agent_description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agent_purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "general_context": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hierarchy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "personality": {
+      "type": "string",
+      "minLength": 1
+    },
+    "communication_style": {
+      "type": "string",
+      "minLength": 1
+    },
+    "retrieval_strategy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "embedding_strategy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "llm_policy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expected_frequency": {
+      "type": "string",
+      "minLength": 1
+    },
+    "specific_objectives": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "responsibilities": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "authority": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required_context": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "execution_modes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "asynchronous_capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "execution_dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "escalation_rules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "qa_specific": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "deployment": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifact_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "artifact_version": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "artifact_id",
+            "artifact_version"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "creation_mode": {
+      "enum": [
+        "NEW",
+        "CLONE"
+      ]
+    },
+    "review_status": {
+      "const": "DRAFT"
+    },
+    "origin": {
+      "type": "string",
+      "minLength": 1
+    },
+    "non_interactive": {
+      "type": "boolean"
+    },
+    "standard_upgrade_requested": {
+      "type": "boolean"
+    },
+    "source_agent_id_hint": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "source_agent_version_hint": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "source_standard_version_hint": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "parent_agent_id": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "parent_agent_version": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "parent_spec_id": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "parent_spec_version": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "creation_mode": {
+            "const": "NEW"
+          }
+        },
+        "required": [
+          "creation_mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "parent_agent_id": {
+            "type": "null"
+          },
+          "parent_agent_version": {
+            "type": "null"
+          },
+          "parent_spec_id": {
+            "type": "null"
+          },
+          "parent_spec_version": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "creation_mode": {
+            "const": "CLONE"
+          }
+        },
+        "required": [
+          "creation_mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "parent_agent_id",
+          "parent_agent_version",
+          "parent_spec_id",
+          "parent_spec_version"
+        ],
+        "properties": {
+          "parent_agent_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "parent_agent_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "parent_spec_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "parent_spec_version": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

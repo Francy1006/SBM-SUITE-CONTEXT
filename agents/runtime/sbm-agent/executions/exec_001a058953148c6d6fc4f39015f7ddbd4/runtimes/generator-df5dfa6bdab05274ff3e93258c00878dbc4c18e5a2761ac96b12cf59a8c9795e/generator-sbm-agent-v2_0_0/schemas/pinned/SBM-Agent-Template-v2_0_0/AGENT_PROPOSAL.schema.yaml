@@ -1,0 +1,116 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  proposal_id: &id001
+    type: string
+    minLength: 1
+  proposal_version: *id001
+  agent_name: *id001
+  agent_description: *id001
+  agent_purpose: *id001
+  general_context: *id001
+  hierarchy: *id001
+  personality: *id001
+  communication_style: *id001
+  retrieval_strategy: *id001
+  embedding_strategy: *id001
+  llm_policy: *id001
+  expected_frequency: *id001
+  specific_objectives: &id002
+    type: array
+    items: *id001
+  responsibilities: *id002
+  authority: *id002
+  permissions: *id002
+  relationships: *id002
+  required_context: *id002
+  execution_modes: *id002
+  asynchronous_capabilities: *id002
+  execution_dependencies: *id002
+  outputs: *id002
+  escalation_rules: *id002
+  qa_specific: *id002
+  deployment:
+    oneOf:
+    - type: 'null'
+    - type: object
+      properties:
+        artifact_id: *id001
+        artifact_version: *id001
+      required:
+      - artifact_id
+      - artifact_version
+      additionalProperties: false
+  creation_mode:
+    enum:
+    - NEW
+    - CLONE
+  parent_reference:
+    oneOf:
+    - type: 'null'
+    - &id003
+      type: object
+      properties:
+        agent_id: *id001
+        agent_version: *id001
+        spec_id: *id001
+        spec_version: *id001
+      required:
+      - agent_id
+      - agent_version
+      - spec_id
+      - spec_version
+      additionalProperties: false
+  review_status:
+    enum:
+    - DRAFT
+    - REFUTED
+    - APROBABLE
+    - APPROVED
+required:
+- proposal_id
+- proposal_version
+- agent_name
+- agent_description
+- agent_purpose
+- general_context
+- hierarchy
+- personality
+- communication_style
+- retrieval_strategy
+- embedding_strategy
+- llm_policy
+- expected_frequency
+- specific_objectives
+- responsibilities
+- authority
+- permissions
+- relationships
+- required_context
+- execution_modes
+- asynchronous_capabilities
+- execution_dependencies
+- outputs
+- escalation_rules
+- qa_specific
+- deployment
+- creation_mode
+- parent_reference
+- review_status
+additionalProperties: false
+allOf:
+- if:
+    properties:
+      creation_mode:
+        const: NEW
+  then:
+    properties:
+      parent_reference:
+        type: 'null'
+- if:
+    properties:
+      creation_mode:
+        const: CLONE
+  then:
+    properties:
+      parent_reference: *id003

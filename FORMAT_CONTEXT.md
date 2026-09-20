@@ -353,7 +353,10 @@ Required structure:
 ## 17. Validated business decisions
 ## 18. Business constraints
 ## 19. Pending business definitions
-## 20. Document boundary
+## 20. Multi-brand commercial baseline — 2026-08-16
+## 21. Pricing, package and accounting baseline
+## 22. Channel/application audience model
+## 23. Document boundary
 ```
 
 Required tables:
@@ -494,7 +497,8 @@ Required structure:
 ## 18. Accepted exceptions
 ## 19. Security roadmap
 ## 20. Related documentation
-## 21. Document boundary
+## 21. Multi-brand and control-plane security baseline — 2026-08-16
+## 22. Document boundary
 ```
 
 Required table:
@@ -546,7 +550,8 @@ Required structure:
 ## 15. Data risks
 ## 16. Pending data work
 ## 17. Related documentation
-## 18. Document boundary
+## 18. Planned multi-brand data evolution — 2026-08-16
+## 19. Document boundary
 ```
 
 Required tables:
@@ -666,6 +671,7 @@ Required structure:
 ## Manifest
 ## Manifest construction rules
 ## Final validation
+## Transversal development-state checks
 ```
 
 Rules:

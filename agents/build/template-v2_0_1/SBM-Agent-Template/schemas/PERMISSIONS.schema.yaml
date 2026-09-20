@@ -1,0 +1,23 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  permissions_id: &id001
+    type: string
+    minLength: 1
+  permissions_version: *id001
+  agent_id: *id001
+  allowed_actions: &id002
+    type: array
+    items: *id001
+  denied_actions: *id002
+  approval_required_actions: *id002
+  escalation_rules: *id002
+required:
+- permissions_id
+- permissions_version
+- agent_id
+- allowed_actions
+- denied_actions
+- approval_required_actions
+- escalation_rules
+additionalProperties: false

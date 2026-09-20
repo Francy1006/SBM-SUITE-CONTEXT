@@ -1,0 +1,26 @@
+runtime_profile_id: '{{runtime_profile_id}}'
+runtime_profile_version: '{{runtime_profile_version}}'
+agent_id: '{{agent_id}}'
+execution_modes:
+- '{{execution_mode}}'
+context_delivery: '{{context_delivery}}'
+retrieval_strategy: '{{retrieval_strategy}}'
+embedding_strategy: '{{embedding_strategy}}'
+llm_invocation_policy: NO_LLM_BY_DEFAULT
+deterministic_capabilities:
+- '{{capability}}'
+asynchronous_capabilities:
+- '{{async_capability}}'
+scheduling_requirements:
+- '{{scheduling_requirement}}'
+cost_control_policy: '{{cost_control_policy}}'
+caching_policy: '{{caching_policy}}'
+idempotency_policy: '{{idempotency_policy}}'
+retry_policy: '{{retry_policy}}'
+timeout_policy: '{{timeout_policy}}'
+concurrency_policy: '{{concurrency_policy}}'
+execution_dependencies:
+- '{{dependency}}'
+observability_requirements:
+- '{{observability_requirement}}'
+runtime_reference: null

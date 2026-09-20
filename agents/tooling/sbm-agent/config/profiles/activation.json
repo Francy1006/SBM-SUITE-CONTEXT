@@ -1,0 +1,13 @@
+{
+  "namespace": "normal",
+  "active_profiles": [
+    {
+      "profile_id": "SBM-AGENT-CREATION-PROFILE",
+      "path": "creation-profile-v1.json",
+      "sha256": "94541cc2ae8f970b62d3c9545ea02af38ef2be80b753433b7d49ef419109a309",
+      "revoked": false,
+      "activated_at": "2026-08-28T00:00:00Z"
+    }
+  ],
+  "revoked_profiles": []
+}

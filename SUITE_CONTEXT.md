@@ -1,6 +1,6 @@
 # SUITE_CONTEXT.md
 
-> **Last updated:** 2026-08-16
+> **Last updated:** 2026-09-10
 >
 > **Purpose**
 >
@@ -84,6 +84,7 @@ Canonical repository paths currently evidenced here include `SBM-SUITE/dp/DP-API
 | SBM | SBM-DB | Data/migration authority | database repository | PostgreSQL/DBML/Flyway authority; not runtime gateway | active |
 | SBM | SBM-AI-ASSISTANT | AI orchestrator | AI/API service | RAG, Tools, agents and context/documentation processing | active |
 | SBM | QA infrastructure | SonarQube | QA service | Static analysis/quality gates on demand | QA-only |
+| SBM | SBM-UTIL | Reusable utility/integration service | API/service | Deterministic external integrations; current implementation includes controlled Documentation→Notion synchronization | active |
 
 ### Planned applications
 
@@ -325,6 +326,11 @@ SBM-AI-ASSISTANT
 → canonical APIs/services
 → never direct PostgreSQL writes
 
+Git Markdown documentation
+→ documentation-upgrade.sh
+→ SBM-UTIL
+→ Notion
+
 SBM-CONTROL / SBM-SECURITY / SBM-AI-MANAGER
 → privileged control-plane APIs
 → observe/manage their bounded domains, not business ownership
@@ -334,18 +340,76 @@ Future KS/PC/CG repositories must not be treated as canonical integrations until
 
 ## 13. Infrastructure and containers
 
-| Component | Container or service | Internal port | Host port | Network | Status |
-|---|---|---:|---:|---|---|
-| SBM-MANAGER | app / sbm_manager | 8080 | 8080 | sbm-network | active |
-| DP-API | dp-core | 8000 | 8081 | sbm-network | active |
-| SBM-API | `SBM-CORE` (legacy runtime name; rename pending) | 8000 | 8082 | sbm-network | active |
-| SBM-AI-ASSISTANT | backend | 8000 | 8000 | sbm-network | active |
-| Qdrant | qdrant | 6333 | 6333 | sbm-network | active |
-| PostgreSQL | postgres | 5432 | 5432 | sbm-network | active |
-| Flyway | flyway | N/A | N/A | sbm-network | active |
-| SonarQube | sonarqube | N/A | N/A | independent/shared as configured | QA-only/on-demand |
+Canonical host-port policy:
 
-Do not assume current names, ports or versions without checking the project Compose files.
+- container-internal ports remain project-native and may repeat between isolated containers;
+- host ports are assigned centrally to avoid collisions across the suite;
+- **Mode A — home:** the Windows PC runs the initial single-user production-like/pilot runtime; application/API/control-plane host ports use the `8xxx` range;
+- **Mode B — away/development:** the Mac M2 runs development containers locally; corresponding application/API/control-plane host ports use the Mode A allocation plus `10000`, producing the `18xxx` range;
+- service-to-service container traffic must use Docker DNS/service names and internal ports rather than host ports;
+- Compose host mappings should remain environment-configurable while using these allocations as canonical defaults;
+- a reserved port does not imply that the corresponding project is already implemented.
+
+Application, API and control-plane allocation:
+
+| Component | Container or service | Internal port | Mode A PC host port | Mode B Mac DEV host port | Allocation state |
+|---|---|---:|---:|---:|---|
+| SBM-AI-ASSISTANT | backend | 8000 | 8000 | 18000 | assigned |
+| SBM-API | `SBM-CORE` (legacy runtime name; rename pending) | 8000 | 8001 | 18001 | assigned |
+| SBM-UTIL | sbm-util-dev | 8080 | 8002 | 18002 | assigned |
+| SBM-CORE | future async runtime | N/A | 8003 | 18003 | reserved |
+| SBM-CALCULATION | future calculation API | N/A | 8004 | 18004 | reserved |
+| SBM-SECURITY-API | future Security API | N/A | 8005 | 18005 | reserved |
+| SBM-MARKETING | future Marketing API | N/A | 8006 | 18006 | reserved |
+| SBM-CONTENT | future Content API | N/A | 8007 | 18007 | reserved |
+| KS-API | future brand API | N/A | 8101 | 18101 | reserved |
+| PC-API | future brand API | N/A | 8102 | 18102 | reserved |
+| CG-API | future brand API | N/A | 8103 | 18103 | reserved |
+| DP-API | dp-core | 8000 | 8199 | 18199 | historical/reference allocation |
+| SBM-MANAGER | app / sbm_manager | 8080 | 8200 | 18200 | assigned |
+| SBM-AI-MANAGER | future agent control plane | N/A | 8201 | 18201 | reserved |
+| SBM-SECURITY | future Security control plane | N/A | 8202 | 18202 | reserved |
+| SBM-CONTROL | future operations control plane | N/A | 8203 | 18203 | reserved |
+| SBM-SUITE/context agent tooling | Node/Yeoman CLI container | N/A | N/A | N/A | no host port required |
+
+Static store preview allocation:
+
+| Store | Production hosting | Mode A PC preview port | Mode B Mac DEV preview port | Notes |
+|---|---|---:|---:|---|
+| KS-STORE | Cloudflare Pages | 8301 | 18301 | preview only; no persistent production host port |
+| PC-STORE | Cloudflare Pages | 8302 | 18302 | preview only; no persistent production host port |
+| CG-STORE | Cloudflare Pages | 8303 | 18303 | preview only; no persistent production host port |
+
+Shared infrastructure allocation:
+
+| Component | Internal/default port | Mode A PC host port | Mode B Mac DEV host port | Runtime rule |
+|---|---:|---:|---:|---|
+| PostgreSQL / SBM-DB | 5432 | 5432 | 15432 | private infrastructure; not public ingress |
+| Qdrant | 6333 | 6333 | 16333 | private infrastructure; not public ingress |
+| Redis | 6379 | 6379 | 16379 | reserved when SBM-CORE is implemented |
+| Kafka | 9092 | 9092 | 19092 | optional/reserved; only when event-stream semantics justify it |
+| SonarQube | 9000 | 9000 | 19000 | QA-only/on-demand |
+| Flyway | N/A | N/A | N/A | migration runner; no host port required |
+
+Port-range intent:
+
+```text
+8000-8099   shared backend/API services on Mode A PC
+8100-8199   brand/reference APIs on Mode A PC
+8200-8299   web/control-plane services on Mode A PC
+8300-8399   optional static-store previews on Mode A PC
+18000-18999 corresponding Mac development allocations
+```
+
+The initial Mode A runtime is a trusted-home, single-user pilot and must not expose these backend or infrastructure ports directly to the public Internet. When a second human user or external access is enabled, public ingress must move behind a gateway/reverse proxy with TLS on `443` (`80` only for redirect if required), while API, database, vector, cache and broker ports remain private.
+
+Known Docker network remains:
+
+```text
+sbm-network
+```
+
+Development stacks may use a separate `sbm-dev-network` when multiple local project containers need shared DNS on the Mac; the network name does not change the canonical host-port allocation.
 
 Runtime naming constraint:
 
@@ -360,6 +424,7 @@ Shared configuration rules:
 
 - secrets and `.env` values must remain outside Git and ZIP packages;
 - project-specific environment files own local runtime values;
+- host-port mappings are machine/environment configuration and must use the canonical allocations from `## 13. Infrastructure and containers` without hardcoded absolute machine paths;
 - `SBM-MANAGER` uses canonical repository root `SBM-SUITE/sbm/SBM-MANAGER/` and runtime root `/suite/sbm/SBM-MANAGER`;
 - `SBM-DB` uses canonical repository root `SBM-SUITE/sbm/SBM-DB/` and runtime root `/suite/sbm/SBM-DB`;
 - project context scripts resolve the absolute suite root from `SBM_SUITE_ROOT`;
@@ -420,21 +485,44 @@ The transversal Git Flow policy is implemented once in `scripts/git-flow-policy.
 Current stage:
 
 ```text
-manual validated workflow
+Mode A — home
+Windows PC
+→ initial single-user production-like/pilot runtime
+→ SBM shared services + brand APIs as they become available
+
+Mac M2
+→ SBM-SUITE/context and agent-generation tooling
+→ development containers
 ```
 
-Future stage:
+The Mode A PC runtime is an interim approximately three-month pilot/marcha blanca before migration to a real VPS/cloud production environment when budget and operational need justify it.
 
 ```text
-database configuration flags
-→ asynchronous orchestration
-→ automatic context and documentation processing
+Mode B — away
+Mac M2
+→ development containers run locally
+→ no dependency on the home PC runtime for normal development
+```
+
+Static `*-STORE` applications remain deployed to Cloudflare Pages during the current stage and therefore do not consume persistent production host ports. Their `83xx/183xx` allocations are only for optional local preview servers.
+
+Multi-user/external transition:
+
+```text
+second human user or external access
+→ gateway / reverse proxy
+→ TLS ingress on 443
+→ internal APIs and infrastructure remain private
+→ later migrate the runtime from the home PC to VPS/cloud
 ```
 
 Current deployment principles:
 
 - one validated step at a time;
 - Docker-based local services;
+- canonical host-port allocation from `## 13. Infrastructure and containers`;
+- internal container communication uses Docker service names and internal ports;
+- backend/database/vector/cache/broker ports are not public Internet ingress;
 - backup before replacement;
 - manifest and hash validation;
 - atomic application or rollback;
@@ -481,15 +569,17 @@ Current verified direction:
 - Global Project, Suite, Business, QA, Security, Data and Decisions contexts exist.
 - `project-tree.txt` is generated and packaged as structural evidence.
 - `SBM-SUITE/context/QA` provides centralized Context QA, per-project QA dispatch and all-project queue orchestration while preserving project-owned QA entrypoints.
+- SBM-UTIL is present as a reusable suite utility/integration service; current structural evidence includes a Java application, service-token security and Notion synchronization components, and its with-Sonar QA queue entry passed.
+- Documentation upgrade now performs downstream Git/Markdown→Notion publication through SBM-UTIL after local Markdown replacement; a pending marker preserves idempotent publication retry without repeating the local upgrade.
 - the current `OBJ-CTX-014` implementation-progress evidence records all five project repositories passed in `without-sonar` mode and Context QA passed; this evidence does not close the objective.
 - `implementation-progress` for `sbm-suite-context` validates transversal summary/queue evidence and normalizes verified QA evidence into the generated context package.
-- Documentation lifecycle and `sbm_documentation` remain separate follow-up work.
+- Documentation RAG remains separate from Context RAG through `sbm_documentation`; controlled Notion publication is downstream of the local Documentation upgrade.
 
 Validated workflow state:
 
 - context deployment validates the published contract before cleaning exchange outputs;
 - lifecycle phase and objective ID are explicit and are not inferred from implementation evidence;
-- implementation closure requires five synchronized objective and QA patches;
+- implementation closure requires the lifecycle patch set for the selected target; `sbm-suite-context` requires global project, completed-objectives and global QA patches and forbids project-scoped patches;
 - context upgrade preflights ZIP members, manifest metadata and patch mappings before backend submission;
 - `qa-check.sh` creates bounded execution evidence in `context/qa-results.md`;
 - the supplied DP-API evidence records 65 passing tests, 88% configured coverage and successful SonarScanner execution;
@@ -506,6 +596,7 @@ QA/qa-full.sh
 
 ./scripts/context-deploy.sh <project_name> <lifecycle_phase> <small-objectives-json-array|-> [user_prompt]
 → validate the selected project through the backend Project Registry
+→ validate the 9 global Context H1/H2 structures against FORMAT_CONTEXT.md before export
 → accept compact `SBM-GZIP-BASE64-V1` objective envelopes through stdin with objectives argument `-`, validate gzip CRC/base64/UTF-8/JSON/lifecycle fidelity in internal temporary files, preserve plain JSON only for backward compatibility and keep `input/` reserved for upgrade ZIP exchange
 → dispatch planning-activation, objective-activation, objective-registration, objective-completion, objective-deletion, objective-update, implementation-progress and implementation-closure by exact literal equality
 → reserve planning-activation for new objectives
@@ -562,8 +653,10 @@ Run Documentation globally from the root of `SBM-SUITE/context`; do not select o
 10. ./scripts/documentation-upgrade.sh validates manifest/file equality and authorized Markdown targets
 11. create a timestamped documentation backup under SBM-SUITE/context/backup/
 12. replace validated documentation files
-13. return the proposed commit message
-14. refresh context.zip again before returning to any state-reading menu
+13. publish the current Markdown downstream through SBM-UTIL to Notion
+14. if Notion publication fails, preserve local Markdown and pending retry state so rerunning documentation-upgrade retries publication without repeating the local upgrade
+15. return the proposed commit message
+16. refresh context.zip again before returning to any state-reading menu
 ```
 
 Current rules:
@@ -575,7 +668,7 @@ Current rules:
 - Creation, deletion, rename or structural change requires explicit manual contract updates.
 - Main pages are documents and must maintain subpage links.
 - A synchronized no-op must not leave a previous `documentation-package.zip` reusable as a current result.
-- Notion synchronization is downstream: OBJ-CTX-042 publishes controlled Git/Markdown changes to Notion while Git remains the source of truth; bidirectional sync is deferred.
+- Notion synchronization is downstream: after local Markdown replacement, `documentation-upgrade.sh` invokes SBM-UTIL; Git remains the source of truth and bidirectional sync is deferred.
 - `SBM-SUITE/context/backup/` is the single backup root for Context and Documentation workflows.
 
 ## 22. Related documentation

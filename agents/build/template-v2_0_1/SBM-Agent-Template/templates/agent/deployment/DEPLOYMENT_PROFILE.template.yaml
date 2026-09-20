@@ -1,0 +1,6 @@
+deployment_profile_id: '{{deployment_profile_id}}'
+deployment_profile_version: '{{deployment_profile_version}}'
+agent_id: '{{agent_id}}'
+agent_version: '{{agent_version}}'
+target: CHATGPT_CUSTOM_GPT
+enabled: true

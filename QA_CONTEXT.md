@@ -349,7 +349,7 @@ Current suite QA state:
 
 ```text
 Status: VALIDATED
-Reason: Current canonical full-suite QA passed: Context QA passed and the sequential with-Sonar transversal queue passed for all five registered project repositories.
+Reason: Current canonical full-suite QA passed: Context QA passed and the sequential with-Sonar transversal queue passed for all seven registered project repositories.
 ```
 
 Verified `OBJ-CTX-014` implementation-closure evidence:
@@ -433,6 +433,30 @@ SBM-DB: passed
 SBM-MANAGER: passed
 Evidence file: qa-results.md
 Evidence SHA-256: 45494719bb3a927937466346d73d0b0d1ed89eb813f9e601854759d03782dffc
+Reason: full Context and transversal with-Sonar QA evidence verified
+```
+
+Verified `OBJ-CTX-042` + `OBJ-CTX-005` implementation-closure evidence:
+
+```text
+Project: sbm-suite-context
+Objectives: OBJ-CTX-042, OBJ-CTX-005
+QA status: passed
+QA applicable: true
+QA workflow: QA/qa-full.sh
+Context QA: passed
+Transversal with-Sonar queue: passed
+DP-API: passed
+KS-STORE: passed
+sbm-ai-assistant: passed
+SBM-API: passed
+SBM-DB: passed
+SBM-MANAGER: passed
+SBM-UTIL: passed
+Executed projects: 7
+Skipped projects: 0
+Evidence file: qa-results.md
+Evidence SHA-256: fd37891bfff2d477516180b7a35e98056c4e1a818a07e0b5b68d28726ae3694f
 Reason: full Context and transversal with-Sonar QA evidence verified
 ```
 

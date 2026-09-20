@@ -1,0 +1,16 @@
+agent_id: '{{agent_id}}'
+agent_version: '{{agent_version}}'
+context_version: '{{context_version}}'
+general_context: '{{general_context}}'
+specific_objectives:
+- '{{specific_objective}}'
+current_scope:
+- '{{scope}}'
+domain_context: '{{domain_context}}'
+relevant_entities:
+- '{{entity}}'
+operational_assumptions:
+- '{{assumption}}'
+context_sources:
+- '{{source}}'
+updated_at: '{{updated_at}}'

@@ -1,0 +1,29 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  agent_id: &id001
+    type: string
+    minLength: 1
+  hierarchy_version: *id001
+  reports_to:
+    oneOf:
+    - type: 'null'
+    - *id001
+  can_request_from: &id002
+    type: array
+    items: *id001
+  can_instruct: *id002
+  requires_approval_from: *id002
+  escalation_target:
+    oneOf:
+    - type: 'null'
+    - *id001
+required:
+- agent_id
+- hierarchy_version
+- reports_to
+- can_request_from
+- can_instruct
+- requires_approval_from
+- escalation_target
+additionalProperties: false

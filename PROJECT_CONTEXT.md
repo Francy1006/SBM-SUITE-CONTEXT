@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md
 
-> **Last updated:** 2026-08-16
+> **Last updated:** 2026-09-10
 >
 > **Purpose**
 >
@@ -114,7 +114,6 @@ Rules:
 | DP-ARCH-001 | DP-API | Estabilizar satisfactoriamente DP-API trabajando con SBM-API como implementación funcional de referencia, preservando datos/comportamiento Ditaly y cerrando contratos de integración antes de extraer cualquier base reusable. | pending | 5 | N/A | FEATURE-stabilizes-dp-sbm-integration | N/A |
 | OBJ-CTX-003 | SBM-SUITE | Separar QA y Context mediante una estructura específica por proyecto. | pending | 5 | N/A | FEATURE-separates-qa-context | N/A |
 | OBJ-CTX-004 | SBM-SUITE | Crear SBM-CORE para scheduler/cron, PostgreSQL de flags/estado, Celery, Redis, retries/idempotency y Kafka solo donde el patrón event-driven lo justifique; sin lógica financiera ni de seguridad de dominio. | pending | 5 | N/A | FEATURE-enables-sbm-core | N/A |
-| OBJ-CTX-005 | SBM-SUITE | Crear SBM-UTIL como servicio reutilizable Java/Spring Boot para email, archivos, APIs externas, conectores determinísticos, transformaciones técnicas y tipos de cambio oficiales consumidos por servicios/agentes. | pending | 5 | N/A | FEATURE-enables-sbm-util | N/A |
 | OBJ-CTX-006 | SBM-SUITE | Habilitar Scrum Agent para administrar el backlog Jira sincronizado por OBJ-CTX-043, priorizar Epic/Issue/Task, coordinar dependencias, procesos asíncronos y activaciones IA mediante SBM-CORE/Control API. | pending | 5 | N/A | FEATURE-enables-scrum-agent | N/A |
 | OBJ-CTX-007 | SBM-SUITE | Habilitar Igor Agent como responsable técnico de QA automation, DevOps/SRE, infraestructura y troubleshooting, integrándolo a CI/CD y a los gates técnicos sin mezclar QA con Security. | pending | 5 | N/A | FEATURE-enables-igor-agent | N/A |
 | OBJ-CTX-008 | SBM-SUITE | Habilitar el Security Gate posterior a QA y previo a release: ejecución automatizada, evidencias, findings, mitigación/prevención, aprobación humana en SBM-SECURITY y retorno obligatorio a Development cuando Security rechace. | pending | 5 | N/A | FEATURE-enables-security-flow | N/A |
@@ -147,7 +146,6 @@ Rules:
 | OBJ-CTX-039 | SBM-SUITE | Habilitar el framework __BASE-* con lineage/versionado, features opcionales/configurables, creación controlada de derivados y propagación BASE→derivados mediante diff/adaptación validada por agentes, QA y Security; Yeoman puede usarse para scaffolding inicial, nunca como mecanismo de sincronización posterior. | pending | 5 | N/A | FEATURE-enables-base-project-inheritance | N/A |
 | OBJ-CTX-040 | SBM-SUITE | Crear SBM-SECURITY-API en Go/Gin/PostgreSQL como backend aislado de Security para pentests/scans, tool runs, findings, evidencias, políticas, riesgos y approvals; integra herramientas locales/dockerizadas/externas y usa SBM-CORE solo para scheduling/jobs, sin lógica Security en Core. | pending | 5 | N/A | FEATURE-enables-security-api | N/A |
 | BASE-FRANCHISE-001 | __BASE-FRANCHISE-API | Después de completar DP-ARCH-001, generar __BASE-FRANCHISE-API desde la implementación validada de DP-API, remover/configurar comportamiento específico DP, estandarizar módulos opcionales y registrar DP-API como primer derivado controlado del BASE. | pending | 5 | N/A | FEATURE-creates-franchise-base-from-dp | N/A |
-| OBJ-CTX-042 | SBM-SUITE | Integrar Documentation Markdown con Notion mediante sincronización Git→Notion controlada, preservando Git/Markdown como source of truth, estructura de páginas, IDs estables, trazabilidad y detección de cambios; bidireccionalidad queda fuera del alcance inicial. | pending | 5 | N/A | FEATURE-syncs-documentation-to-notion | N/A |
 | OBJ-CTX-043 | SBM-SUITE | Integrar Objectives con Jira como backlog organizado por Proyecto→Epic→Issue/Task, manteniendo mapping Objective ID↔Jira ID, estado, prioridad y dependencias sin duplicados; inicialmente operado por SBM Agent/SBM-UTIL y futuramente administrado por Scrum Agent. | pending | 5 | N/A | FEATURE-syncs-objectives-to-jira | N/A |
 | OBJ-CTX-044 | SBM-SUITE | Estandarizar contratos Agent↔API/Tool en SBM-AI-ASSISTANT para request/response, scopes/permisos, approvals, auditoría, idempotencia, errores y evidencias, evitando integraciones ad hoc específicas por agente. | pending | 5 | N/A | FEATURE-standardizes-agent-tool-contracts | N/A |
 | OBJ-CTX-045 | SBM-SUITE | Implementar Xavier Agent como coordinador de conversaciones humanas y reuniones multiagente, gestionando sesiones, participantes, turnos, contexto conversacional, incorporación y retiro dinámico de agentes, permisos y auditoría. | pending | 5 | N/A | FEATURE-adds-suite-objectives | N/A |
@@ -216,7 +214,7 @@ Only current repositories have canonical filesystem/runtime roots. Planned names
 | SBM-DB | Flyway/DBML/PostgreSQL authority | SBM-DB-001 | `SBM-DB-002`, `SBM-DB-003`, `SBM-DB-004`, `SBM-DB-005`, `SBM-DB-006`, `SBM-DB-007`, `SBM-DB-008`, `SBM-DB-009`, `SBM-DB-010`, `SBM-DB-011` | FEATURE-enables-sbm-db | `SBM/SBM-DB/context/PROJECT_CONTEXT.md` | `SBM/SBM-DB/context/QA_CONTEXT.md` | N/A |
 | SBM-API | Shared identity/platform API | N/A | `SBM-API-001`, `SBM-API-002`, `SBM-API-003` | N/A | `SBM/SBM-API/context/PROJECT_CONTEXT.md` | `SBM/SBM-API/context/QA_CONTEXT.md` | N/A |
 | SBM-AI-ASSISTANT | AI/agent/RAG orchestration | N/A in global table | `OBJ-CTX-034`, `OBJ-CTX-044` | N/A | `SBM/sbm-ai-assistant/context/PROJECT_CONTEXT.md` | `SBM/sbm-ai-assistant/context/QA_CONTEXT.md` | N/A |
-| SBM-SUITE/context | Global governance/orchestration | `OBJ-CTX-038`, `OBJ-CTX-012`, `OBJ-CTX-002` | `OBJ-DOC-001`, `OBJ-CTX-003`, `OBJ-CTX-004`, `OBJ-CTX-005`, `OBJ-CTX-006`, `OBJ-CTX-007`, `OBJ-CTX-008`, `OBJ-CTX-009`, `OBJ-CTX-010`, `OBJ-CTX-011`, `OBJ-CTX-015`, `OBJ-CTX-016`, `OBJ-CTX-017`, `OBJ-CTX-018`, `OBJ-CTX-019`, `OBJ-CTX-020`, `OBJ-CTX-021`, `OBJ-CTX-022`, `OBJ-CTX-023`, `OBJ-CTX-024`, `OBJ-CTX-025`, `OBJ-CTX-026`, `OBJ-CTX-027`, `OBJ-CTX-028`, `OBJ-CTX-029`, `OBJ-CTX-030`, `OBJ-CTX-031`, `OBJ-CTX-032`, `OBJ-CTX-033`, `OBJ-CTX-034`, `OBJ-CTX-035`, `OBJ-CTX-036`, `OBJ-CTX-037`, `OBJ-CTX-039`, `OBJ-CTX-040`, `OBJ-CTX-042`, `OBJ-CTX-043`, `OBJ-CTX-044`, `OBJ-CTX-045`, `OBJ-CTX-046`, `OBJ-CTX-047`, `OBJ-CTX-048` | FEATURE-standardizes-suite-governance | `context/PROJECT_CONTEXT.md` | `context/QA_CONTEXT.md` | N/A |
+| SBM-SUITE/context | Global governance/orchestration | `OBJ-CTX-038`, `OBJ-CTX-012`, `OBJ-CTX-002` | `OBJ-DOC-001`, `OBJ-CTX-003`, `OBJ-CTX-004`, `OBJ-CTX-006`, `OBJ-CTX-007`, `OBJ-CTX-008`, `OBJ-CTX-009`, `OBJ-CTX-010`, `OBJ-CTX-011`, `OBJ-CTX-015`, `OBJ-CTX-016`, `OBJ-CTX-017`, `OBJ-CTX-018`, `OBJ-CTX-019`, `OBJ-CTX-020`, `OBJ-CTX-021`, `OBJ-CTX-022`, `OBJ-CTX-023`, `OBJ-CTX-024`, `OBJ-CTX-025`, `OBJ-CTX-026`, `OBJ-CTX-027`, `OBJ-CTX-028`, `OBJ-CTX-029`, `OBJ-CTX-030`, `OBJ-CTX-031`, `OBJ-CTX-032`, `OBJ-CTX-033`, `OBJ-CTX-034`, `OBJ-CTX-035`, `OBJ-CTX-036`, `OBJ-CTX-037`, `OBJ-CTX-039`, `OBJ-CTX-040`, `OBJ-CTX-043`, `OBJ-CTX-044`, `OBJ-CTX-045`, `OBJ-CTX-046`, `OBJ-CTX-047`, `OBJ-CTX-048` | FEATURE-standardizes-suite-governance | `context/PROJECT_CONTEXT.md` | `context/QA_CONTEXT.md` | N/A |
 | __BASE-FRANCHISE-API | Reusable Franchise API template | N/A | `BASE-FRANCHISE-001` | N/A | N/A | N/A | N/A |
 | KS | Production-target brand | N/A | `KS-API`, `KS-STORE`, `KS-MOBILE`, `KS-CLIENT`, `KS Agent` derived/governed through canonical bases | N/A | N/A | N/A | N/A |
 | PC | Production-target brand | N/A | `PC-API`, `PC-STORE`, `PC-MOBILE`, `PC-CLIENT`, `PC-CUSTOMER`, `PC Agent` derived/governed through canonical bases | N/A | N/A | N/A | N/A |
@@ -297,6 +295,16 @@ sbm_documentation
 ```
 
 `sbm_documentation` is planned and must remain separate from `sbm_contexts`.
+
+Canonical runtime host-port allocation is owned by `SUITE_CONTEXT.md` `## 13. Infrastructure and containers`:
+
+- Mode A/home uses the Windows PC as the initial single-user production-like/pilot runtime, with application/API/control-plane ports in `8xxx`;
+- Mode B/away uses the Mac M2 for local development, with the corresponding application/API/control-plane ports in `18xxx`;
+- shared infrastructure keeps canonical PC ports (`5432`, `6333`, `6379`, `9092`, `9000`) and Mac development counterparts offset by `+10000`;
+- container-internal ports may repeat and are not globally reassigned; host mappings provide collision isolation;
+- `SBM-SUITE/context` Node/Yeoman agent-generation tooling is CLI-oriented and requires no host port;
+- current static `*-STORE` deployments remain on Cloudflare Pages; `83xx/183xx` ports are reserved only for local previews;
+- enabling a second human user or external access requires TLS ingress through a gateway/reverse proxy on `443`, keeping internal service and infrastructure ports private.
 
 ## 9. Cross-project integrations
 
@@ -536,6 +544,7 @@ Current limitations/pending validation:
 19. Context Objectives remain canonical initially; Jira is the synchronized Project→Epic→Issue/Task backlog and Scrum Agent becomes its future operator.
 20. `SBM_AGENT.md` is the minimal clean-chat bootstrap and consumes `INIT_CONTEXT.md`, which remains the sole operational contract.
 21. Transversal Git Flow and common-artifact propagation are controlled only from `SBM-SUITE/context`; repository inventory remains dynamically owned by `scripts/suite-repositories.py`.
+22. Runtime host ports follow the canonical dual-mode allocation: Mode A Windows PC uses `8xxx`, Mode B Mac development uses corresponding `18xxx`, container-internal ports remain project-native, and multi-user/external ingress is exposed only through TLS `443`.
 
 ## 14. Accepted risks and constraints
 

@@ -1,0 +1,27 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+additionalProperties: false
+required: [execution_id,factory_id,factory_version,command,status,input_references,proposal_reference,spec_reference,approval_references,template_id,template_version,template_sha256,validation_result,qa_result,agent_validate_exit_code,agent_test_exit_code,package_path,package_sha256,registry_candidate_path,started_at,completed_at,errors]
+properties:
+  execution_id: {type: string}
+  factory_id: {const: SBM-Agent-Factory}
+  factory_version: {const: 1.0.2}
+  command: {enum: [create, clone, validate, test, package, docs]}
+  status: {enum: [PENDING,RUNNING,SUCCEEDED,FAILED,BLOCKED]}
+  input_references: {type: array}
+  proposal_reference: {type: [object,'null']}
+  spec_reference: {type: [object,'null']}
+  approval_references: {type: array}
+  template_id: {const: SBM-Agent-Template}
+  template_version: {const: 2.0.1}
+  template_sha256: {type: string}
+  validation_result: {type: string}
+  qa_result: {enum: [NOT_RUN, PASS, FAIL]}
+  agent_validate_exit_code: {type: integer}
+  agent_test_exit_code: {type: integer}
+  package_path: {type: [string,'null']}
+  package_sha256: {type: [string,'null']}
+  registry_candidate_path: {type: [string,'null']}
+  started_at: {type: string}
+  completed_at: {type: string}
+  errors: {type: array}

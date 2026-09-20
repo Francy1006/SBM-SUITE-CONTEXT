@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=75,<85"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sbm-agent-orchestrator"
+version = "1.0.0"
+requires-python = ">=3.11"
+dependencies = ["PyYAML>=6,<7", "jsonschema>=4.23,<5"]
+
+[project.scripts]
+sbm-agent = "sbm_agent_orchestrator.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

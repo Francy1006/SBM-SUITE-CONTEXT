@@ -184,6 +184,15 @@ Authorized service/agent
 → email / external API / exchange-rate provider / file utility
 ```
 
+Documentation publication:
+
+```text
+Git Markdown documentation
+→ documentation-upgrade.sh
+→ SBM-UTIL
+→ Notion
+```
+
 AI-assisted operation:
 
 ```text

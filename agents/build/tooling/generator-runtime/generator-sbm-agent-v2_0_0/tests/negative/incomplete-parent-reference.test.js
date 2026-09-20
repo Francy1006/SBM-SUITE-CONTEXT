@@ -1,0 +1,2 @@
+import assert from 'node:assert/strict';import {validateGeneratorRules,validateInputAgainstDraftInputSchema} from '../../generators/clone/index.js';import {validInput,exactRuntimeDependenciesAvailable} from '../unit/prompt-mapping.test.js';
+export const gates=[];export async function run(){const i=validInput({clone:true});delete i.parent_spec_version;assert.throws(()=>validateGeneratorRules(i,{clone:true}),e=>e.code==='INVALID_INPUT');if(exactRuntimeDependenciesAvailable())assert.throws(()=>validateInputAgainstDraftInputSchema(i),e=>e.code==='INVALID_INPUT');}

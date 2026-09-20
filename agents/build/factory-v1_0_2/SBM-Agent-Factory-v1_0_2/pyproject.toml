@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=75,<82", "wheel>=0.44,<1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sbm-agent-factory"
+version = "1.0.2"
+requires-python = ">=3.11,<3.14"
+dependencies = ["PyYAML>=6.0,<7", "jsonschema>=4.23,<5", "Jinja2>=3.1,<4"]
+
+[project.optional-dependencies]
+test = ["pytest>=9.0,<10"]
+
+[project.scripts]
+sbm-agent = "sbm_agent_factory.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

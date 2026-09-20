@@ -1,0 +1,66 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  runtime_profile_id: &id001
+    type: string
+    minLength: 1
+  runtime_profile_version: *id001
+  agent_id: *id001
+  execution_modes: &id002
+    type: array
+    items: *id001
+  context_delivery: *id001
+  retrieval_strategy: *id001
+  embedding_strategy: *id001
+  llm_invocation_policy:
+    const: NO_LLM_BY_DEFAULT
+  deterministic_capabilities: *id002
+  asynchronous_capabilities: *id002
+  scheduling_requirements: *id002
+  cost_control_policy: *id001
+  caching_policy: *id001
+  idempotency_policy: *id001
+  retry_policy: *id001
+  timeout_policy: *id001
+  concurrency_policy: *id001
+  execution_dependencies: *id002
+  observability_requirements: *id002
+  runtime_reference:
+    oneOf:
+    - type: 'null'
+    - type: object
+      properties:
+        target:
+          enum:
+          - CHATGPT_CUSTOM_GPT
+          - OPENAI_API
+          - ANTHROPIC_API
+        deployment_profile_id: *id001
+        deployment_profile_version: *id001
+      required:
+      - target
+      - deployment_profile_id
+      - deployment_profile_version
+      additionalProperties: false
+required:
+- runtime_profile_id
+- runtime_profile_version
+- agent_id
+- execution_modes
+- context_delivery
+- retrieval_strategy
+- embedding_strategy
+- llm_invocation_policy
+- deterministic_capabilities
+- asynchronous_capabilities
+- scheduling_requirements
+- cost_control_policy
+- caching_policy
+- idempotency_policy
+- retry_policy
+- timeout_policy
+- concurrency_policy
+- execution_dependencies
+- observability_requirements
+- runtime_reference
+additionalProperties: false
