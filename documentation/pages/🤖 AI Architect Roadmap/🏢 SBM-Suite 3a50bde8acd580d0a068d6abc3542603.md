@@ -2,7 +2,7 @@
 
 > **Nota de arquitectura 2026-08-16:** `sbm-comercial` y `sbm-digital-api` se conservan solo como conceptos históricos del roadmap. No son proyectos aprobados para crear actualmente; el diseño vigente prioriza APIs de marca + stores/mobile/client channels directos.
 >
-> **Last updated:** 2026-08-19
+> **Last updated:** 2026-09-13
 >
 > **Purpose:**
 >
@@ -137,6 +137,8 @@ Este cierre corrige el consumo del frontend; no acredita eliminación de endpoin
 | OBJ-CTX-001 | SBM-SUITE | Validate and stabilize the expanded context governance model, synchronized section patches and project-tree evidence | completed | Lifecycle-only/no-op closure registrada el 2026-08-13; `implementation-closure` y `context-upgrade` completados. QA fue `not-applicable` porque `scripts/qa-check.sh` no existe para `sbm-suite-context`; no se acreditan cambios de implementación. |
 | SBM-MANAGER-002 | SBM-MANAGER | Corregir SBM-MANAGER para consumir correctamente SBM-API y DP-API según ownership canónico. | completed | Cierre registrado el 2026-08-14; Service, Catalog y Provider consumen `DP-API` mediante `dpApi`, las consultas internas de franquicia permanecen en `SBM-API` mediante `sbmApi`, y QA registró 45/45 tests, coverage 70.14% y Quality Gate `PASSED`. |
 | OBJ-CTX-041 | SBM-SUITE | Permitir que `context-upgrade.sh` acepte exactamente un archivo `input/context-upgrade*.zip` y `documentation-upgrade.sh` exactamente un `documentation/input/documentation-upgrade*.zip`, incluyendo sufijos generados por el cliente como `(32)`, sin renombrado manual; mantener validación de manifest/workflow y rechazo de entradas ambiguas o no válidas. | completed | Cierre registrado el 2026-08-17; la implementación acepta exactamente un ZIP con prefijo de workflow, soporta sufijos del cliente sin renombrado manual, rechaza entradas ambiguas/no válidas y preserva la validación canónica de manifest/workflow. QA completo de Context y la cola transversal con SonarQube pasaron para los cinco repositorios registrados. |
+| OBJ-CTX-042 | SBM-SUITE | Integrar Documentation Markdown con Notion mediante sincronización Git→Notion controlada, preservando Git/Markdown como source of truth, estructura de páginas, IDs estables, trazabilidad y detección de cambios; bidireccionalidad queda fuera del alcance inicial. | completed | Cierre registrado el 2026-09-13; `documentation-upgrade.sh` publica Markdown downstream mediante `SBM-UTIL`, conserva Git/Markdown como source of truth y mantiene estado de reintento cuando la publicación Notion falla sin revertir el reemplazo local. QA completo pasó para Context y 7 proyectos de la cola transversal con SonarQube, sin skips. |
+| OBJ-CTX-005 | SBM-SUITE | Crear SBM-UTIL como servicio reutilizable Java/Spring Boot para email, archivos, APIs externas, conectores determinísticos, transformaciones técnicas y tipos de cambio oficiales consumidos por servicios/agentes. | completed | Cierre registrado el 2026-09-13; `SBM-UTIL` quedó establecido como servicio reutilizable Java/Spring Boot con seguridad por service token y la implementación validada de sincronización de Documentation hacia Notion. QA de `SBM-UTIL` ejecutó 106 tests con 0 failures/errors/skips y Quality Gate `PASSED`; la cola transversal completa ejecutó 7 proyectos y 0 skips. |
 
 ---
 
@@ -567,6 +569,31 @@ Estos datos de marca se incorporarán cuando comience formalmente la etapa de pu
 
 🚧 En desarrollo.
 
+#### `SBM-UTIL`
+
+##### Tipo
+
+Servicio reutilizable de utilidades e integraciones de SBM Suite.
+
+##### Tecnologías actuales
+
+- Java;
+- Spring Boot;
+- Docker para ejecución y QA del proyecto.
+
+##### Responsabilidades validadas
+
+- exponer integraciones determinísticas reutilizables para la suite;
+- proteger las llamadas de servicio mediante service token;
+- ejecutar la sincronización controlada de Documentation Markdown hacia Notion;
+- preservar Git/Markdown como source of truth del flujo documental.
+
+El alcance validado actual documenta la integración Notion; otras capacidades generales de `SBM-UTIL` se incorporan solo cuando exista evidencia de implementación correspondiente.
+
+##### Estado
+
+✅ Implementado y validado para el baseline actual de integración Notion.
+
 #### `KS-STORE`
 
 ##### Tipo
@@ -735,16 +762,20 @@ Azure DevOps también se incorporará como plataforma empresarial complementaria
 
 #### Notion
 
-Contendrá:
+Notion funciona como destino downstream de publicación documental; Git/Markdown permanece como source of truth. El flujo validado es:
 
-- visión general;
-- roadmap;
-- tecnologías;
-- certificaciones;
-- prioridades;
-- estado global.
+```text
+Git Markdown documentation
+→ documentation-upgrade.sh
+→ SBM-UTIL
+→ Notion
+```
 
-La documentación técnica detallada se reducirá progresivamente a medida que migre hacia Azure DevOps y los repositorios.
+`documentation-upgrade.sh` aplica primero el reemplazo Markdown validado y luego invoca `SBM-UTIL` para publicar el estado actual. Si la publicación falla, el Markdown local se conserva y queda un estado pendiente para reintentar la sincronización sin repetir el upgrade local.
+
+La autenticación del llamado usa `SBM_SERVICE_TOKEN` obtenido únicamente desde el entorno de proceso o `context/.env.dev`; el valor del secreto no forma parte de Context, Documentation ni paquetes generados.
+
+La sincronización bidireccional permanece fuera del alcance inicial.
 
 #### Azure DevOps
 
@@ -858,6 +889,17 @@ La evidencia de cierre registra:
 - DP-API, sbm-ai-assistant, SBM-API, SBM-DB y SBM-MANAGER `passed`;
 - soporte validado para un único ZIP con prefijo `context-upgrade*` o `documentation-upgrade*`, incluyendo sufijos generados por el cliente sin renombrado manual.
 
+### Evidencia de cierre de `OBJ-CTX-042` y `OBJ-CTX-005`
+
+La evidencia de cierre del `2026-09-13` registra:
+
+- ambos objetivos en estado `completed`;
+- Context QA `passed`;
+- cola transversal con SonarQube `passed`;
+- DP-API, KS-STORE, sbm-ai-assistant, SBM-API, SBM-DB, SBM-MANAGER y SBM-UTIL `passed`;
+- 7 proyectos ejecutados y 0 skips;
+- `SBM-UTIL`: 106 tests, 0 failures, 0 errors, 0 skipped y Quality Gate `PASSED`.
+
 ## 11. Known limitations
 
 Limitaciones y transiciones explícitas en el documento fuente:
@@ -894,7 +936,6 @@ Este objetivo permanece **active**. Su presencia aquí no representa cierre ni i
 | OBJ-CTX-002 | Habilitar tooling transversal desde SBM-SUITE/context para crear, comparar, propagar y actualizar artefactos comunes sobre uno, varios o todos los repositorios físicos actuales. | active | 5 | N/A | FEATURE-automates-cross-project-flows |
 | OBJ-CTX-003 | Separar QA y Context mediante una estructura específica por proyecto. | pending | 5 | N/A | FEATURE-separates-qa-context |
 | OBJ-CTX-004 | Crear SBM-CORE para scheduler/cron, PostgreSQL de flags/estado, Celery, Redis, retries/idempotency y Kafka solo donde el patrón event-driven lo justifique; sin lógica financiera ni de seguridad de dominio. | pending | 5 | N/A | FEATURE-enables-sbm-core |
-| OBJ-CTX-005 | Crear SBM-UTIL como servicio reutilizable Java/Spring Boot para email, archivos, APIs externas, conectores determinísticos, transformaciones técnicas y tipos de cambio oficiales consumidos por servicios/agentes. | pending | 5 | N/A | FEATURE-enables-sbm-util |
 | OBJ-CTX-006 | Habilitar Scrum Agent para convertir Objectives en Jira Epic/Issue, priorizar backlog y coordinar dependencias, procesos asíncronos y activaciones IA mediante SBM-CORE/Control API. | pending | 5 | N/A | FEATURE-enables-scrum-agent |
 | OBJ-CTX-007 | Habilitar Igor Agent como responsable técnico de QA automation, DevOps/SRE, infraestructura y troubleshooting, integrándolo a CI/CD y a los gates técnicos sin mezclar QA con Security. | pending | 5 | N/A | FEATURE-enables-igor-agent |
 | OBJ-CTX-008 | Habilitar el Security Gate posterior a QA y previo a release: ejecución automatizada, evidencias, findings, mitigación/prevención, aprobación humana en SBM-SECURITY y retorno obligatorio a Development cuando Security rechace. | pending | 5 | N/A | FEATURE-enables-security-flow |
@@ -1586,7 +1627,6 @@ SBM Suite busca convertirse en un **sistema operativo empresarial inteligente**,
 | SBM-DB-011 | SBM-DB | Definir contratos/migraciones compatibles con __BASE-FRANCHISE-API y sus derivados, separando estructuras comunes de extensiones/configuración por franchise y evitando dependencias de datos específicas de DP en la base reusable. | pending | 5 | N/A | FEATURE-defines-base-data-contract |
 | DP-ARCH-001 | DP-API | Estabilizar satisfactoriamente DP-API trabajando con SBM-API como implementación funcional de referencia, preservando datos/comportamiento Ditaly y cerrando contratos de integración antes de extraer cualquier base reusable. | pending | 5 | N/A | FEATURE-stabilizes-dp-sbm-integration |
 | BASE-FRANCHISE-001 | __BASE-FRANCHISE-API | Después de completar DP-ARCH-001, generar __BASE-FRANCHISE-API desde la implementación validada de DP-API, remover/configurar comportamiento específico DP, estandarizar módulos opcionales y registrar DP-API como primer derivado controlado del BASE. | pending | 5 | N/A | FEATURE-creates-franchise-base-from-dp |
-| OBJ-CTX-042 | SBM-SUITE | Integrar Documentation Markdown con Notion mediante sincronización Git→Notion controlada, preservando Git/Markdown como source of truth, estructura de páginas, IDs estables, trazabilidad y detección de cambios; bidireccionalidad queda fuera del alcance inicial. | pending | 5 | N/A | FEATURE-syncs-documentation-to-notion |
 | OBJ-CTX-043 | SBM-SUITE | Integrar Objectives con Jira como backlog organizado por Proyecto→Epic→Issue/Task, manteniendo mapping Objective ID↔Jira ID, estado, prioridad y dependencias sin duplicados; inicialmente operado por SBM Agent/SBM-UTIL y futuramente administrado por Scrum Agent. | pending | 5 | N/A | FEATURE-syncs-objectives-to-jira |
 | OBJ-CTX-044 | SBM-SUITE | Estandarizar contratos Agent↔API/Tool en SBM-AI-ASSISTANT para request/response, scopes/permisos, approvals, auditoría, idempotencia, errores y evidencias, evitando integraciones ad hoc específicas por agente. | pending | 5 | N/A | FEATURE-standardizes-agent-tool-contracts |
 | OBJ-CTX-045 | SBM-SUITE | Implementar Xavier Agent como coordinador de conversaciones humanas y reuniones multiagente, gestionando sesiones, participantes, turnos, contexto conversacional, incorporación y retiro dinámico de agentes, permisos y auditoría. | pending | 5 | N/A | FEATURE-adds-suite-objectives |

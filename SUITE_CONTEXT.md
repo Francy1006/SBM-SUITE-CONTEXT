@@ -84,6 +84,7 @@ Canonical repository paths currently evidenced here include `SBM-SUITE/dp/DP-API
 | SBM | SBM-DB | Data/migration authority | database repository | PostgreSQL/DBML/Flyway authority; not runtime gateway | active |
 | SBM | SBM-AI-ASSISTANT | AI orchestrator | AI/API service | RAG, Tools, agents and context/documentation processing | active |
 | SBM | QA infrastructure | SonarQube | QA service | Static analysis/quality gates on demand | QA-only |
+| SBM | SBM-UTIL | Reusable utility/integration service | API/service | Deterministic external integrations; current implementation includes controlled Documentation→Notion synchronization | active |
 
 ### Planned applications
 
@@ -325,6 +326,11 @@ SBM-AI-ASSISTANT
 → canonical APIs/services
 → never direct PostgreSQL writes
 
+Git Markdown documentation
+→ documentation-upgrade.sh
+→ SBM-UTIL
+→ Notion
+
 SBM-CONTROL / SBM-SECURITY / SBM-AI-MANAGER
 → privileged control-plane APIs
 → observe/manage their bounded domains, not business ownership
@@ -563,15 +569,17 @@ Current verified direction:
 - Global Project, Suite, Business, QA, Security, Data and Decisions contexts exist.
 - `project-tree.txt` is generated and packaged as structural evidence.
 - `SBM-SUITE/context/QA` provides centralized Context QA, per-project QA dispatch and all-project queue orchestration while preserving project-owned QA entrypoints.
+- SBM-UTIL is present as a reusable suite utility/integration service; current structural evidence includes a Java application, service-token security and Notion synchronization components, and its with-Sonar QA queue entry passed.
+- Documentation upgrade now performs downstream Git/Markdown→Notion publication through SBM-UTIL after local Markdown replacement; a pending marker preserves idempotent publication retry without repeating the local upgrade.
 - the current `OBJ-CTX-014` implementation-progress evidence records all five project repositories passed in `without-sonar` mode and Context QA passed; this evidence does not close the objective.
 - `implementation-progress` for `sbm-suite-context` validates transversal summary/queue evidence and normalizes verified QA evidence into the generated context package.
-- Documentation lifecycle and `sbm_documentation` remain separate follow-up work.
+- Documentation RAG remains separate from Context RAG through `sbm_documentation`; controlled Notion publication is downstream of the local Documentation upgrade.
 
 Validated workflow state:
 
 - context deployment validates the published contract before cleaning exchange outputs;
 - lifecycle phase and objective ID are explicit and are not inferred from implementation evidence;
-- implementation closure requires five synchronized objective and QA patches;
+- implementation closure requires the lifecycle patch set for the selected target; `sbm-suite-context` requires global project, completed-objectives and global QA patches and forbids project-scoped patches;
 - context upgrade preflights ZIP members, manifest metadata and patch mappings before backend submission;
 - `qa-check.sh` creates bounded execution evidence in `context/qa-results.md`;
 - the supplied DP-API evidence records 65 passing tests, 88% configured coverage and successful SonarScanner execution;
@@ -588,6 +596,7 @@ QA/qa-full.sh
 
 ./scripts/context-deploy.sh <project_name> <lifecycle_phase> <small-objectives-json-array|-> [user_prompt]
 → validate the selected project through the backend Project Registry
+→ validate the 9 global Context H1/H2 structures against FORMAT_CONTEXT.md before export
 → accept compact `SBM-GZIP-BASE64-V1` objective envelopes through stdin with objectives argument `-`, validate gzip CRC/base64/UTF-8/JSON/lifecycle fidelity in internal temporary files, preserve plain JSON only for backward compatibility and keep `input/` reserved for upgrade ZIP exchange
 → dispatch planning-activation, objective-activation, objective-registration, objective-completion, objective-deletion, objective-update, implementation-progress and implementation-closure by exact literal equality
 → reserve planning-activation for new objectives
@@ -644,8 +653,10 @@ Run Documentation globally from the root of `SBM-SUITE/context`; do not select o
 10. ./scripts/documentation-upgrade.sh validates manifest/file equality and authorized Markdown targets
 11. create a timestamped documentation backup under SBM-SUITE/context/backup/
 12. replace validated documentation files
-13. return the proposed commit message
-14. refresh context.zip again before returning to any state-reading menu
+13. publish the current Markdown downstream through SBM-UTIL to Notion
+14. if Notion publication fails, preserve local Markdown and pending retry state so rerunning documentation-upgrade retries publication without repeating the local upgrade
+15. return the proposed commit message
+16. refresh context.zip again before returning to any state-reading menu
 ```
 
 Current rules:
@@ -657,7 +668,7 @@ Current rules:
 - Creation, deletion, rename or structural change requires explicit manual contract updates.
 - Main pages are documents and must maintain subpage links.
 - A synchronized no-op must not leave a previous `documentation-package.zip` reusable as a current result.
-- Notion synchronization is downstream: OBJ-CTX-042 publishes controlled Git/Markdown changes to Notion while Git remains the source of truth; bidirectional sync is deferred.
+- Notion synchronization is downstream: after local Markdown replacement, `documentation-upgrade.sh` invokes SBM-UTIL; Git remains the source of truth and bidirectional sync is deferred.
 - `SBM-SUITE/context/backup/` is the single backup root for Context and Documentation workflows.
 
 ## 22. Related documentation

@@ -13,6 +13,7 @@ SBM_SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
 
 get_env() {
   local key="$1"
+  local env_file="${2:-${ENV_FILE}}"
 
   awk -v key="${key}" '
     index($0, key "=") == 1 { value = substr($0, length(key) + 2) }
@@ -22,7 +23,7 @@ get_env() {
       sub(/"$/, "", value)
       printf "%s", value
     }
-  ' "${ENV_FILE}"
+  ' "${env_file}"
 }
 
 AI_ASSISTANT_URL="${AI_ASSISTANT_URL:-}"
@@ -35,8 +36,7 @@ if [[ -z "${AI_ASSISTANT_URL}" ]]; then
     "${SBM_SUITE_ROOT}/sbm/sbm-ai-assistant/.env.dev"
   do
     if [[ -f "${candidate}" ]]; then
-      ENV_FILE="${candidate}"
-      AI_ASSISTANT_URL="$(get_env AI_ASSISTANT_URL)"
+      AI_ASSISTANT_URL="$(get_env AI_ASSISTANT_URL "${candidate}")"
       break
     fi
   done
@@ -61,6 +61,34 @@ for timeout_value in "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" "${AI_ASSISTANT_M
   }
 done
 
+# SBM-UTIL always uses the process environment or context/.env.dev.
+SBM_UTIL_BASE_URL="${SBM_UTIL_BASE_URL:-}"
+SBM_SERVICE_TOKEN="${SBM_SERVICE_TOKEN:-}"
+if [[ -f "${ENV_FILE}" ]]; then
+  SBM_UTIL_BASE_URL="${SBM_UTIL_BASE_URL:-$(get_env SBM_UTIL_BASE_URL)}"
+  SBM_SERVICE_TOKEN="${SBM_SERVICE_TOKEN:-$(get_env SBM_SERVICE_TOKEN)}"
+fi
+[[ -n "${SBM_UTIL_BASE_URL}" ]] || {
+  echo "ERROR: Falta SBM_UTIL_BASE_URL" >&2
+  exit 1
+}
+[[ "${SBM_UTIL_BASE_URL}" =~ ^https?:// ]] || {
+  echo "ERROR: SBM_UTIL_BASE_URL debe usar http:// o https://" >&2
+  exit 1
+}
+[[ -n "${SBM_SERVICE_TOKEN}" ]] || {
+  echo "ERROR: Falta SBM_SERVICE_TOKEN" >&2
+  exit 1
+}
+SBM_UTIL_CONNECT_TIMEOUT_SECONDS="${SBM_UTIL_CONNECT_TIMEOUT_SECONDS:-5}"
+SBM_UTIL_MAX_TIME_SECONDS="${SBM_UTIL_MAX_TIME_SECONDS:-900}"
+for timeout_value in "${SBM_UTIL_CONNECT_TIMEOUT_SECONDS}" "${SBM_UTIL_MAX_TIME_SECONDS}"; do
+  [[ "${timeout_value}" =~ ^[1-9][0-9]*$ ]] || {
+    echo "ERROR: Los timeouts HTTP de SBM-UTIL deben ser enteros positivos" >&2
+    exit 1
+  }
+done
+
 [[ "${CONTEXT_ROOT}" == "${SBM_SUITE_ROOT}/context" ]] || {
   echo "ERROR: CONTEXT_ROOT no corresponde a ${SBM_SUITE_ROOT}/context"
   exit 1
@@ -72,6 +100,7 @@ OUTPUT_DIR="${DOCUMENTATION_ROOT}/output"
 BACKUP_DIR="${CONTEXT_ROOT}/backup"
 RESPONSE_FILE="${OUTPUT_DIR}/documentation-upgrade-response.json"
 
+upgrade_documentation() {
 mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}" "${BACKUP_DIR}"
 rm -f "${RESPONSE_FILE}"
 
@@ -119,7 +148,6 @@ PY
 )"
 
 CONTRACT_FILE="$(mktemp)"
-trap 'rm -f "${CONTRACT_FILE}"' EXIT
 HTTP_STATUS="$(
   curl --connect-timeout "${AI_ASSISTANT_CONNECT_TIMEOUT_SECONDS}" \
     --max-time "${AI_ASSISTANT_MAX_TIME_SECONDS}" \
@@ -216,4 +244,66 @@ PY
 
 "${SCRIPT_DIR}/cleanup-exchange.sh" documentation "${CONTEXT_ROOT}"
 
+}
+
+# Keep retry state outside the exchange directories cleaned by the lifecycle.
+PENDING_SYNC_FILE="${DOCUMENTATION_ROOT}/.notion-sync-pending"
+SYNC_RESPONSE_FILE="$(mktemp)"
+CONTRACT_FILE=""
+trap 'rm -f "${CONTRACT_FILE}" "${SYNC_RESPONSE_FILE}"' EXIT
+if [[ -f "${PENDING_SYNC_FILE}" ]] && \
+   [[ -z "$(find "${INPUT_DIR}" -maxdepth 1 -type f -name '*.zip' -print -quit)" ]]; then
+  echo "Reintentando publicación Notion pendiente; Markdown local conservado."
+else
+  # Preserve any pending publication if the new local upgrade fails.
+  upgrade_documentation
+  touch "${PENDING_SYNC_FILE}"
+fi
+
+CURL_STATUS=0
+HTTP_STATUS="$(
+  curl --connect-timeout "${SBM_UTIL_CONNECT_TIMEOUT_SECONDS}" \
+    --max-time "${SBM_UTIL_MAX_TIME_SECONDS}" \
+    --silent --show-error \
+    --output "${SYNC_RESPONSE_FILE}" \
+    --write-out "%{http_code}" \
+    --request POST \
+    "${SBM_UTIL_BASE_URL%/}/api/notion/documentation/sync" \
+    --header "Content-Type: application/json" \
+    --header "X-SBM-Service-Token: ${SBM_SERVICE_TOKEN}" \
+    --data-binary '{"project":"SBM-SUITE","documentationPath":"sbm-suite"}'
+)" || CURL_STATUS=$?
+if [[ "${CURL_STATUS}" -ne 0 ]]; then
+  echo "ERROR: Sync Notion vía SBM-UTIL falló (curl ${CURL_STATUS}; conexión o timeout). Markdown conservado; vuelva a ejecutar el script para reintentar." >&2
+  exit 1
+fi
+[[ "${HTTP_STATUS}" =~ ^2[0-9][0-9]$ ]] || {
+  echo "ERROR: Sync Notion vía SBM-UTIL respondió HTTP ${HTTP_STATUS}. Markdown conservado; vuelva a ejecutar el script para reintentar." >&2
+  exit 1
+}
+python3 - "${SYNC_RESPONSE_FILE}" <<'PY_SYNC'
+import json
+import sys
+from pathlib import Path
+
+try:
+    payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+    if not isinstance(payload, dict) or payload.get("project") != "SBM-SUITE":
+        raise ValueError("project debe ser SBM-SUITE")
+    counters = ("discovered", "created", "updated", "unchanged")
+    for key in counters:
+        if type(payload.get(key)) is not int or payload[key] < 0:
+            raise ValueError(f"{key} debe existir y ser un entero no negativo")
+    if payload["discovered"] != sum(payload[key] for key in counters[1:]):
+        raise ValueError("discovered no coincide con created + updated + unchanged")
+except (OSError, UnicodeError, ValueError) as exc:
+    # Do not echo the response: it may contain credentials or sensitive details.
+    detail = str(exc) if type(exc) is ValueError else "JSON inválido o ilegible"
+    raise SystemExit(
+        f"ERROR: Respuesta SBM-UTIL inválida: {detail}. Markdown conservado; "
+        "vuelva a ejecutar el script para reintentar."
+    ) from None
+print("Notion sincronizado: " + "/".join(f"{key}={payload[key]}" for key in counters))
+PY_SYNC
+rm -f "${PENDING_SYNC_FILE}"
 echo "Documentación actualizada correctamente."

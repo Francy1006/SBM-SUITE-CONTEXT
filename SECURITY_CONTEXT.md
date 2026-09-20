@@ -1,6 +1,6 @@
 # SECURITY_CONTEXT.md
 
-> **Last updated:** 2026-09-10
+> **Last updated:** 2026-09-13
 >
 > **Purpose**
 >
@@ -155,6 +155,7 @@ Rules:
 8. Do not embed secrets in fixtures, scripts or documentation.
 9. Secret values must not enter Qdrant.
 10. Generated manifests may reference secret names, never values.
+11. Documentation→Notion publication obtains `SBM_SERVICE_TOKEN` only from the process environment or `context/.env.dev`; the token value must never enter Context, Documentation, logs or generated packages.
 
 ## 9. Data protection
 

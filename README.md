@@ -51,7 +51,8 @@ SBM-SUITE/
     ├── SBM-API/
     ├── SBM-DB/
     ├── SBM-MANAGER/
-    └── sbm-ai-assistant/
+    ├── sbm-ai-assistant/
+    └── SBM-UTIL/
 ```
 
 Container project roots mirror the brand hierarchy under `/suite/<brand>/<project>`, including `/suite/sbm/SBM-MANAGER` for the web frontend and `/suite/sbm/SBM-DB` for PostgreSQL/Flyway ownership.
@@ -71,13 +72,15 @@ Canonical application/project display names use uppercase; existing filesystem p
 
 Global contracts are `FORMAT_CONTEXT.md` and `SYS_PROMPT.md`. Documentation-specific contracts are `documentation/FORMAT_CONTEXT.md` and `documentation/SYS_PROMPT.md`. `PROJECT_CONTEXT.md` stores only active and pending objectives, while `COMPLETED_OBJECTIVES.md` stores the single global history grouped by project. Secret values and `.env` files must never be included in packages, manifests, contexts, or documentation.
 
+Documentation→Notion publication uses `SBM_UTIL_BASE_URL` and `SBM_SERVICE_TOKEN` from the process environment or local `context/.env.dev`; optional bounded HTTP controls are `SBM_UTIL_CONNECT_TIMEOUT_SECONDS` and `SBM_UTIL_MAX_TIME_SECONDS`. Secret values remain outside generated artifacts.
+
 ## Installation
 
 No standalone installation is required for the Markdown contracts. All manual Context and Documentation workflows use the canonical scripts in this repository; project-local scripts are not orchestration authorities.
 
 ## Runtime
 
-`context-deploy` receives a registered project name, validates its canonical path through the backend Project Registry, refreshes the global `project-tree.txt`, gathers Git and QA evidence from that project, and requests the RAG package. `context-upgrade` obtains the project from the ZIP manifest and applies project-scoped or suite-scoped rules accordingly. Documentation deploy is global: it compares the complete active, pending and completed Context lifecycle with all functional Documentation pages, selects real candidates across projects and uses `sbm-suite-context` only as an internal backend identity.
+`context-deploy` receives a registered project name, validates its canonical path through the backend Project Registry, refreshes the global `project-tree.txt`, gathers Git and QA evidence from that project, and requests the RAG package. Before export, it validates the H1/H2 structure of all 9 global Context files against `FORMAT_CONTEXT.md`. `context-upgrade` obtains the project from the ZIP manifest and applies project-scoped or suite-scoped rules accordingly. Documentation deploy is global: it compares the complete active, pending and completed Context lifecycle with all functional Documentation pages, selects real candidates across projects and uses `sbm-suite-context` only as an internal backend identity. After a successful local Documentation upgrade, `documentation-upgrade.sh` publishes current Markdown downstream through SBM-UTIL to Notion; failed publication preserves local Markdown plus a pending marker for retry.
 
 Objective creation uses `planning-activation`. Activating one or more objectives that already exist as pending uses one atomic `objective-activation` with a complete payload per objective expressing desired `status=active`; every transition preserves ID, description, priority and target date, permits an explicit valid branch migration (including a shared branch), and never inserts duplicate objectives.
 
