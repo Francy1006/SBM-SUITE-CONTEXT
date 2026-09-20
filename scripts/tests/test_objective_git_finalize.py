@@ -60,6 +60,9 @@ class Environment:
         for source in SOURCES:
             shutil.copy2(source, scripts / source.name)
             (scripts / source.name).chmod(0o755)
+        (scripts / "suite-repositories.json").write_text(
+            json.dumps(self.repositories), encoding="utf-8"
+        )
 
         self.write_context([], [])
         self.write_completed([])

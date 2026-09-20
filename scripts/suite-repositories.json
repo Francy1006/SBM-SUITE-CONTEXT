@@ -1,0 +1,12 @@
+[
+  "context",
+  "DP/DP-API",
+  "DP/DP-STORE",
+  "KS/KS-STORE",
+  "PC/PC-STORE",
+  "SBM/sbm-ai-assistant",
+  "SBM/SBM-API",
+  "SBM/SBM-DB",
+  "SBM/SBM-MANAGER",
+  "SBM/SBM-UTIL"
+]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -65,6 +66,9 @@ class PullEnvironment:
         for name in ("repos-pull.sh", "suite-repositories.py"):
             shutil.copy2(SCRIPTS / name, scripts / name)
             (scripts / name).chmod(0o755)
+        (scripts / "suite-repositories.json").write_text(
+            json.dumps(self.repositories), encoding="utf-8"
+        )
         run("git", "add", ".", cwd=self.context)
         run("git", "commit", "-m", "add scripts", cwd=self.context)
         run("git", "push", "origin", "main", cwd=self.context)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import tempfile
@@ -44,6 +45,19 @@ class QAEnvironment:
             self.context / "QA" / QA_CONTEXT_SOURCE.name,
         ]:
             path.chmod(0o755)
+
+        (self.context / "scripts/suite-repositories.json").write_text(
+            json.dumps(
+                [
+                    "context",
+                    "DP/DP-API",
+                    "SBM/SBM-API",
+                    "SBM/SBM-DB",
+                    "SBM/SBM-MANAGER",
+                ]
+            ),
+            encoding="utf-8",
+        )
 
         self._repo("SBM/SBM-MANAGER", sonar=True, split=True)
         self._repo("DP/DP-API", sonar=False, split=True)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
@@ -42,6 +43,9 @@ class BranchEnvironment:
         shutil.copy2(SCRIPT_SOURCE, self.script)
         shutil.copy2(REPOSITORY_SOURCE, self.helper)
         shutil.copy2(POLICY_SOURCE, self.script.parent / POLICY_SOURCE.name)
+        (self.script.parent / "suite-repositories.json").write_text(
+            json.dumps(self.repositories), encoding="utf-8"
+        )
         self.script.chmod(0o755)
         self.helper.chmod(0o755)
         (self.script.parent / POLICY_SOURCE.name).chmod(0o755)
@@ -78,6 +82,14 @@ class BranchEnvironment:
         _run("git", "commit", "-m", "initial", cwd=repository)
         _run("git", "remote", "add", "origin", str(remote), cwd=repository)
         _run("git", "push", "-u", "origin", "main", cwd=repository)
+        inventory_path = self.script.parent / "suite-repositories.json"
+        inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+        if relative_path not in inventory:
+            inventory.append(relative_path)
+            inventory_path.write_text(json.dumps(inventory), encoding="utf-8")
+            if (self.context_root / ".git").is_dir():
+                _run("git", "add", "scripts/suite-repositories.json", cwd=self.context_root)
+                _run("git", "commit", "-m", "register repository", cwd=self.context_root)
 
     def repository(self, relative_path: str) -> Path:
         return self.suite_root / relative_path

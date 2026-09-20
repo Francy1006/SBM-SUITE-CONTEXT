@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import tempfile
@@ -44,6 +45,9 @@ class CleanupEnvironment:
         shutil.copy2(REPOSITORY_SOURCE, scripts / REPOSITORY_SOURCE.name)
         shutil.copy2(POLICY_SOURCE, scripts / POLICY_SOURCE.name)
         shutil.copy2(STATE_SOURCE, scripts / STATE_SOURCE.name)
+        (scripts / "suite-repositories.json").write_text(
+            json.dumps(self.repositories), encoding="utf-8"
+        )
         (scripts / CLEANUP_SOURCE.name).chmod(0o755)
         (scripts / REPOSITORY_SOURCE.name).chmod(0o755)
         (scripts / POLICY_SOURCE.name).chmod(0o755)
