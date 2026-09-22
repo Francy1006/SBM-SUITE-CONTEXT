@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -116,7 +117,7 @@ class UpgradeInputResolutionTests(unittest.TestCase):
             (input_dir / "other.zip").write_bytes(b"zip")
             result = subprocess.run(
                 [
-                    "python3",
+                    sys.executable,
                     str(RESOLVER),
                     str(input_dir),
                     "context-upgrade",
@@ -130,6 +131,32 @@ class UpgradeInputResolutionTests(unittest.TestCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("debe comenzar con context-upgrade", result.stderr)
+
+    def test_cli_tsv_uses_lf_without_carriage_return(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            input_dir = Path(directory)
+            source = input_dir / "documentation-upgrade.zip"
+            source.write_bytes(b"zip")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(RESOLVER),
+                    str(input_dir),
+                    "documentation-upgrade",
+                    "documentation-upgrade.zip",
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            result.stdout,
+            f"{source}\t{source}\n".encode("utf-8"),
+        )
+        self.assertNotIn(b"\r", result.stdout)
 
 
 if __name__ == "__main__":

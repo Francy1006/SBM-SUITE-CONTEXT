@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+
+from scripts.tests._git_bash import bash_command
 
 
 CONTEXT_ROOT = Path(__file__).resolve().parents[2]
@@ -16,11 +19,17 @@ STATE_SOURCE = CONTEXT_ROOT / "scripts" / "objective-git-state.py"
 
 
 def _run(*args: str, cwd: Path, check: bool = True) -> subprocess.CompletedProcess[str]:
+    command = bash_command(args[0], *args[1:]) if args[0].endswith(".sh") else args
+    environment = os.environ.copy()
+    environment.update({"GIT_TERMINAL_PROMPT": "0", "GIT_PAGER": "cat", "GIT_EDITOR": "true"})
     return subprocess.run(
-        args,
+        command,
         cwd=cwd,
         check=check,
+        env=environment,
+        stdin=subprocess.DEVNULL,
         text=True,
+        encoding="utf-8",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )

@@ -5,13 +5,20 @@ import subprocess
 import tempfile
 import unittest
 
+from scripts.tests._git_bash import bash_command
+
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 
 
 def run(*args, cwd=None, check=True):
+    command = (
+        bash_command(args[0], *args[1:])
+        if str(args[0]).endswith(".sh")
+        else [str(arg) for arg in args]
+    )
     return subprocess.run(
-        [str(arg) for arg in args],
+        command,
         cwd=cwd,
         text=True,
         capture_output=True,

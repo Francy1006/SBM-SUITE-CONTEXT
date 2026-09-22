@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -30,12 +31,38 @@ class SuiteRepositoriesTests(unittest.TestCase):
 
     def run_helper(self, *arguments: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            ["python3", str(self.helper), *arguments],
+            [sys.executable, str(self.helper), *arguments],
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=False,
         )
+
+    def run_helper_raw(self, *arguments: str) -> subprocess.CompletedProcess[bytes]:
+        return subprocess.run(
+            [sys.executable, str(self.helper), *arguments],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+    def test_stdout_uses_only_lf_for_all_output_modes(self) -> None:
+        self.write_inventory(["TEAM/ARBITRARY-REPOSITORY", "context"])
+        expected = {
+            ("list",): (
+                b"context\tcontext\n"
+                b"ARBITRARY-REPOSITORY\tTEAM/ARBITRARY-REPOSITORY\n"
+            ),
+            ("list-paths",): b"context\nTEAM/ARBITRARY-REPOSITORY\n",
+            ("resolve", "arbitrary-repository"): b"TEAM/ARBITRARY-REPOSITORY\n",
+        }
+
+        for arguments, expected_stdout in expected.items():
+            with self.subTest(arguments=arguments):
+                result = self.run_helper_raw(*arguments)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, expected_stdout)
+                self.assertNotIn(b"\r", result.stdout)
 
     def test_inventory_is_independent_from_locally_cloned_repositories(self) -> None:
         repositories = [

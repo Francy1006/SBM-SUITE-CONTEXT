@@ -33,6 +33,8 @@ def resolve_upgrade_input(input_dir: Path, prefix: str, canonical_name: str) -> 
 
 
 def main() -> int:
+    sys.stdout.reconfigure(newline="\n")
+
     parser = argparse.ArgumentParser()
     parser.add_argument("input_dir", type=Path)
     parser.add_argument("prefix")
@@ -49,7 +51,7 @@ def main() -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
-    print(f"{original}\t{canonical}")
+    sys.stdout.write(f"{original}\t{canonical}\n")
     return 0
 
 

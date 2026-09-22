@@ -369,6 +369,8 @@ qa-check.sh (when the selected project provides it)
 → use SBM-SUITE/context/SYS_PROMPT.md and SBM-SUITE/context/FORMAT_CONTEXT.md
 → execute SBM-SUITE/context/scripts/project-tree.sh and require project-tree.txt
 → collect Git and applicable QA evidence without packaging environment values
+→ for `sbm-suite-context`, accept the short CLI `./scripts/context-deploy.sh <lifecycle_phase> '<small-objectives-json-array>' [user_prompt]` and infer `project_name=sbm-suite-context` while retaining the long form for other projects
+→ load `qa_results` and QA manifest fields directly from the canonical QA decision JSON so `evidence_sha256` is calculated against the exact transmitted evidence bytes
 → call POST /contexts/export using the registry-resolved canonical project root
 → index authorized contexts in sbm_contexts
 → retrieve relevant chunks
@@ -500,6 +502,15 @@ Rules:
 ## 12. Current implementation status
 
 Verified current capabilities include:
+
+- Context QA tooling resolves the Context-owned Python from `.venv/Scripts` on Windows or `.venv/bin` on POSIX instead of depending on an inherited interpreter;
+- per-project QA clears inherited Context `VIRTUAL_ENV`, prefers the selected repository `.venv` when available, normalizes Windows/MSYS `PATH`, and shields Docker container paths from Git Bash path rewriting while converting required host paths;
+- `context-deploy.sh` supports the `sbm-suite-context` short form and preserves exact QA evidence bytes/hash through the canonical decision JSON payload;
+- the root-level portable CLI exposes short user-facing commands through `sbm` on POSIX/macOS and `sbm.cmd` on Windows CMD for QA, Context deploy/upgrade, Documentation deploy/upgrade and Git finalization; objective-aware commands accept an optional `objective_id`, resolve the branch from lifecycle state and reject ambiguous active-objective selection;
+- `sbm.cmd` locates a Git for Windows Bash runtime while excluding Windows System32/WSL Bash, and the POSIX dispatcher uses the Context-owned `.venv`;
+- shared path canonicalization treats Windows drive paths and their MSYS forms as equivalent while preserving POSIX/macOS semantics, removing false repository-root mismatches from transversal Git operations;
+- Context deploy evidence now combines tracked/staged diffs with safe untracked UTF-8 text as canonical `new file` patches while respecting Git ignore rules and omitting sensitive, generated, archive, binary and oversized untracked artifacts;
+- 2026-09-22 Context QA and the sequential transversal `with-sonar` run passed for all applicable repositories; DP-STORE and PC-STORE were `not-applicable`;
 
 - Upgrade input discovery accepts exactly one workflow-prefixed ZIP for Context and Documentation (`context-upgrade*.zip` or `documentation-upgrade*.zip`), including client-generated suffixes such as `(32)`; ambiguous ZIP sets and invalid prefixes remain rejected, and the selected file is normalized internally to the canonical filename before backend validation.
 

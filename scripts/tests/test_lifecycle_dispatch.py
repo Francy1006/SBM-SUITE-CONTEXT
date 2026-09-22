@@ -194,7 +194,7 @@ class LifecycleDispatchTests(unittest.TestCase):
         init_context = (CONTEXT_ROOT / "INIT_CONTEXT.md").read_text(encoding="utf-8")
         readme = (CONTEXT_ROOT / "README.md").read_text(encoding="utf-8")
 
-        self.assertIn('OBJECTIVES_SOURCE="$3"', deploy)
+        self.assertIn('context_deploy_parse_args "$@"', deploy)
         self.assertIn('cat > "${OBJECTIVES_RAW_FILE}"', deploy)
         self.assertIn('OBJECTIVE_PAYLOAD_HELPER=', deploy)
         self.assertIn('decode \\', deploy)

@@ -46,7 +46,26 @@ OUTPUT_DIR="${QA_DIR}/output"
 REPOSITORY_LIST="$(mktemp)"
 trap 'rm -f "${REPOSITORY_LIST}"' EXIT
 
-python3 "${REPOSITORY_HELPER}" list > "${REPOSITORY_LIST}"
+context_python() {
+  local candidate
+  for candidate in \
+    "${CONTEXT_ROOT}/.venv/Scripts/python.exe" \
+    "${CONTEXT_ROOT}/.venv/Scripts/python3.exe" \
+    "${CONTEXT_ROOT}/.venv/bin/python3" \
+    "${CONTEXT_ROOT}/.venv/bin/python"
+  do
+    if [[ -x "${candidate}" ]]; then
+      printf '%s\n' "${candidate}"
+      return 0
+    fi
+  done
+  echo "ERROR: Context requiere su propio Python en .venv/Scripts o .venv/bin" >&2
+  return 1
+}
+
+CONTEXT_PYTHON="$(context_python)"
+"${CONTEXT_PYTHON}" "${REPOSITORY_HELPER}" list \
+  | tr -d '\r' > "${REPOSITORY_LIST}"
 mkdir -p "${OUTPUT_DIR}"
 mode_slug="$(printf '%s' "${MODE}" | tr -cd '[:alnum:]-')"
 SUMMARY="${OUTPUT_DIR}/qa-all-${mode_slug}-results.md"

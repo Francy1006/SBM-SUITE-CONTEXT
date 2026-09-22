@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+from scripts.tests._git_bash import bash_command
 
 CONTEXT_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_NAMES = (
@@ -16,16 +20,28 @@ SCRIPT_NAMES = (
     "git-flow-policy.py",
     "objective-git-state.py",
     "workflow-state.py",
+    "path-portability.py",
 )
 SOURCES = tuple(CONTEXT_ROOT / "scripts" / name for name in SCRIPT_NAMES)
 
 
 def run(*args: str, cwd: Path, check: bool = True):
+    if args[0].endswith(".sh"):
+        command = bash_command(args[0], *args[1:])
+    elif args[0] == "python3":
+        command = (sys.executable, *args[1:])
+    else:
+        command = args
+    environment = os.environ.copy()
+    environment.update({"GIT_TERMINAL_PROMPT": "0", "GIT_PAGER": "cat", "GIT_EDITOR": "true"})
     return subprocess.run(
-        args,
+        command,
         cwd=cwd,
         check=check,
+        env=environment,
+        stdin=subprocess.DEVNULL,
         text=True,
+        encoding="utf-8",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
@@ -284,6 +300,7 @@ class ObjectiveGitFinalizeTests(unittest.TestCase):
         self.assertIn("documentation/output/finalization-gate.json", source)
         self.assertIn("objective-git-state.py", source)
         self.assertIn("objective-git-cleanup.sh", source)
+        self.assertIn("path-portability.py", source)
         self.assertIn("chore: finalize transversal objective batch", source)
 
 

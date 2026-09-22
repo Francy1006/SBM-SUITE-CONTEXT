@@ -17,6 +17,7 @@ from qa_lifecycle import (  # noqa: E402
     evaluate_progress_qa,
     evaluate_full_qa,
     evaluate_qa,
+    load_qa_payload_fields,
     normalize_context_export,
     require_closure_qa,
     validate_closure_manifest_qa,
@@ -24,6 +25,44 @@ from qa_lifecycle import (  # noqa: E402
 
 
 class QALifecycleTests(unittest.TestCase):
+    def test_payload_qa_hash_matches_exact_lf_and_crlf_evidence(self) -> None:
+        for evidence in ("first line\nsecond line\n", "first line\r\nsecond line\r\n"):
+            with self.subTest(newline=repr(evidence[-2:])):
+                with tempfile.TemporaryDirectory() as directory:
+                    decision_path = Path(directory) / "decision.json"
+                    qa = {
+                        "status": "passed",
+                        "applicable": True,
+                        "workflow_path": "QA/qa-full.sh",
+                        "evidence_file": "qa-results.md",
+                        "evidence_sha256": hashlib.sha256(
+                            evidence.encode("utf-8")
+                        ).hexdigest(),
+                        "reason": "QA evidence is available",
+                    }
+                    decision_path.write_text(
+                        json.dumps(
+                            {
+                                "project_name": "sbm-suite-context",
+                                "qa": qa,
+                                "qa_results": evidence,
+                            },
+                            ensure_ascii=False,
+                        ),
+                        encoding="utf-8",
+                    )
+
+                    manifest, qa_results = load_qa_payload_fields(decision_path)
+                    payload = {"qa": manifest, "qa_results": qa_results}
+
+                    self.assertEqual(payload["qa_results"], evidence)
+                    self.assertEqual(
+                        hashlib.sha256(
+                            payload["qa_results"].encode("utf-8")
+                        ).hexdigest(),
+                        payload["qa"]["evidence_sha256"],
+                    )
+
     def test_full_suite_qa_requires_context_and_with_sonar_transversal_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -315,19 +354,31 @@ class QALifecycleTests(unittest.TestCase):
     def test_suite_qa_evaluation_does_not_mutate_operational_context(self) -> None:
         project_context = CONTEXT_ROOT / "PROJECT_CONTEXT.md"
         before = project_context.read_bytes()
-        decision, evidence = require_closure_qa(
-            "sbm-suite-context", CONTEXT_ROOT
-        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_transversal_evidence(root)
+            fixture_context = root / "PROJECT_CONTEXT.md"
+            fixture_before = b"# Fixture operational context\n"
+            fixture_context.write_bytes(fixture_before)
 
-        self.assertEqual(decision.status, "passed")
-        self.assertTrue(decision.applicable)
-        self.assertIn("qa-all-without-sonar-results.md", evidence)
-        self.assertEqual(project_context.read_bytes(), before)
+            decision, evidence = require_closure_qa(
+                "sbm-suite-context", root
+            )
+
+            self.assertEqual(decision.status, "passed")
+            self.assertTrue(decision.applicable)
+            self.assertIn("qa-all-without-sonar-results.md", evidence)
+            self.assertIn(
+                "example\tSBM/example\twithout-sonar\tpassed\t0", evidence
+            )
+            self.assertEqual(fixture_context.read_bytes(), fixture_before)
+            self.assertEqual(project_context.read_bytes(), before)
 
         deploy = (CONTEXT_ROOT / "scripts/context-deploy.sh").read_text()
         self.assertIn('evaluate-full', deploy)
         self.assertIn('--project-root "${CONTEXT_ROOT}"', deploy)
-        self.assertIn('PAYLOAD_QA_MANIFEST_JSON="${QA_MANIFEST_JSON}"', deploy)
+        self.assertIn("load_qa_payload_fields", deploy)
+        self.assertNotIn('QA_RESULTS="$(', deploy)
 
 
 if __name__ == "__main__":

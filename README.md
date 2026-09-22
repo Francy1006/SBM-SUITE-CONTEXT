@@ -32,6 +32,7 @@ SBM-SUITE/
 │   │   ├── context-upgrade.sh
 │   │   ├── documentation-deploy.sh
 │   │   ├── documentation-upgrade.sh
+│   │   ├── objective-git-publish.sh
 │   │   ├── objective-git-finalize.sh
 │   │   ├── objective-git-cleanup.sh
 │   │   ├── objective-git-state.py
@@ -88,14 +89,41 @@ During `implementation-progress` for `sbm-suite-context`, `context-deploy` can v
 
 Every 1..N lifecycle batch requires successful complete-suite evidence from `QA/qa-full.sh` after the branch changes and before finalization; fast-track transitions and lifecycle-only changes never bypass Context QA, the all-project with-Sonar queue or Documentation.
 
+On Windows/Git Bash and POSIX, Context QA resolves its own `.venv` (`.venv/Scripts` or `.venv/bin`). Per-project QA removes inherited Context virtualenv state, selects the child repository `.venv` when present, normalizes MSYS PATH handling and protects Docker container paths from automatic Git Bash conversion. For `sbm-suite-context`, `context-deploy.sh` also accepts the short form that omits `project_name`; QA payload construction reads exact evidence bytes and metadata from the canonical QA decision JSON.
+
 ## Usage
 
 Use `input/` only for Context upgrade ZIP exchange and `output/` only for generated workflow artifacts. Active and pending objectives remain in project and global `PROJECT_CONTEXT.md` files. Completed objectives are stored only in global `COMPLETED_OBJECTIVES.md`. Documentation pages live only below `documentation/pages/<page>/`, with subpages below `documentation/pages/<page>/subpages/`. Full-object lifecycle batches are serialized by SBM Agent, deterministically gzip-compressed (`mtime=0`), standard-base64 encoded, prefixed with `SBM-GZIP-BASE64-V1`, round-trip verified against the frozen batch and then streamed to the existing `context-deploy.sh` through stdin using `-`. Raw JSON paste is not canonical. The script decodes/validates using internal temporary files and removes them automatically.
 
-Execute from the local repository root `SBM-SUITE/context`:
+Execute from the local repository root `SBM-SUITE/context`. The canonical user-facing commands are short and portable:
+
+```text
+Windows CMD:
+sbm qa [objective_id]
+sbm context deploy [objective_id]
+sbm context upgrade
+sbm documentation deploy
+sbm documentation upgrade
+sbm git publish [objective_id]
+sbm git finalize [objective_id]
+
+macOS/POSIX:
+./sbm qa [objective_id]
+./sbm context deploy [objective_id]
+./sbm context upgrade
+./sbm documentation deploy
+./sbm documentation upgrade
+./sbm git publish [objective_id]
+./sbm git finalize [objective_id]
+```
+
+When an objective-aware command receives an explicit `objective_id`, the CLI validates that active objective and resolves its branch from lifecycle state. Without an ID, exactly one active objective must be available; ambiguous selection is rejected instead of inventing an objective or branch. Windows `sbm.cmd` locates Git for Windows Bash and excludes Windows System32/WSL Bash.
+
+The lower-level scripts remain available as internal/advanced interfaces:
 
 ```bash
 ./scripts/context-deploy.sh <project_name> <lifecycle_phase> '<small-objectives-json-array>|-' [user_prompt]
+./scripts/context-deploy.sh <lifecycle_phase> '<small-objectives-json-array>' [user_prompt]  # sbm-suite-context short form
 ./scripts/context-upgrade.sh
 ./scripts/documentation-deploy.sh
 ./scripts/documentation-upgrade.sh
@@ -104,6 +132,7 @@ Execute from the local repository root `SBM-SUITE/context`:
 ./QA/qa-all.sh --without-sonar
 ./QA/qa-project.sh <project> --with-sonar --sonarqube-ready
 ./QA/qa-all.sh --with-sonar --sonarqube-ready
+./scripts/objective-git-publish.sh <objective-id>
 ./scripts/objective-git-finalize.sh <objective-id> <objective-branch>
 ./scripts/objective-git-cleanup.sh <objective-id> <objective-branch>
 ./scripts/objective-branches.sh prepare <objective-branch>
@@ -149,6 +178,8 @@ Keep this README suite-level. Update it only for structural, architectural, shar
 Validate exact headings and tables, objective synchronization, completed-objective append-only history, authorized targets, repository-relative paths, manifest/file agreement, SHA-256 hashes, backup contents, and absence of secrets before applying an upgrade.
 
 Before contacting the backend, `documentation-upgrade.sh` rejects any archive unless `manifest.updated_files` equals the complete set of physical non-manifest ZIP files and reports both undeclared physical files and declared paths missing from the ZIP.
+
+For progress QA export, validate that the exact `qa_results` bytes loaded from the canonical decision JSON hash to `manifest.qa.evidence_sha256`; LF and CRLF evidence must remain byte-consistent end to end.
 
 ## Security
 

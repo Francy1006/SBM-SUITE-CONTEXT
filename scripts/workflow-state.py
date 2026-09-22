@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import subprocess
+import sys
 from pathlib import Path, PurePosixPath
 
 COMMON_EXCLUDED_PREFIXES = (
@@ -62,7 +63,7 @@ def digest(suite_root: Path, repository_paths: list[str], scope: str = "qa") -> 
 
 def repository_paths(helper: Path) -> list[str]:
     output = subprocess.run(
-        ("python3", str(helper), "list-paths"),
+        (sys.executable, str(helper), "list-paths"),
         check=True,
         text=True,
         stdout=subprocess.PIPE,
@@ -70,6 +71,8 @@ def repository_paths(helper: Path) -> list[str]:
     return [line for line in output.splitlines() if line]
 
 def main() -> int:
+    sys.stdout.reconfigure(newline="\n")
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--suite-root", required=True)
     parser.add_argument("--repository-helper", required=True)
@@ -86,7 +89,7 @@ def main() -> int:
         raise SystemExit(
             f"ERROR: {gate_label} gate no corresponde al estado actual de la branch"
         )
-    print(value)
+    sys.stdout.write(value + "\n")
     return 0
 
 if __name__ == "__main__":
