@@ -32,6 +32,7 @@ SBM-SUITE/
 │   │   ├── context-upgrade.sh
 │   │   ├── documentation-deploy.sh
 │   │   ├── documentation-upgrade.sh
+│   │   ├── objective-git-pull.sh
 │   │   ├── objective-git-publish.sh
 │   │   ├── objective-git-finalize.sh
 │   │   ├── objective-git-cleanup.sh
@@ -104,6 +105,7 @@ sbm context deploy [objective_id]
 sbm context upgrade
 sbm documentation deploy
 sbm documentation upgrade
+sbm git pull [objective_id]
 sbm git publish [objective_id]
 sbm git finalize [objective_id]
 
@@ -113,6 +115,7 @@ macOS/POSIX:
 ./sbm context upgrade
 ./sbm documentation deploy
 ./sbm documentation upgrade
+./sbm git pull [objective_id]
 ./sbm git publish [objective_id]
 ./sbm git finalize [objective_id]
 ```
@@ -132,6 +135,7 @@ The lower-level scripts remain available as internal/advanced interfaces:
 ./QA/qa-all.sh --without-sonar
 ./QA/qa-project.sh <project> --with-sonar --sonarqube-ready
 ./QA/qa-all.sh --with-sonar --sonarqube-ready
+./scripts/objective-git-pull.sh <objective-id>
 ./scripts/objective-git-publish.sh <objective-id>
 ./scripts/objective-git-finalize.sh <objective-id> <objective-branch>
 ./scripts/objective-git-cleanup.sh <objective-id> <objective-branch>

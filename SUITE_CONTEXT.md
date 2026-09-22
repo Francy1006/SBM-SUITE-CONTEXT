@@ -558,7 +558,7 @@ Current verified direction:
 
 - Context QA and lifecycle tooling is portable across Windows/Git Bash and POSIX by resolving the Context-owned `.venv`, isolating child repository virtual environments and normalizing MSYS path handling; Docker orchestration preserves container paths while converting required host paths.
 - `context-deploy.sh` supports a Context-specific short form that infers `sbm-suite-context`; QA export reads exact evidence bytes and metadata from the canonical QA decision JSON to keep the evidence hash consistent.
-- the root Context CLI provides the portable user-facing surface `sbm qa`, `sbm context deploy|upgrade`, `sbm documentation deploy|upgrade`, `sbm git publish` and `sbm git finalize`; Windows delegates through Git for Windows while macOS/POSIX uses the same dispatcher contract, and objective-aware commands resolve branch state from lifecycle metadata instead of requiring a branch argument.
+- the root Context CLI provides the portable user-facing surface `sbm qa`, `sbm context deploy|upgrade`, `sbm documentation deploy|upgrade`, `sbm git pull`, `sbm git publish` and `sbm git finalize`; Windows delegates through Git for Windows while macOS/POSIX uses the same dispatcher contract, and objective-aware commands resolve branch state from lifecycle metadata instead of requiring a branch argument.
 - transversal Git path comparisons use canonical Windows/MSYS/POSIX representations, and Context evidence generation includes safe untracked text files in `git-diff.patch` without packaging ignored, sensitive, generated, archive, binary or oversized untracked content.
 
 - SBM-MANAGER is the canonical Vue 3 web frontend consuming DP-API and SBM-API through explicit frontend clients.

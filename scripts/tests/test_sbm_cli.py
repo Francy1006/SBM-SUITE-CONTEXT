@@ -34,6 +34,7 @@ class SbmCliTests(unittest.TestCase):
             "scripts/documentation-upgrade.sh",
             "scripts/objective-git-finalize.sh",
             "scripts/objective-git-publish.sh",
+            "scripts/objective-git-pull.sh",
         ):
             self._write_stub(relative)
         self.log = self.context / "dispatch.log"
@@ -133,6 +134,11 @@ class SbmCliTests(unittest.TestCase):
                 "objective-git-publish.sh",
                 ["OBJ-TEST-001"],
             ),
+            (
+                ("git", "pull"),
+                "objective-git-pull.sh",
+                ["OBJ-TEST-001"],
+            ),
         )
         for arguments, script_name, expected_args in cases:
             with self.subTest(arguments=arguments):
@@ -172,6 +178,11 @@ class SbmCliTests(unittest.TestCase):
             (
                 ("git", "publish", "OBJ-TEST-002"),
                 "objective-git-publish.sh",
+                ["OBJ-TEST-002"],
+            ),
+            (
+                ("git", "pull", "OBJ-TEST-002"),
+                "objective-git-pull.sh",
                 ["OBJ-TEST-002"],
             ),
         )
@@ -220,6 +231,7 @@ class SbmCliTests(unittest.TestCase):
         for arguments in (
             ("qa", "OBJ-TEST-001", "FEATURE-manual-branch"),
             ("git", "publish", "OBJ-TEST-001", "FEATURE-manual-branch"),
+            ("git", "pull", "OBJ-TEST-001", "FEATURE-manual-branch"),
         ):
             with self.subTest(arguments=arguments):
                 self.log.unlink(missing_ok=True)
@@ -244,6 +256,7 @@ class SbmCliTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("sbm git pull", result.stdout)
             self.assertIn("sbm git publish", result.stdout)
             self.assertIn("sbm git finalize", result.stdout)
 

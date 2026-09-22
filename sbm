@@ -9,6 +9,7 @@ Uso:
   sbm context upgrade
   sbm documentation deploy
   sbm documentation upgrade
+  sbm git pull [objective_id]
   sbm git publish [objective_id]
   sbm git finalize [objective_id]
 EOF
@@ -94,6 +95,11 @@ case "${COMMAND}" in
   "documentation upgrade")
     [[ "$#" == 2 ]] || { usage >&2; exit 2; }
     bash "${ROOT}/scripts/documentation-upgrade.sh"
+    ;;
+  "git pull")
+    [[ "$#" -ge 2 && "$#" -le 3 ]] || { usage >&2; exit 2; }
+    load_active "${3:-}"
+    bash "${ROOT}/scripts/objective-git-pull.sh" "${OBJECTIVE_ID}"
     ;;
   "git publish")
     [[ "$#" -ge 2 && "$#" -le 3 ]] || { usage >&2; exit 2; }
