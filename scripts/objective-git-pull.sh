@@ -144,7 +144,7 @@ done < "${REPOSITORIES}"
 
 fetch_failed=0
 while IFS= read -r path; do
-  [[ -z "${path}" ]] || continue
+  [[ -n "${path}" ]] || continue
   repository="${SUITE_ROOT}/${path}"
   git -C "${repository}" fetch origin >/dev/null 2>&1 || {
     echo "ERROR: ${path}: git fetch origin falló" >&2
@@ -161,7 +161,7 @@ validate_repository() {
   local path="$1"
   local repository="${SUITE_ROOT}/$1"
   local remote_ref="refs/remotes/origin/${OBJECTIVE_BRANCH}"
-  local local_sha
+  local counts behind ahead
 
   [[ -z "$(git -C "${repository}" status --porcelain)" ]] || {
     echo "ERROR: ${path}: el working tree cambió después del preflight" >&2
@@ -172,11 +172,15 @@ validate_repository() {
     return 1
   }
   if git -C "${repository}" show-ref --verify --quiet "refs/heads/${OBJECTIVE_BRANCH}"; then
-    local_sha="$(git -C "${repository}" rev-parse "refs/heads/${OBJECTIVE_BRANCH}")"
-    git -C "${repository}" merge-base --is-ancestor "${local_sha}" "${remote_ref}" || {
-      echo "ERROR: ${path}: ${OBJECTIVE_BRANCH} local no admite fast-forward desde origin" >&2
+    counts="$(git -C "${repository}" rev-list --left-right --count "${remote_ref}...refs/heads/${OBJECTIVE_BRANCH}")" || {
+      echo "ERROR: ${path}: no se pudo determinar la relación local/origin" >&2
       return 1
     }
+    read -r behind ahead <<< "${counts}"
+    if (( behind > 0 && ahead > 0 )); then
+      echo "ERROR: ${path}: ${OBJECTIVE_BRANCH} local no admite fast-forward: divergencia con origin (behind=${behind}, ahead=${ahead})" >&2
+      return 1
+    fi
   fi
 }
 
@@ -224,8 +228,8 @@ while IFS= read -r path; do
     echo "ERROR: ${path}: working tree no quedó limpio" >&2
     postflight_failed=1
   }
-  [[ "$(git -C "${repository}" rev-parse HEAD)" == "$(git -C "${repository}" rev-parse "origin/${OBJECTIVE_BRANCH}")" ]] || {
-    echo "ERROR: ${path}: HEAD no coincide con origin/${OBJECTIVE_BRANCH}" >&2
+  git -C "${repository}" merge-base --is-ancestor "refs/remotes/origin/${OBJECTIVE_BRANCH}" HEAD || {
+    echo "ERROR: ${path}: HEAD no contiene todos los commits de origin/${OBJECTIVE_BRANCH}" >&2
     postflight_failed=1
   }
 done < "${REPOSITORIES}"
@@ -240,4 +244,4 @@ done < "${REPOSITORIES}"
   exit 1
 }
 
-echo "Branch ${OBJECTIVE_BRANCH} sincronizada desde origin para ${OBJECTIVE_ID}; repositorios listos en la branch del objetivo."
+echo "Branch ${OBJECTIVE_BRANCH} actualizada desde origin para ${OBJECTIVE_ID}; commits locales conservados y repositorios listos en la branch del objetivo."

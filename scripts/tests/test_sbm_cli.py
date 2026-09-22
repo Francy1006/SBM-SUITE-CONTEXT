@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import os
+import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -54,7 +56,7 @@ class SbmCliTests(unittest.TestCase):
         binary = self.context / ".venv" / "bin" / "python3"
         binary.parent.mkdir(parents=True)
         binary.write_text(
-            "#!/usr/bin/env bash\nexec python3 \"$@\"\n",
+            f"#!/usr/bin/env bash\nexec {shlex.quote(sys.executable)} \"$@\"\n",
             encoding="utf-8",
             newline="\n",
         )

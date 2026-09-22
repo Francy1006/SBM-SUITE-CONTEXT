@@ -166,6 +166,61 @@ class Environment:
 
 
 class ObjectiveGitPullTests(unittest.TestCase):
+    def test_local_remote_relationship_states(self) -> None:
+        for behind, ahead in ((0, 0), (1, 0), (0, 1), (1, 1)):
+            with self.subTest(behind=behind, ahead=ahead), tempfile.TemporaryDirectory() as directory:
+                env = Environment(Path(directory))
+                branch = "FEATURE-relationship-states"
+                oid = "OBJ-PULL-007"
+                env.write_context([(oid, branch)], [])
+                run("git", "add", "PROJECT_CONTEXT.md", cwd=env.context)
+                run("git", "commit", "-m", "lifecycle", cwd=env.context)
+                env.publish_branch(branch)
+                if ahead:
+                    (env.context / "local-only.txt").write_text("local\n", encoding="utf-8")
+                    run("git", "add", "local-only.txt", cwd=env.context)
+                    run("git", "commit", "-m", "local advance", cwd=env.context)
+                remote_head = env.tracking("context", f"origin/{branch}")
+                if behind:
+                    remote_head = env.advance_remote("context", branch)
+                # The script must fetch this remote head before evaluating the relationship.
+                run("git", "checkout", "main", cwd=env.repository("DP/DP-API"))
+                before = {
+                    relative: (env.head(relative), env.current_branch(relative), env.porcelain(relative))
+                    for relative in env.repositories
+                }
+                main_before = {relative: env.main_head(relative) for relative in env.repositories}
+                lifecycle_before = (env.context / "PROJECT_CONTEXT.md").read_bytes()
+
+                result = env.pull(oid)
+
+                self.assertEqual(env.tracking("context", f"origin/{branch}"), remote_head)
+                counts = run(
+                    "git", "rev-list", "--left-right", "--count",
+                    f"origin/{branch}...{before['context'][0]}", cwd=env.context,
+                ).stdout.split()
+                self.assertEqual(counts, [str(behind), str(ahead)])
+                if behind and ahead:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("divergencia", result.stderr)
+                    self.assertIn("no se modificó ningún working tree", result.stderr)
+                    for relative in env.repositories:
+                        self.assertEqual(
+                            (env.head(relative), env.current_branch(relative), env.porcelain(relative)),
+                            before[relative],
+                        )
+                else:
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(env.head("context"), before["context"][0] if ahead else remote_head)
+                    for relative in env.repositories:
+                        self.assertEqual(env.current_branch(relative), branch)
+                        self.assertEqual(env.porcelain(relative), "")
+                if ahead:
+                    self.assertEqual((env.context / "local-only.txt").read_text(encoding="utf-8"), "local\n")
+                for relative in env.repositories:
+                    self.assertEqual(env.main_head(relative), main_before[relative])
+                self.assertEqual((env.context / "PROJECT_CONTEXT.md").read_bytes(), lifecycle_before)
+
     def test_existing_local_branch_fast_forwards_from_origin(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             env = Environment(Path(directory))
@@ -226,6 +281,55 @@ class ObjectiveGitPullTests(unittest.TestCase):
                     f"origin/{branch}",
                 )
 
+    def test_fetch_discovers_remote_branch_missing_from_initial_clone(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            env = Environment(Path(directory))
+            branch = "FEATURE-discovers-remote"
+            oid = "OBJ-PULL-006"
+            env.write_context([(oid, branch)], [])
+            run("git", "add", "PROJECT_CONTEXT.md", cwd=env.context)
+            run("git", "commit", "-m", "lifecycle", cwd=env.context)
+            run("git", "push", "origin", "main", cwd=env.context)
+            expected = {}
+            for relative in env.repositories:
+                repository = env.repository(relative)
+                publisher = env.publishers / relative.replace("/", "-")
+                repository.rename(publisher)
+                run("git", "clone", "--branch", "main", str(env.remote(relative)),
+                    str(repository), cwd=env.root)
+                run("git", "checkout", "-b", branch, cwd=publisher)
+                (publisher / "remote-only.txt").write_text("discovered\n", encoding="utf-8")
+                run("git", "add", "remote-only.txt", cwd=publisher)
+                run("git", "commit", "-m", "publish objective", cwd=publisher)
+                run("git", "push", "origin", branch, cwd=publisher)
+                expected[relative] = run("git", "rev-parse", "HEAD", cwd=publisher).stdout.strip()
+                self.assertNotEqual(run(
+                    "git", "show-ref", "--verify", "--quiet",
+                    f"refs/remotes/origin/{branch}", cwd=repository, check=False,
+                ).returncode, 0)
+                self.assertNotIn(branch, env.local_branches(relative))
+            main_before = {relative: env.main_head(relative) for relative in env.repositories}
+            lifecycle_before = (env.context / "PROJECT_CONTEXT.md").read_bytes()
+
+            result = env.pull(oid)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            for relative in env.repositories:
+                self.assertEqual(env.current_branch(relative), branch)
+                self.assertEqual(env.head(relative), expected[relative])
+                self.assertEqual(env.tracking(relative, f"origin/{branch}"), expected[relative])
+                self.assertEqual(env.main_head(relative), main_before[relative])
+                self.assertEqual(env.porcelain(relative), "")
+                self.assertEqual(run(
+                    "git", "rev-parse", "--abbrev-ref", "@{upstream}",
+                    cwd=env.repository(relative),
+                ).stdout.strip(), f"origin/{branch}")
+                self.assertEqual(
+                    (env.repository(relative) / "remote-only.txt").read_text(encoding="utf-8"),
+                    "discovered\n",
+                )
+            self.assertEqual((env.context / "PROJECT_CONTEXT.md").read_bytes(), lifecycle_before)
+
     def test_missing_remote_branch_aborts_before_working_tree_changes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             env = Environment(Path(directory))
@@ -255,20 +359,33 @@ class ObjectiveGitPullTests(unittest.TestCase):
             oid = "OBJ-PULL-004"
             env.publish_branch(branch)
             env.write_context([(oid, branch)], [])
-            tracking_before = env.tracking("DP/DP-API", "origin/main")
+            run("git", "add", "PROJECT_CONTEXT.md", cwd=env.context)
+            run("git", "commit", "-m", "lifecycle", cwd=env.context)
+            tracking_before = env.tracking("DP/DP-API", f"origin/{branch}")
             env.advance_remote("DP/DP-API", branch)
             (env.repository("SBM/SBM-API") / "tracked.txt").write_text(
                 "dirty\n", encoding="utf-8", newline="\n"
             )
-            head_before = env.head("DP/DP-API")
+            before = {
+                relative: (env.head(relative), env.current_branch(relative), env.porcelain(relative))
+                for relative in env.repositories
+            }
 
             result = env.pull(oid)
 
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("working tree contiene cambios locales", result.stderr)
             self.assertIn("no se ejecutó fetch", result.stderr)
-            self.assertEqual(env.head("DP/DP-API"), head_before)
-            self.assertEqual(env.tracking("DP/DP-API", "origin/main"), tracking_before)
+            for relative in env.repositories:
+                self.assertEqual(
+                    (env.head(relative), env.current_branch(relative), env.porcelain(relative)),
+                    before[relative],
+                )
+            self.assertEqual(env.tracking("DP/DP-API", f"origin/{branch}"), tracking_before)
+            self.assertEqual(
+                (env.repository("SBM/SBM-API") / "tracked.txt").read_text(encoding="utf-8"),
+                "dirty\n",
+            )
 
     def test_diverged_history_rejects_non_fast_forward(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
