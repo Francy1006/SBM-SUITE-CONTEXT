@@ -35,6 +35,7 @@ class SbmCliTests(unittest.TestCase):
             "scripts/objective-git-finalize.sh",
             "scripts/objective-git-publish.sh",
             "scripts/objective-git-pull.sh",
+            "scripts/repos-check.sh",
         ):
             self._write_stub(relative)
         self.log = self.context / "dispatch.log"
@@ -210,6 +211,22 @@ class SbmCliTests(unittest.TestCase):
                 self.assertEqual(Path(invocation[0]).name, script_name)
                 self.assertEqual(invocation[1:], [])
 
+    def test_check_all_ignores_objective_ambiguity_and_dispatches_without_arguments(self) -> None:
+        self.write_active(
+            ("OBJ-TEST-001", "FEATURE-tests-short-cli"),
+            ("OBJ-TEST-002", "BUGFIX-fixes-short-cli"),
+        )
+        result = self.run_cli("check", "all")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        invocation = self.invocation()
+        self.assertEqual(Path(invocation[0]).name, "repos-check.sh")
+        self.assertEqual(invocation[1:], [])
+
+        self.log.unlink()
+        rejected = self.run_cli("check", "all", "OBJ-TEST-001")
+        self.assertEqual(rejected.returncode, 2)
+        self.assertFalse(self.log.exists())
+
     def test_ambiguous_active_objective_fails_without_dispatch(self) -> None:
         self.write_active(
             ("OBJ-TEST-001", "FEATURE-tests-short-cli"),
@@ -259,6 +276,7 @@ class SbmCliTests(unittest.TestCase):
             self.assertIn("sbm git pull", result.stdout)
             self.assertIn("sbm git publish", result.stdout)
             self.assertIn("sbm git finalize", result.stdout)
+            self.assertIn("sbm check all", result.stdout)
 
 
 if __name__ == "__main__":

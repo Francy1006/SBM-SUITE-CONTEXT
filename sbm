@@ -9,6 +9,7 @@ Uso:
   sbm context upgrade
   sbm documentation deploy
   sbm documentation upgrade
+  sbm check all
   sbm git pull [objective_id]
   sbm git publish [objective_id]
   sbm git finalize [objective_id]
@@ -95,6 +96,10 @@ case "${COMMAND}" in
   "documentation upgrade")
     [[ "$#" == 2 ]] || { usage >&2; exit 2; }
     bash "${ROOT}/scripts/documentation-upgrade.sh"
+    ;;
+  "check all")
+    [[ "$#" == 2 ]] || { usage >&2; exit 2; }
+    bash "${ROOT}/scripts/repos-check.sh"
     ;;
   "git pull")
     [[ "$#" -ge 2 && "$#" -le 3 ]] || { usage >&2; exit 2; }
