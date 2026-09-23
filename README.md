@@ -92,6 +92,8 @@ Every 1..N lifecycle batch requires successful complete-suite evidence from `QA/
 
 On Windows/Git Bash and POSIX, Context QA resolves its own `.venv` (`.venv/Scripts` or `.venv/bin`). Per-project QA removes inherited Context virtualenv state, selects the child repository `.venv` when present, normalizes MSYS PATH handling and protects Docker container paths from automatic Git Bash conversion. For `sbm-suite-context`, `context-deploy.sh` also accepts the short form that omits `project_name`; QA payload construction reads exact evidence bytes and metadata from the canonical QA decision JSON.
 
+Sonar-backed project QA uses the Context-owned `sbm-sonar-scanner:<arch>` image. `scripts/sonar-scanner-common.sh` resolves native amd64/arm64 execution, keeps scanner cache architecture-specific, rebuilds stale images using a Dockerfile SHA-256 label and enforces timeout cleanup. The image is built from `docker/sonar-scanner/Dockerfile`, pins SonarScanner CLI 8.1.0.6389 with Node.js 22.14.0 and uses `SONAR_USER_HOME=/opt/sonar-scanner/.sonar`; no shared scanner wrapper exists outside `context/scripts/`.
+
 ## Usage
 
 Use `input/` only for Context upgrade ZIP exchange and `output/` only for generated workflow artifacts. Active and pending objectives remain in project and global `PROJECT_CONTEXT.md` files. Completed objectives are stored only in global `COMPLETED_OBJECTIVES.md`. Documentation pages live only below `documentation/pages/<page>/`, with subpages below `documentation/pages/<page>/subpages/`. Full-object lifecycle batches are serialized by SBM Agent, deterministically gzip-compressed (`mtime=0`), standard-base64 encoded, prefixed with `SBM-GZIP-BASE64-V1`, round-trip verified against the frozen batch and then streamed to the existing `context-deploy.sh` through stdin using `-`. Raw JSON paste is not canonical. The script decodes/validates using internal temporary files and removes them automatically.
@@ -105,6 +107,7 @@ sbm context deploy [objective_id]
 sbm context upgrade
 sbm documentation deploy
 sbm documentation upgrade
+sbm check all
 sbm git pull [objective_id]
 sbm git publish [objective_id]
 sbm git finalize [objective_id]
@@ -115,6 +118,7 @@ macOS/POSIX:
 ./sbm context upgrade
 ./sbm documentation deploy
 ./sbm documentation upgrade
+./sbm check all
 ./sbm git pull [objective_id]
 ./sbm git publish [objective_id]
 ./sbm git finalize [objective_id]

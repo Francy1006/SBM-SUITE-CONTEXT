@@ -258,6 +258,22 @@ class SbmCliTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 2)
                 self.assertFalse(self.log.exists())
 
+    def test_public_commands_are_platform_independent(self) -> None:
+        result = self.run_cli("--help")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(), [
+            "Uso:",
+            "  sbm qa [objective_id]",
+            "  sbm context deploy [objective_id]",
+            "  sbm context upgrade",
+            "  sbm documentation deploy",
+            "  sbm documentation upgrade",
+            "  sbm check all",
+            "  sbm git pull [objective_id]",
+            "  sbm git publish [objective_id]",
+            "  sbm git finalize [objective_id]",
+        ])
+
     def test_windows_cmd_wrapper_uses_git_for_windows_not_wsl(self) -> None:
         source = (CONTEXT_ROOT / "sbm.cmd").read_text(encoding="utf-8")
         self.assertIn("where git.exe", source)
@@ -275,6 +291,7 @@ class SbmCliTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout, self.run_cli("--help").stdout)
             self.assertIn("sbm git pull", result.stdout)
             self.assertIn("sbm git publish", result.stdout)
             self.assertIn("sbm git finalize", result.stdout)

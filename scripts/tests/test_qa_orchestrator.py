@@ -400,7 +400,13 @@ class QAOrchestratorTests(unittest.TestCase):
             coverage.chmod(0o755)
 
             inherited = env.inherited_context_environment()
-            inherited["PATH"] += r";E:\Programs Files\Git\cmd"
+            inherited["GIT_BASH"] = ""
+            native_bin = Path(d) / "native tools" / "bin"
+            native_bin.mkdir(parents=True)
+            inherited["PATH"] += os.pathsep + str(native_bin)
+            # Only Windows fixtures may introduce a Git for Windows PATH entry.
+            if os.name == "nt":
+                inherited["PATH"] += os.pathsep + r"E:\Programs Files\Git\cmd"
             result = _run(
                 str(env.context / "QA/qa-project.sh"),
                 "DP-API",
@@ -418,6 +424,16 @@ class QAOrchestratorTests(unittest.TestCase):
                 encoding="utf-8"
             ).strip()
             self.assertNotRegex(child_path, r";[A-Za-z]:[\\/]")
+            self.assertNotIn(_bash_path(env.context / ".venv/bin"), child_path.split(":"))
+            if os.name == "nt":
+                # Bash uses POSIX separators after importing the native Windows PATH.
+                self.assertIn(_bash_path(native_bin), child_path.split(":"))
+                self.assertIn("/e/Programs Files/Git/cmd", child_path.split(":"))
+            else:
+                self.assertNotIn(str(env.context / ".venv/bin"), child_path.split(":"))
+                self.assertNotRegex(child_path, r"(?:^|[:;])[A-Za-z]:[\\/]")
+                self.assertNotIn(";", child_path)
+                self.assertEqual(child_path, os.environ["PATH"] + os.pathsep + str(native_bin))
             self.assertFalse(any(";E" in path.name for path in env.suite.rglob("*")))
 
     def test_repository_venv_is_selected_for_windows_and_posix_layouts(self):

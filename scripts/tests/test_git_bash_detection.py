@@ -7,6 +7,28 @@ from scripts.tests import _git_bash
 
 
 class GitBashDetectionTests(unittest.TestCase):
+    def test_posix_ignores_git_for_windows_environment(self):
+        for git_bash in ("", r"E:\Programs Files\Git\bin\bash.exe"):
+            with (
+                self.subTest(git_bash=git_bash),
+                mock.patch.object(_git_bash, "_is_windows", return_value=False),
+                mock.patch.object(_git_bash.shutil, "which", return_value="/bin/bash") as which,
+                mock.patch.object(_git_bash, "_exists") as windows_exists,
+                mock.patch.object(_git_bash, "_windows_python_shim") as windows_shim,
+                mock.patch.dict(_git_bash.os.environ, {
+                    "PATH": "/usr/bin:/bin:/opt/native tools/bin",
+                    "GIT_BASH": git_bash,
+                    "ProgramFiles": r"E:\Programs Files",
+                }, clear=True),
+            ):
+                before = dict(_git_bash.os.environ)
+                command = _git_bash.bash_command("script.sh", "argument")
+                self.assertEqual(command, ["/bin/bash", _git_bash.bash_path("script.sh"), "argument"])
+                which.assert_called_once_with("bash")
+                windows_exists.assert_not_called()
+                windows_shim.assert_not_called()
+                self.assertEqual(dict(_git_bash.os.environ), before)
+
     @staticmethod
     def _which(mapping):
         return lambda executable: mapping.get(executable)
