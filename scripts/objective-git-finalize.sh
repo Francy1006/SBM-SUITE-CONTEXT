@@ -19,6 +19,7 @@ BRANCH_HELPER="${SCRIPT_DIR}/objective-branches.sh"
 POLICY_HELPER="${SCRIPT_DIR}/git-flow-policy.py"
 OBJECTIVE_STATE_HELPER="${SCRIPT_DIR}/objective-git-state.py"
 WORKFLOW_STATE_HELPER="${SCRIPT_DIR}/workflow-state.py"
+PATH_PORTABILITY_HELPER="${SCRIPT_DIR}/path-portability.py"
 CLEANUP_HELPER="${SCRIPT_DIR}/objective-git-cleanup.sh"
 QA_GATE_FILE="${CONTEXT_ROOT}/QA/output/finalization-gate.json"
 DOCUMENTATION_GATE_FILE="${CONTEXT_ROOT}/documentation/output/finalization-gate.json"
@@ -31,6 +32,7 @@ for required_file in \
   "${POLICY_HELPER}" \
   "${OBJECTIVE_STATE_HELPER}" \
   "${WORKFLOW_STATE_HELPER}" \
+  "${PATH_PORTABILITY_HELPER}" \
   "${CLEANUP_HELPER}"; do
   [[ -f "${required_file}" ]] || {
     echo "ERROR: archivo requerido inexistente: ${required_file}" >&2
@@ -114,7 +116,7 @@ if qa.get("mode") != "full-suite-with-sonar":
 
 doc = load(doc_path, "Documentation gate")
 require_common(doc, "Documentation gate", "updated")
-print(doc["state_sha256"])
+sys.stdout.write(doc["state_sha256"])
 PY
 )"
 
@@ -147,7 +149,9 @@ preflight_repository() {
     echo "ERROR: ${path}: no es un repositorio Git válido" >&2
     return 1
   }
-  [[ "$(git -C "${repository}" rev-parse --show-toplevel)" == "$(cd "${repository}" && pwd -P)" ]] || {
+  python3 "${PATH_PORTABILITY_HELPER}" equivalent \
+    "$(git -C "${repository}" rev-parse --show-toplevel)" \
+    "$(cd "${repository}" && pwd -P)" || {
     echo "ERROR: ${path}: el path resuelto no es la raíz del repositorio" >&2
     return 1
   }

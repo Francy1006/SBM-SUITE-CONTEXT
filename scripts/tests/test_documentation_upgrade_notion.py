@@ -2,15 +2,28 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 from zipfile import ZipFile
 
+from scripts.tests._git_bash import bash_executable as _bash_executable
+
 
 CONTEXT_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _bash_path(path: Path) -> str:
+    resolved = path.resolve().as_posix()
+    if os.name == 'nt' and len(resolved) >= 3 and resolved[1:3] == ':/':
+        return f'/{resolved[0].lower()}/{resolved[3:]}'
+    return resolved
+
+
 STUB = r'''#!/usr/bin/env python3
 import json
 import os
@@ -29,6 +42,12 @@ if url.endswith('/contexts/contract'):
     if os.environ.get('BAD_REGISTRY'):
         payload = {'canonical_projects': {}}
 elif url.endswith('/documentation/upgrade'):
+    request = json.loads(args[args.index('--data-binary') + 1])
+    assert request == {
+        'project_name': 'sbm-suite-context',
+        'workflow': 'documentation-upgrade',
+    }, request
+    assert '\r' not in request['project_name'], request
     target = root / 'documentation/pages/guide.md'
     backup = root / 'backup/test/guide.md'
     backup.parent.mkdir(parents=True, exist_ok=True)
@@ -71,6 +90,13 @@ class DocumentationUpgradeNotionTests(unittest.TestCase):
             shutil.copy2(CONTEXT_ROOT / 'scripts' / name, scripts / name)
         self.bin = suite / 'bin'
         self.bin.mkdir()
+        python3 = self.bin / 'python3'
+        python3.write_text(
+            '#!/usr/bin/env bash\n'
+            f'exec {shlex.quote(_bash_path(Path(sys.executable)))} "$@"\n',
+            encoding='utf-8',
+        )
+        python3.chmod(0o755)
         curl = self.bin / 'curl'
         curl.write_text(STUB)
         curl.chmod(0o755)
@@ -82,9 +108,16 @@ class DocumentationUpgradeNotionTests(unittest.TestCase):
         self.make_zip()
         self.env = {k: v for k, v in os.environ.items()
                     if not k.startswith(('SBM_', 'AI_ASSISTANT_', 'SYNC_', 'BAD_'))}
-        self.env.update(PATH=f'{self.bin}:{os.environ["PATH"]}',
-                        TEST_CONTEXT=str(self.root), AI_ASSISTANT_URL='https://assistant.test',
-                        SYNC_BODY=json.dumps(self.payload()))
+        self.env.update(
+            PATH=os.pathsep.join((
+                str(self.bin), str(Path(sys.executable).parent), os.environ['PATH']
+            )),
+            PYTHONUTF8='1',
+            PYTHONIOENCODING='utf-8',
+            TEST_CONTEXT=str(self.root),
+            AI_ASSISTANT_URL='https://assistant.test',
+            SYNC_BODY=json.dumps(self.payload()),
+        )
         self.env_file = self.root / '.env.dev'
         self.env_file.write_text('SBM_UTIL_BASE_URL="https://util.test/"\nSBM_SERVICE_TOKEN="test-secret"\n')
 
@@ -100,8 +133,30 @@ class DocumentationUpgradeNotionTests(unittest.TestCase):
             archive.writestr('documentation/pages/guide.md', '# Updated\n')
 
     def run_script(self, **env):
-        result = subprocess.run(['bash', str(self.root / 'scripts/documentation-upgrade.sh')],
-                                env=self.env | env, text=True, capture_output=True, timeout=15)
+        script = self.root / 'scripts/documentation-upgrade.sh'
+        script_arg = _bash_path(script) if os.name == 'nt' else str(script)
+        command = [_bash_executable(), script_arg]
+        if os.name == 'nt':
+            command = [
+                _bash_executable(),
+                '-c',
+                'export PATH="$1${PATH:+:$PATH}"; exec bash "$2"',
+                'documentation-upgrade-test',
+                _bash_path(self.bin),
+                script_arg,
+            ]
+        completed = subprocess.run(
+            command,
+            env=self.env | env,
+            capture_output=True,
+            timeout=15,
+        )
+        result = subprocess.CompletedProcess(
+            completed.args,
+            completed.returncode,
+            completed.stdout.decode('utf-8', errors='replace'),
+            completed.stderr.decode('utf-8', errors='replace'),
+        )
         self.assertNotIn('test-secret', result.stdout + result.stderr)
         return result
 

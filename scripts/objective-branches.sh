@@ -19,8 +19,10 @@ CONTEXT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
 REPOSITORY_HELPER="${SCRIPT_DIR}/suite-repositories.py"
 POLICY_HELPER="${SCRIPT_DIR}/git-flow-policy.py"
+PATH_PORTABILITY_HELPER="${SCRIPT_DIR}/path-portability.py"
 [[ -f "${REPOSITORY_HELPER}" ]] || { echo "ERROR: No existe scripts/suite-repositories.py" >&2; exit 1; }
 [[ -f "${POLICY_HELPER}" ]] || { echo "ERROR: No existe scripts/git-flow-policy.py" >&2; exit 1; }
+[[ -f "${PATH_PORTABILITY_HELPER}" ]] || { echo "ERROR: No existe scripts/path-portability.py" >&2; exit 1; }
 IFS=$'\t' read -r _ BASE_BRANCH _ _ _ _ < <(python3 "${POLICY_HELPER}" describe "${OBJECTIVE_BRANCH}" --format tsv)
 [[ "${BASE_BRANCH}" == "main" ]] || { echo "ERROR: La política temporal debe nacer desde main" >&2; exit 1; }
 
@@ -40,7 +42,9 @@ git_state_guard() {
 preflight_repository() {
   local relative_path="$1" repository="${SUITE_ROOT}/$1" current_branch target_source remote_target occupied
   [[ -d "${repository}" ]] || { echo "ERROR: ${relative_path}: directorio inexistente" >&2; return 1; }
-  [[ "$(git -C "${repository}" rev-parse --show-toplevel 2>/dev/null)" == "$(cd "${repository}" && pwd -P)" ]] || { echo "ERROR: ${relative_path}: el path registrado no es la raíz Git" >&2; return 1; }
+  python3 "${PATH_PORTABILITY_HELPER}" equivalent \
+    "$(git -C "${repository}" rev-parse --show-toplevel 2>/dev/null)" \
+    "$(cd "${repository}" && pwd -P)" || { echo "ERROR: ${relative_path}: el path registrado no es la raíz Git" >&2; return 1; }
   git_state_guard "${repository}" "${relative_path}" || return 1
   git -C "${repository}" show-ref --verify --quiet refs/heads/main || { echo "ERROR: ${relative_path}: branch local main inexistente" >&2; return 1; }
   git -C "${repository}" remote get-url origin >/dev/null 2>&1 || { echo "ERROR: ${relative_path}: remote origin inexistente" >&2; return 1; }

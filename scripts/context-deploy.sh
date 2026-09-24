@@ -4,14 +4,15 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Uso:
-  ./scripts/context-deploy.sh <project_name> planning-activation '<objectives-json-array>|-' [user_prompt]
-  ./scripts/context-deploy.sh <project_name> objective-activation '<objectives-json-array>|-' [user_prompt]
-  ./scripts/context-deploy.sh <project_name> objective-registration '<objectives-json-array>|-' [user_prompt]
-  ./scripts/context-deploy.sh <project_name> objective-completion '<objectives-json-array>|-' [user_prompt]
-  ./scripts/context-deploy.sh <project_name> objective-deletion '<objectives-json-array>|-' [user_prompt]
-  ./scripts/context-deploy.sh <project_name> objective-update '<objectives-json-array>|-' [user_prompt]
-  ./scripts/context-deploy.sh <project_name> implementation-progress '<objectives-json-array>|-' [user_prompt]
-  ./scripts/context-deploy.sh <project_name> implementation-closure '<objectives-json-array>|-' [user_prompt]
+  ./scripts/context-deploy.sh <lifecycle_phase> '<objectives-json-array>|-' [user_prompt]
+  ./scripts/context-deploy.sh <project_name> <lifecycle_phase> '<objectives-json-array>|-' [user_prompt]
+
+El formato corto usa project_name=sbm-suite-context.
+
+Lifecycle phases:
+  planning-activation, objective-activation, objective-registration,
+  objective-completion, objective-deletion, objective-update,
+  implementation-progress, implementation-closure.
 
 Transporte de objectives:
   - JSON inline queda soportado para payloads cortos/compatibilidad.
@@ -38,15 +39,19 @@ progress/closure incorporan esa evidencia cuando ya fue ejecutada.
 EOF
 }
 
-[[ "$#" -ge 3 && "$#" -le 4 ]] || {
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ARGUMENT_HELPER="${SCRIPT_DIR}/context-deploy-args.sh"
+[[ -r "${ARGUMENT_HELPER}" ]] || {
+  echo "ERROR: ${ARGUMENT_HELPER} no está disponible" >&2
+  exit 1
+}
+# shellcheck disable=SC1090
+source "${ARGUMENT_HELPER}"
+
+context_deploy_parse_args "$@" || {
   usage >&2
   exit 1
 }
-
-PROJECT_NAME="$1"
-LIFECYCLE_PHASE="$2"
-OBJECTIVES_SOURCE="$3"
-USER_PROMPT="${4:-}"
 
 if [[ -n "${USER_PROMPT//[[:space:]]/}" ]]; then
   EXECUTION_MODE="user-guided"
@@ -82,7 +87,6 @@ esac
   exit 1
 }
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTEXT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SBM_SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
 OBJECTIVE_PAYLOAD_HELPER="${SCRIPT_DIR}/objective_payload.py"
@@ -95,7 +99,10 @@ CONTRACT_FILE="$(mktemp)"
 META_FILE="$(mktemp)"
 QA_DECISION_FILE="$(mktemp)"
 PAYLOAD_FILE="$(mktemp)"
-trap 'rm -f "${OBJECTIVES_RAW_FILE}" "${DECODED_OBJECTIVES_FILE}" "${NORMALIZED_OBJECTIVES_FILE}" "${CONTRACT_FILE}" "${META_FILE}" "${QA_DECISION_FILE}" "${PAYLOAD_FILE}"' EXIT
+GIT_DIFF_FILE="$(mktemp)"
+CHANGED_FILES_FILE="$(mktemp)"
+EVIDENCE_OMISSIONS_FILE="$(mktemp)"
+trap 'rm -f "${OBJECTIVES_RAW_FILE}" "${DECODED_OBJECTIVES_FILE}" "${NORMALIZED_OBJECTIVES_FILE}" "${CONTRACT_FILE}" "${META_FILE}" "${QA_DECISION_FILE}" "${PAYLOAD_FILE}" "${GIT_DIFF_FILE}" "${CHANGED_FILES_FILE}" "${EVIDENCE_OMISSIONS_FILE}"' EXIT
 
 case "${OBJECTIVES_SOURCE}" in
   -)
@@ -144,6 +151,7 @@ RESPONSE_FILE="${OUTPUT_DIR}/context-export-response.json"
 CONTEXT_PACKAGE_FILE="${OUTPUT_DIR}/context-package.zip"
 UPLOAD_PACKAGE_FILE="${OUTPUT_DIR}/context-deploy-package.zip"
 QA_LIFECYCLE_HELPER="${SCRIPT_DIR}/qa_lifecycle.py"
+CONTEXT_EVIDENCE_HELPER="${SCRIPT_DIR}/context-evidence.py"
 
 get_env() {
   local file="$1"
@@ -541,9 +549,7 @@ python3 "${LIFECYCLE_VALIDATOR}" \
   --completed-context "${CONTEXT_ROOT}/COMPLETED_OBJECTIVES.md" \
   "${LIFECYCLE_CONTEXT_ARGS[@]}"
 
-QA_RESULTS=""
-QA_MANIFEST_JSON=""
-PAYLOAD_QA_MANIFEST_JSON=""
+QA_DECISION_AVAILABLE=0
 [[ -f "${QA_LIFECYCLE_HELPER}" ]] || {
   echo "ERROR: No existe ${QA_LIFECYCLE_HELPER}" >&2
   exit 1
@@ -553,26 +559,7 @@ if [[ "${LIFECYCLE_ROUTE}" == "implementation-progress" || "${LIFECYCLE_ROUTE}" 
     --project-name "${PROJECT_NAME}" \
     --project-root "${CONTEXT_ROOT}" \
     --output "${QA_DECISION_FILE}"
-  QA_RESULTS="$(
-    python3 - "${QA_DECISION_FILE}" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-print(json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["qa_results"], end="")
-PY
-  )"
-  QA_MANIFEST_JSON="$(
-    python3 - "${QA_DECISION_FILE}" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-print(json.dumps(payload["qa"], ensure_ascii=False, separators=(",", ":")))
-PY
-  )"
-  PAYLOAD_QA_MANIFEST_JSON="${QA_MANIFEST_JSON}"
+  QA_DECISION_AVAILABLE=1
 fi
 
 mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}"
@@ -615,30 +602,24 @@ PY
   exit 1
 }
 
-GIT_DIFF="$(
-  {
-    git -C "${PROJECT_ROOT}" diff --no-ext-diff -- . \
-      ':(exclude).env' ':(exclude).env.*' \
-      ':(exclude)**/.env' ':(exclude)**/.env.*'
-    git -C "${PROJECT_ROOT}" diff --cached --no-ext-diff -- . \
-      ':(exclude).env' ':(exclude).env.*' \
-      ':(exclude)**/.env' ':(exclude)**/.env.*'
-  } 2>/dev/null
-)"
+[[ -f "${CONTEXT_EVIDENCE_HELPER}" ]] || {
+  echo "ERROR: No existe ${CONTEXT_EVIDENCE_HELPER}" >&2
+  exit 1
+}
+python3 "${CONTEXT_EVIDENCE_HELPER}" \
+  --project-root "${PROJECT_ROOT}" \
+  --diff-output "${GIT_DIFF_FILE}" \
+  --changed-output "${CHANGED_FILES_FILE}" \
+  --omissions-output "${EVIDENCE_OMISSIONS_FILE}"
 
-CHANGED_FILES="$(
-  {
-    git -C "${PROJECT_ROOT}" diff --name-only -- . \
-      ':(exclude).env' ':(exclude).env.*' \
-      ':(exclude)**/.env' ':(exclude)**/.env.*'
-    git -C "${PROJECT_ROOT}" diff --cached --name-only -- . \
-      ':(exclude).env' ':(exclude).env.*' \
-      ':(exclude)**/.env' ':(exclude)**/.env.*'
-    git -C "${PROJECT_ROOT}" ls-files --others --exclude-standard
-  } 2>/dev/null \
-    | awk '!/(^|\/)\.env($|\.)/' \
-    | sort -u
-)"
+if [[ -s "${EVIDENCE_OMISSIONS_FILE}" ]]; then
+  echo "Archivos omitidos de la evidencia Context:" >&2
+  while IFS=$'\t' read -r omitted_path omitted_reason; do
+    printf '  - %s (%s)\n' "${omitted_path}" "${omitted_reason}" >&2
+  done < "${EVIDENCE_OMISSIONS_FILE}"
+fi
+
+CHANGED_FILES="$(cat "${CHANGED_FILES_FILE}")"
 
 if [[ -n "${CHANGED_FILES}" ]]; then
   CHANGE_SUMMARY="Current ${PROJECT_NAME} changes affect: $(printf '%s\n' "${CHANGED_FILES}" | awk 'NF' | paste -sd ',' - | sed 's/,/, /g')."
@@ -651,17 +632,28 @@ LIFECYCLE_PHASE="${LIFECYCLE_PHASE}" \
 EXECUTION_MODE="${EXECUTION_MODE}" \
 USER_PROMPT="${USER_PROMPT}" \
 CHANGE_SUMMARY="${CHANGE_SUMMARY}" \
-CHANGED_FILES="${CHANGED_FILES}" \
-GIT_DIFF="${GIT_DIFF}" \
-QA_RESULTS="${QA_RESULTS}" \
-QA_MANIFEST_JSON="${PAYLOAD_QA_MANIFEST_JSON}" \
-python3 - "${NORMALIZED_OBJECTIVES_FILE}" "${PAYLOAD_FILE}" <<'PY'
+python3 - \
+  "${NORMALIZED_OBJECTIVES_FILE}" \
+  "${PAYLOAD_FILE}" \
+  "${QA_DECISION_FILE}" \
+  "${QA_DECISION_AVAILABLE}" \
+  "${SCRIPT_DIR}" \
+  "${CHANGED_FILES_FILE}" \
+  "${GIT_DIFF_FILE}" <<'PY'
 import json
 import os
 import sys
 from pathlib import Path
 
-objectives_path, payload_path = sys.argv[1:]
+(
+    objectives_path,
+    payload_path,
+    qa_decision_path,
+    qa_available,
+    script_dir,
+    changed_files_path,
+    git_diff_path,
+) = sys.argv[1:]
 payload = {
     "project_name": os.environ["PROJECT_NAME"],
     "workflow": "context-deploy",
@@ -672,14 +664,19 @@ payload = {
     "change_summary": os.environ["CHANGE_SUMMARY"],
     "changed_files": [
         value
-        for value in os.environ["CHANGED_FILES"].splitlines()
+        for value in Path(changed_files_path).read_text(encoding="utf-8").splitlines()
         if value.strip()
     ],
-    "git_diff": os.environ["GIT_DIFF"],
-    "qa_results": os.environ["QA_RESULTS"],
+    "git_diff": Path(git_diff_path).read_text(encoding="utf-8"),
+    "qa_results": "",
 }
-if os.environ["QA_MANIFEST_JSON"]:
-    payload["qa"] = json.loads(os.environ["QA_MANIFEST_JSON"])
+if qa_available == "1":
+    sys.path.insert(0, script_dir)
+    from qa_lifecycle import load_qa_payload_fields
+
+    qa_manifest, qa_results = load_qa_payload_fields(Path(qa_decision_path))
+    payload["qa_results"] = qa_results
+    payload["qa"] = qa_manifest
 Path(payload_path).write_text(
     json.dumps(payload, ensure_ascii=False),
     encoding="utf-8",
@@ -745,7 +742,7 @@ print("Objetivos: " + ", ".join(
 print("Paquete: output/context-deploy-package.zip")
 PY
 
-if [[ -n "${QA_MANIFEST_JSON}" ]]; then
+if [[ "${QA_DECISION_AVAILABLE}" == "1" ]]; then
   python3 "${QA_LIFECYCLE_HELPER}" normalize-export \
     --decision "${QA_DECISION_FILE}" \
     --context-package "${CONTEXT_PACKAGE_FILE}" \

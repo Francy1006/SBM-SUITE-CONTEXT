@@ -143,7 +143,7 @@ if not isinstance(project_name, str) or not re.fullmatch(
     raise SystemExit("ERROR: manifest.project_name inválido")
 if manifest.get("workflow") != "documentation-upgrade":
     raise SystemExit("ERROR: manifest.workflow debe ser documentation-upgrade")
-print(project_name)
+sys.stdout.write(project_name)
 PY
 )"
 
@@ -186,8 +186,9 @@ HTTP_STATUS="$(
       python3 <<'PY'
 import json
 import os
+import sys
 
-print(json.dumps({
+sys.stdout.write(json.dumps({
     "project_name": os.environ["PROJECT_NAME"],
     "workflow": "documentation-upgrade"
 }))

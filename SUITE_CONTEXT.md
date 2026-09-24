@@ -411,12 +411,13 @@ sbm-network
 
 Development stacks may use a separate `sbm-dev-network` when multiple local project containers need shared DNS on the Mac; the network name does not change the canonical host-port allocation.
 
+Sonar-backed project QA uses ephemeral scanner containers from the Context-owned multiarchitecture image `sbm-sonar-scanner:<arch>`, built from `context/docker/sonar-scanner/Dockerfile`. The image pins SonarScanner CLI 8.1.0.6389 and Node.js 22.14.0, sets `SONAR_USER_HOME=/opt/sonar-scanner/.sonar`, uses architecture-specific project cache paths and is rebuilt when its Dockerfile SHA-256 label no longer matches. Shared architecture detection, image validation and timeout cleanup live only under `context/scripts/`.
+
 Runtime naming constraint:
 
 - the current SBM-API runtime/service is documented as `sbm-core`;
 - the new asynchronous platform project is also named `SBM-CORE`;
 - `SBM-API-002` must rename the legacy SBM-API runtime/container/service before onboarding the new project to avoid Docker/DNS/service-name collision.
-
 
 ## 14. Shared configuration
 
@@ -556,6 +557,11 @@ Current deployment principles:
 
 Current verified direction:
 
+- Context QA and lifecycle tooling is portable across Windows/Git Bash and POSIX by resolving the Context-owned `.venv`, isolating child repository virtual environments and normalizing MSYS path handling; Docker orchestration preserves container paths while converting required host paths. Regression coverage explicitly keeps Git-for-Windows environment handling platform-gated so POSIX child QA preserves its native PATH.
+- `context-deploy.sh` supports a Context-specific short form that infers `sbm-suite-context`; QA export reads exact evidence bytes and metadata from the canonical QA decision JSON to keep the evidence hash consistent.
+- the root Context CLI provides the portable user-facing surface `sbm qa`, `sbm check all`, `sbm context deploy|upgrade`, `sbm documentation deploy|upgrade`, `sbm git pull`, `sbm git publish` and `sbm git finalize`; Windows delegates through Git for Windows while macOS/POSIX uses the same dispatcher contract, and objective-aware commands resolve branch state from lifecycle metadata instead of requiring a branch argument.
+- transversal Git path comparisons use canonical Windows/MSYS/POSIX representations, and Context evidence generation includes safe untracked text files in `git-diff.patch` without packaging ignored, sensitive, generated, archive, binary or oversized untracked content.
+
 - SBM-MANAGER is the canonical Vue 3 web frontend consuming DP-API and SBM-API through explicit frontend clients.
 - SBM-MANAGER context, QA and lifecycle scaffolding is present; current implementation-progress QA reports 45/45 tests passed, 70.14% coverage and server-side SonarQube Quality Gate PASSED while SBM-MANAGER-002 remains active.
 - SBM-DB is the canonical PostgreSQL/Flyway authority; project context, QA/lifecycle scaffolding and canonical routing are defined, and the current transversal without-Sonar queue records its project QA entrypoint as passed.
@@ -595,6 +601,7 @@ QA/qa-full.sh
 → `not-applicable`, missing, stale or failed evidence blocks finalization
 
 ./scripts/context-deploy.sh <project_name> <lifecycle_phase> <small-objectives-json-array|-> [user_prompt]
+./scripts/context-deploy.sh <lifecycle_phase> <small-objectives-json-array> [user_prompt]  # sbm-suite-context short form
 → validate the selected project through the backend Project Registry
 → validate the 9 global Context H1/H2 structures against FORMAT_CONTEXT.md before export
 → accept compact `SBM-GZIP-BASE64-V1` objective envelopes through stdin with objectives argument `-`, validate gzip CRC/base64/UTF-8/JSON/lifecycle fidelity in internal temporary files, preserve plain JSON only for backward compatibility and keep `input/` reserved for upgrade ZIP exchange
@@ -606,6 +613,9 @@ QA/qa-full.sh
 → request GET /contexts/contract before exchange-directory cleanup
 → generate project-tree.txt through ./scripts/project-tree.sh
 → collect Git evidence and canonical QA evidence from the registry-resolved project root
+→ resolve Context tooling Python from `.venv/Scripts` or `.venv/bin`; per-project QA clears inherited Context virtualenv state and selects the child repository environment when available
+→ under Windows/MSYS, normalize PATH and prevent Git Bash from rewriting Docker container paths while preserving host-path conversion where required
+→ read progress QA evidence and manifest metadata from the canonical QA decision JSON so the transmitted evidence bytes match `evidence_sha256`
 → for sbm-suite-context implementation-progress, optionally validate QA/output/qa-all-without-sonar-results.md with its queue and include Context QA evidence when present
 → normalize verified progress QA into qa-results.md and the inner context-package manifest without applying closure semantics
 → call POST /contexts/export

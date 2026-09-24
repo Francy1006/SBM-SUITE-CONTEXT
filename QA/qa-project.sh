@@ -49,7 +49,223 @@ REPOSITORY_HELPER="${CONTEXT_ROOT}/scripts/suite-repositories.py"
 OUTPUT_DIR="${QA_DIR}/output"
 
 [[ -x "${REPOSITORY_HELPER}" ]] || { echo "ERROR: No existe scripts/suite-repositories.py ejecutable" >&2; exit 2; }
-relative_path="$(python3 "${REPOSITORY_HELPER}" resolve "${SELECTOR}")"
+
+context_python() {
+  local candidate
+  for candidate in \
+    "${CONTEXT_ROOT}/.venv/Scripts/python.exe" \
+    "${CONTEXT_ROOT}/.venv/Scripts/python3.exe" \
+    "${CONTEXT_ROOT}/.venv/bin/python3" \
+    "${CONTEXT_ROOT}/.venv/bin/python"
+  do
+    if [[ -x "${candidate}" ]]; then
+      printf '%s\n' "${candidate}"
+      return 0
+    fi
+  done
+  echo "ERROR: Context requiere su propio Python en .venv/Scripts o .venv/bin" >&2
+  return 1
+}
+
+path_without_inherited_venv() {
+  local inherited_venv="${VIRTUAL_ENV:-}" entry cleaned="" path_value="${PATH:-}"
+  local entries=()
+  if [[ -n "${MSYSTEM:-}" && "${path_value}" =~ (^|\;)[A-Za-z]:[/\\] ]]; then
+    path_value="$(cygpath --path --unix "${path_value}")"
+  fi
+  IFS=':' read -r -a entries <<< "${path_value}"
+
+  if [[ -n "${MSYSTEM:-}" ]]; then
+    local candidate canonical_entry canonical_candidate skip
+    local excluded=(
+      "${CONTEXT_ROOT}/.venv/Scripts"
+      "${CONTEXT_ROOT}/.venv/bin"
+    )
+    local canonical_excluded=()
+    if [[ -n "${inherited_venv}" ]]; then
+      excluded+=("${inherited_venv}/Scripts" "${inherited_venv}/bin")
+    fi
+    for candidate in "${excluded[@]}"; do
+      canonical_candidate="$(cygpath -am -- "${candidate}" 2>/dev/null || printf '%s' "${candidate}")"
+      canonical_excluded+=("${canonical_candidate%/}")
+    done
+    for entry in "${entries[@]}"; do
+      canonical_entry="$(cygpath -am -- "${entry}" 2>/dev/null || printf '%s' "${entry}")"
+      canonical_entry="${canonical_entry%/}"
+      skip=0
+      for canonical_candidate in "${canonical_excluded[@]}"; do
+        if [[ "${canonical_entry,,}" == "${canonical_candidate,,}" ]]; then
+          skip=1
+          break
+        fi
+      done
+      [[ "${skip}" == "0" ]] || continue
+      if [[ -n "${cleaned}" ]]; then
+        cleaned="${cleaned}:${entry}"
+      else
+        cleaned="${entry}"
+      fi
+    done
+    printf '%s\n' "${cleaned}"
+    return 0
+  fi
+
+  for entry in "${entries[@]}"; do
+    case "${entry%/}" in
+      "${CONTEXT_ROOT}/.venv/Scripts"|"${CONTEXT_ROOT}/.venv/bin")
+        continue
+        ;;
+      "${inherited_venv}/Scripts"|"${inherited_venv}/bin")
+        [[ -n "${inherited_venv}" ]] && continue
+        ;;
+    esac
+    if [[ -n "${cleaned}" ]]; then
+      cleaned="${cleaned}:${entry}"
+    else
+      cleaned="${entry}"
+    fi
+  done
+  printf '%s\n' "${cleaned}"
+}
+
+QA_RUNTIME_DIR=""
+cleanup_qa_runtime() {
+  if [[ -n "${QA_RUNTIME_DIR}" && -d "${QA_RUNTIME_DIR}" ]]; then
+    rm -rf -- "${QA_RUNTIME_DIR}"
+  fi
+}
+trap cleanup_qa_runtime EXIT
+
+ensure_qa_runtime() {
+  if [[ -z "${QA_RUNTIME_DIR}" ]]; then
+    QA_RUNTIME_DIR="$(mktemp -d)"
+  fi
+}
+
+install_windows_python3_shim() {
+  local python_executable="$1"
+  ensure_qa_runtime
+  printf '#!/usr/bin/env bash\nexec %q "$@"\n' "${python_executable}" \
+    > "${QA_RUNTIME_DIR}/python3"
+  chmod +x "${QA_RUNTIME_DIR}/python3"
+}
+
+install_msys_docker_shim() {
+  local docker_executable="$1"
+  ensure_qa_runtime
+  cat > "${QA_RUNTIME_DIR}/docker" <<'DOCKER_SHIM'
+#!/usr/bin/env bash
+set -euo pipefail
+
+host_path() {
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -am -- "$1"
+  else
+    printf '%s\n' "$1"
+  fi
+}
+
+volume_spec() {
+  local spec="$1" source remainder tail
+  if [[ "${spec}" =~ ^[A-Za-z]:[/\\] ]]; then
+    tail="${spec:2}"
+    source="${spec:0:2}${tail%%:*}"
+    remainder="${tail#*:}"
+  elif [[ "${spec}" == /*:* || "${spec}" == ./*:* || "${spec}" == ../*:* ]]; then
+    source="${spec%%:*}"
+    remainder="${spec#*:}"
+  else
+    printf '%s\n' "${spec}"
+    return 0
+  fi
+  printf '%s:%s\n' "$(host_path "${source}")" "${remainder}"
+}
+
+compose_command=0
+[[ "${1:-}" == "compose" ]] && compose_command=1
+requires_path_handling=0
+for argument in "$@"; do
+  case "${argument}" in
+    cp|-v|--volume|--volume=*|--env-file|--env-file=*|/*|*=/*|[A-Za-z]:[/\\]*)
+      requires_path_handling=1
+      break
+      ;;
+  esac
+  if [[ "${compose_command}" == "1" ]]; then
+    case "${argument}" in
+      -f|--file|--file=*|--project-directory|--project-directory=*)
+        requires_path_handling=1
+        break
+        ;;
+    esac
+  fi
+done
+if [[ "${requires_path_handling}" == "0" ]]; then
+  exec "${QA_REAL_DOCKER}" "$@"
+fi
+
+converted=()
+while [[ "$#" -gt 0 ]]; do
+  if [[ "${compose_command}" == "1" ]]; then
+    case "$1" in
+      -f|--file|--project-directory)
+        converted+=("$1")
+        shift
+        converted+=("$(host_path "$1")")
+        shift
+        continue
+        ;;
+      --file=*|--project-directory=*)
+        converted+=("${1%%=*}=$(host_path "${1#*=}")")
+        shift
+        continue
+        ;;
+    esac
+  fi
+  case "$1" in
+    -v|--volume)
+      converted+=("$1")
+      shift
+      converted+=("$(volume_spec "$1")")
+      ;;
+    --volume=*)
+      converted+=("--volume=$(volume_spec "${1#*=}")")
+      ;;
+    --env-file)
+      converted+=("$1")
+      shift
+      converted+=("$(host_path "$1")")
+      ;;
+    --env-file=*)
+      converted+=("${1%%=*}=$(host_path "${1#*=}")")
+      ;;
+    *)
+      converted+=("$1")
+      ;;
+  esac
+  shift
+done
+
+if [[ "${converted[0]:-}" == "cp" ]]; then
+  for index in 1 2; do
+    value="${converted[${index}]:-}"
+    if [[ -n "${value}" && ( "${value}" != *:* || "${value}" =~ ^[A-Za-z]:[/\\] ) ]]; then
+      converted[${index}]="$(host_path "${value}")"
+    fi
+  done
+fi
+
+MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' \
+  "${QA_REAL_DOCKER}" "${converted[@]}"
+DOCKER_SHIM
+  chmod +x "${QA_RUNTIME_DIR}/docker"
+  export QA_REAL_DOCKER="${docker_executable}"
+}
+
+CONTEXT_PYTHON="$(context_python)"
+relative_path="$(
+  "${CONTEXT_PYTHON}" "${REPOSITORY_HELPER}" resolve "${SELECTOR}" | tr -d '\r'
+)"
 if [[ "${relative_path}" == "context" ]]; then
   echo "ERROR: Para SBM-SUITE/context use ./QA/qa-context.sh" >&2
   exit 3
@@ -118,9 +334,45 @@ result_file="${OUTPUT_DIR}/${slug}-${mode_slug}-qa-results.md"
 rm -f "${log_file}" "${result_file}"
 started_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
+child_path="$(path_without_inherited_venv)"
+repository_venv=""
+repository_venv_bin=""
+if [[ -d "${repository}/.venv/Scripts" ]]; then
+  repository_venv="${repository}/.venv"
+  repository_venv_bin="${repository_venv}/Scripts"
+elif [[ -d "${repository}/.venv/bin" ]]; then
+  repository_venv="${repository}/.venv"
+  repository_venv_bin="${repository_venv}/bin"
+fi
+if [[ -n "${repository_venv_bin}" ]]; then
+  child_path="${repository_venv_bin}${child_path:+:${child_path}}"
+fi
+
+if [[ -n "${MSYSTEM:-}" ]]; then
+  if [[ -n "${repository_venv_bin}" && "${repository_venv_bin}" == */Scripts ]]; then
+    if [[ ! -x "${repository_venv_bin}/python3" && ! -x "${repository_venv_bin}/python3.exe" && -x "${repository_venv_bin}/python.exe" ]]; then
+      install_windows_python3_shim "${repository_venv_bin}/python.exe"
+    fi
+  elif [[ -z "${repository_venv}" ]]; then
+    install_windows_python3_shim "${CONTEXT_PYTHON}"
+  fi
+  real_docker="$(PATH="${child_path}" command -v docker || true)"
+  if [[ -n "${real_docker}" ]]; then
+    install_msys_docker_shim "${real_docker}"
+  fi
+fi
+if [[ -n "${QA_RUNTIME_DIR}" ]]; then
+  child_path="${QA_RUNTIME_DIR}${child_path:+:${child_path}}"
+fi
+
 printf 'Ejecutando QA (%s): %s -> %s\n' "${MODE}" "${relative_path}" "${entrypoint}"
 set +e
 (
+  unset VIRTUAL_ENV VIRTUAL_ENV_PROMPT
+  if [[ -n "${repository_venv}" ]]; then
+    export VIRTUAL_ENV="${repository_venv}"
+  fi
+  export PATH="${child_path}"
   cd "${repository}"
   "./${entrypoint}"
 ) 2>&1 | tee "${log_file}"

@@ -5,6 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from scripts.tests._git_bash import bash_command, bash_path
+
 
 CONTEXT_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = CONTEXT_ROOT / "scripts" / "cleanup-exchange.sh"
@@ -12,7 +14,7 @@ SCRIPT = CONTEXT_ROOT / "scripts" / "cleanup-exchange.sh"
 
 def _run(mode: str, root: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        (str(SCRIPT), mode, str(root)),
+        bash_command(SCRIPT, mode, bash_path(root)),
         check=False,
         text=True,
         stdout=subprocess.PIPE,

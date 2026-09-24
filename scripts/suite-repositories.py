@@ -68,6 +68,8 @@ def resolve_selector(
 
 
 def main() -> int:
+    sys.stdout.reconfigure(newline="\n")
+
     if len(sys.argv) < 2:
         fail("Uso: suite-repositories.py list|list-paths|resolve [selector]")
 

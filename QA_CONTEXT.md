@@ -352,6 +352,8 @@ Status: VALIDATED
 Reason: Current canonical full-suite QA passed: Context QA passed and the sequential with-Sonar transversal queue passed for all seven registered project repositories.
 ```
 
+Current Context regression coverage includes POSIX-vs-Git-for-Windows PATH isolation, public CLI parity, native amd64/arm64 SonarScanner selection, Dockerfile-hash image invalidation, architecture-specific cache handling, timeout cleanup, Node availability and rejection of a root-level scanner compatibility wrapper.
+
 Verified `OBJ-CTX-014` implementation-closure evidence:
 
 ```text
@@ -457,6 +459,32 @@ Executed projects: 7
 Skipped projects: 0
 Evidence file: qa-results.md
 Evidence SHA-256: fd37891bfff2d477516180b7a35e98056c4e1a818a07e0b5b68d28726ae3694f
+Reason: full Context and transversal with-Sonar QA evidence verified
+```
+
+Verified `OBJ-CTX-002` implementation-progress evidence:
+
+```text
+Project: sbm-suite-context
+Objective: OBJ-CTX-002
+QA status: passed
+QA applicable: true
+QA workflow: QA/qa-full.sh
+Context QA: passed
+Transversal with-Sonar queue: passed
+DP-API: passed
+DP-STORE: not-applicable
+KS-STORE: passed
+PC-STORE: not-applicable
+sbm-ai-assistant: passed
+SBM-API: passed
+SBM-DB: passed
+SBM-MANAGER: passed
+SBM-UTIL: passed
+Executed projects: 7
+Skipped projects: 2
+Evidence file: qa-results.md
+Evidence SHA-256: 02ab6c5b40ddb165297e84a72ac1a9aa36ef629ee97adbd5e01c8157929194f8
 Reason: full Context and transversal with-Sonar QA evidence verified
 ```
 

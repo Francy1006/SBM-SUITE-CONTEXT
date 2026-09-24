@@ -447,12 +447,29 @@ def normalize_context_export(
 
 
 def _decision_file(path: Path) -> tuple[str, QADecision, str]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    return (
-        payload["project_name"],
-        QADecision(**payload["qa"]),
-        payload["qa_results"],
-    )
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        project_name = payload["project_name"]
+        qa_payload = payload["qa"]
+        evidence = payload["qa_results"]
+        if not isinstance(project_name, str):
+            raise TypeError("project_name must be a string")
+        if not isinstance(qa_payload, dict):
+            raise TypeError("qa must be an object")
+        if not isinstance(evidence, str):
+            raise TypeError("qa_results must be a string")
+        decision = QADecision(**qa_payload)
+    except (KeyError, TypeError, json.JSONDecodeError) as exc:
+        raise QAContractError("QA decision file is invalid") from exc
+    if decision.evidence_sha256 != _sha256(evidence):
+        raise QAContractError("QA decision evidence hash does not match qa_results")
+    return project_name, decision, evidence
+
+
+def load_qa_payload_fields(path: Path) -> tuple[dict[str, Any], str]:
+    """Return the manifest and exact evidence string from one validated decision."""
+    _, decision, evidence = _decision_file(path)
+    return decision.manifest(), evidence
 
 
 def _main() -> int:

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import NoReturn
@@ -45,6 +46,8 @@ def load_gate(path: Path, branch: str, status: str, objective_ids: list[str]) ->
         fail(f"gate {path.as_posix()} no corresponde al batch solicitado: " + ", ".join(objective_ids))
 
 def main() -> int:
+    sys.stdout.reconfigure(newline="\n")
+
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
     describe = subparsers.add_parser("describe")

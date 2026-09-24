@@ -1,25 +1,16 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
+from scripts.tests._git_bash import bash_executable
+
 
 SCRIPTS = Path(__file__).resolve().parents[1]
-
-
-def bash_executable() -> str:
-    if os.name != "nt":
-        return shutil.which("bash") or "bash"
-    git = Path(shutil.which("git") or "git")
-    candidate = git.parent.parent / "bin" / "bash.exe"
-    if not candidate.is_file():
-        raise RuntimeError("Git Bash no está disponible para ejecutar repos-pull.sh")
-    return str(candidate)
 
 
 BASH = bash_executable()
@@ -63,7 +54,7 @@ class PullEnvironment:
 
         scripts = self.context / "scripts"
         scripts.mkdir(exist_ok=True)
-        for name in ("repos-pull.sh", "suite-repositories.py"):
+        for name in ("repos-pull.sh", "suite-repositories.py", "path-portability.py"):
             shutil.copy2(SCRIPTS / name, scripts / name)
             (scripts / name).chmod(0o755)
         (scripts / "suite-repositories.json").write_text(

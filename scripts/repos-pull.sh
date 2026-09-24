@@ -17,9 +17,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTEXT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SUITE_ROOT="$(cd "${CONTEXT_ROOT}/.." && pwd)"
 REPOSITORY_HELPER="${SCRIPT_DIR}/suite-repositories.py"
+PATH_PORTABILITY_HELPER="${SCRIPT_DIR}/path-portability.py"
 
 [[ -x "${REPOSITORY_HELPER}" || -f "${REPOSITORY_HELPER}" ]] || {
   echo "ERROR: No existe scripts/suite-repositories.py" >&2
+  exit 1
+}
+[[ -x "${PATH_PORTABILITY_HELPER}" || -f "${PATH_PORTABILITY_HELPER}" ]] || {
+  echo "ERROR: No existe scripts/path-portability.py" >&2
   exit 1
 }
 
@@ -36,7 +41,7 @@ REPOSITORIES="$(mktemp)"
 PREFLIGHT="$(mktemp)"
 UPDATE_PLAN="$(mktemp)"
 trap 'rm -f "${REPOSITORIES}" "${PREFLIGHT}" "${UPDATE_PLAN}"' EXIT
-"${PYTHON_COMMAND}" "${REPOSITORY_HELPER}" list-paths | tr -d '\r' > "${REPOSITORIES}"
+"${PYTHON_COMMAND}" "${REPOSITORY_HELPER}" list-paths > "${REPOSITORIES}"
 
 report_error() {
   local relative_path="$1" branch="$2" reason="$3"
@@ -56,7 +61,8 @@ preflight_repository() {
     return 1
   fi
   git_root="$(git -C "${repository}" rev-parse --show-toplevel)"
-  if [[ "$(cd "${git_root}" && pwd -P)" != "$(cd "${repository}" && pwd -P)" ]]; then
+  if ! "${PYTHON_COMMAND}" "${PATH_PORTABILITY_HELPER}" equivalent \
+    "${git_root}" "$(cd "${repository}" && pwd -P)"; then
     report_error "${relative_path}" "desconocida" "el path resuelto no es la raíz del repositorio"
     return 1
   fi

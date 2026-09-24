@@ -132,7 +132,7 @@ for required_file in \
   }
 done
 
-IFS=$'\t' read -r QA_BRANCH QA_STATE_SHA256 QA_OBJECTIVE_IDS_CSV < <(
+QA_GATE_VALUES="$(
   python3 - "${QA_GATE_FILE}" <<'PY'
 import json
 import re
@@ -164,9 +164,10 @@ if len(objectives) != len(set(objectives)):
     raise SystemExit("ERROR: QA gate.objectives contiene duplicados")
 if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
     raise SystemExit("ERROR: QA gate.state_sha256 inválido")
-print(branch + "\t" + digest + "\t" + ",".join(objectives))
+sys.stdout.write(branch + "\t" + digest + "\t" + ",".join(objectives))
 PY
-)
+)"
+IFS=$'\t' read -r QA_BRANCH QA_STATE_SHA256 QA_OBJECTIVE_IDS_CSV <<< "${QA_GATE_VALUES}"
 
 IFS=',' read -r -a QA_OBJECTIVE_IDS <<< "${QA_OBJECTIVE_IDS_CSV}"
 "${BRANCH_HELPER}" verify "${QA_BRANCH}"
@@ -217,9 +218,14 @@ import sys
 from pathlib import Path
 
 payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-print("false" if payload["synchronized"] else "true")
+sys.stdout.write("false" if payload["synchronized"] else "true")
 PY
 )"
+
+[[ "${RECONCILIATION_PENDING}" == "true" || "${RECONCILIATION_PENDING}" == "false" ]] || {
+  echo "ERROR: Estado de reconciliación inválido" >&2
+  exit 1
+}
 
 if [[ "${RECONCILIATION_PENDING}" != "true" ]]; then
   python3 - "${RECONCILIATION_FILE}" "${RESPONSE_FILE}" <<'PY'
@@ -294,7 +300,7 @@ import json
 import sys
 from pathlib import Path
 
-print(json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["summary"])
+sys.stdout.write(json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["summary"])
 PY
 )"
 CHANGE_SUMMARY="${CHANGE_SUMMARY} ${RECONCILIATION_SUMMARY}"
@@ -326,7 +332,7 @@ reconciliation = json.loads(
     Path(os.environ["RECONCILIATION_FILE"]).read_text(encoding="utf-8")
 )
 
-print(json.dumps({
+sys.stdout.write(json.dumps({
     "project_name": os.environ["PROJECT_NAME"],
     "workflow": "documentation-deploy",
     "change_summary": os.environ["CHANGE_SUMMARY"],

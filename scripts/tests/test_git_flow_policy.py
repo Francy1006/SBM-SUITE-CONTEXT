@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -14,7 +15,7 @@ POLICY = CONTEXT_ROOT / "scripts/git-flow-policy.py"
 class GitFlowPolicyTests(unittest.TestCase):
     def describe(self, branch: str) -> dict[str, object]:
         result = subprocess.run(
-            ("python3", str(POLICY), "describe", branch),
+            (sys.executable, str(POLICY), "describe", branch),
             check=True,
             text=True,
             stdout=subprocess.PIPE,
@@ -42,7 +43,7 @@ class GitFlowPolicyTests(unittest.TestCase):
             root = Path(directory)
             result = subprocess.run(
                 (
-                    "python3",
+                    sys.executable,
                     str(POLICY),
                     "verify-finalization-gates",
                     "FEATURE-suite-flow",
@@ -61,7 +62,7 @@ class GitFlowPolicyTests(unittest.TestCase):
 
     def test_release_branch_is_part_of_name_contract(self) -> None:
         invalid = subprocess.run(
-            ("python3", str(POLICY), "describe", "release-lowercase"),
+            (sys.executable, str(POLICY), "describe", "release-lowercase"),
             check=False,
             text=True,
             stderr=subprocess.PIPE,
