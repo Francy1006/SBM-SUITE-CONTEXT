@@ -67,8 +67,11 @@ def _docker_host_path(path: str | Path) -> str:
 def _assert_paths_equivalent(
     test: unittest.TestCase, actual: str, expected: str | Path
 ) -> None:
+    """Compare host paths; container paths must use literal assertions."""
     if os.name == "nt":
         test.assertEqual(_path_key(actual), _path_key(expected))
+    elif sys.platform == "darwin":
+        test.assertEqual(os.path.realpath(actual), os.path.realpath(expected))
     else:
         test.assertEqual(actual, str(expected))
 
@@ -283,7 +286,29 @@ printf 'ARG:%s\n' "$@"
                 "sbm-sonar-scanner:amd64",
                 "-Dsonar.working.directory=/tmp/.scannerwork",
             ]
-            self.assertEqual(arguments, expected)
+            self.assertEqual(len(arguments), len(expected))
+            host_arguments = {
+                3: ("", ""),
+                5: ("", ":/usr/src:ro"),
+                6: ("--volume=", ":/opt/sonar-scanner/.sonar/cache"),
+            }
+            for index, (actual, wanted) in enumerate(zip(arguments, expected)):
+                with self.subTest(argument=index):
+                    if index in host_arguments and sys.platform == "darwin":
+                        prefix, suffix = host_arguments[index]
+                        # Only the host portion may resolve symlinks. Keep the
+                        # option, container destination and mount mode literal.
+                        self.assertTrue(actual.startswith(prefix))
+                        self.assertTrue(actual.endswith(suffix))
+                        _assert_paths_equivalent(
+                            self,
+                            actual[len(prefix):len(actual) - len(suffix)],
+                            wanted[len(prefix):len(wanted) - len(suffix)],
+                        )
+                    else:
+                        # Preserve exact Docker argument checks on Windows/MSYS
+                        # and Linux, including Windows drive spelling.
+                        self.assertEqual(actual, wanted)
             if os.name == "nt":
                 self.assertEqual(flags, "FLAGS:1:*")
                 self.assertRegex(arguments[3], r"^[A-Za-z]:/")
@@ -398,7 +423,7 @@ esac
                         if os.name == "nt":
                             self.assertRegex(dockerfiles[0], r"^[A-Za-z]:/")
                             self.assertRegex(contexts[0], r"^[A-Za-z]:/")
-                        else:
+                        elif sys.platform != "darwin":
                             self.assertEqual(dockerfiles[0], str(portable_docker / "Dockerfile"))
                             self.assertEqual(contexts[0], str(portable_root))
 
