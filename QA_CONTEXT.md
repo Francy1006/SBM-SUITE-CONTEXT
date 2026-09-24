@@ -484,7 +484,7 @@ SBM-UTIL: passed
 Executed projects: 7
 Skipped projects: 2
 Evidence file: qa-results.md
-Evidence SHA-256: 8912fc3ab6405328ef76e541adc6bd881249bbb600df77bd952b195c3fea3b60
+Evidence SHA-256: 02ab6c5b40ddb165297e84a72ac1a9aa36ef629ee97adbd5e01c8157929194f8
 Reason: full Context and transversal with-Sonar QA evidence verified
 ```
 

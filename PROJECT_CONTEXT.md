@@ -512,7 +512,7 @@ Verified current capabilities include:
 - Context deploy evidence now combines tracked/staged diffs with safe untracked UTF-8 text as canonical `new file` patches while respecting Git ignore rules and omitting sensitive, generated, archive, binary and oversized untracked artifacts;
 - SonarScanner orchestration is centralized under `SBM-SUITE/context/scripts/` with a Context-owned multiarchitecture image built from `docker/sonar-scanner/Dockerfile`; native `linux/amd64` and `linux/arm64` selection, architecture-specific cache paths, Dockerfile SHA-256 image invalidation and bounded timeout cleanup are implemented;
 - the Context-owned scanner image pins SonarScanner CLI 8.1.0.6389 and Node.js 22.14.0, uses `SONAR_USER_HOME=/opt/sonar-scanner/.sonar`, and the shared scanner helper exists only under `SBM-SUITE/context/scripts/`;
-- 2026-09-23 Context QA and the sequential transversal `with-sonar` run passed for all applicable repositories; DP-STORE and PC-STORE were `not-applicable`;
+- 2026-09-24 Context QA and the sequential transversal `with-sonar` run passed for all applicable repositories; DP-STORE and PC-STORE were `not-applicable`;
 
 - Upgrade input discovery accepts exactly one workflow-prefixed ZIP for Context and Documentation (`context-upgrade*.zip` or `documentation-upgrade*.zip`), including client-generated suffixes such as `(32)`; ambiguous ZIP sets and invalid prefixes remain rejected, and the selected file is normalized internally to the canonical filename before backend validation.
 
