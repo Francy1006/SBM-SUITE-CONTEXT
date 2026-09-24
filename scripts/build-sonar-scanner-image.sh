@@ -24,6 +24,17 @@ DOCKERFILE="${ROOT_DIR}/docker/sonar-scanner/Dockerfile"
 
 DOCKERFILE_HASH="$(sbm_sonar_dockerfile_hash)"
 
-docker build --platform "linux/${TARGETARCH}" -t "${IMAGE_TAG}" --label "com.sbm.sonar-scanner.dockerfile-sha256=${DOCKERFILE_HASH}" -f "${DOCKERFILE}" "${ROOT_DIR}"
+if [[ -n "${MSYSTEM:-}" ]]; then
+  DOCKERFILE_FOR_DOCKER="$(cygpath -am -- "${DOCKERFILE}")"
+  ROOT_DIR_FOR_DOCKER="$(cygpath -am -- "${ROOT_DIR}")"
+  MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' \
+    docker build --platform "linux/${TARGETARCH}" -t "${IMAGE_TAG}" \
+      --label "com.sbm.sonar-scanner.dockerfile-sha256=${DOCKERFILE_HASH}" \
+      -f "${DOCKERFILE_FOR_DOCKER}" "${ROOT_DIR_FOR_DOCKER}"
+else
+  docker build --platform "linux/${TARGETARCH}" -t "${IMAGE_TAG}" \
+    --label "com.sbm.sonar-scanner.dockerfile-sha256=${DOCKERFILE_HASH}" \
+    -f "${DOCKERFILE}" "${ROOT_DIR}"
+fi
 
 echo "Built ${IMAGE_TAG} for linux/${TARGETARCH}"

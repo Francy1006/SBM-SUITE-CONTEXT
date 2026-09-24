@@ -9,7 +9,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.tests._git_bash import bash_command
+try:
+    from scripts.tests._git_bash import bash_command
+except ModuleNotFoundError:
+    from _git_bash import bash_command
 
 CONTEXT_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_NAMES = (
@@ -98,14 +101,15 @@ class Environment:
     def repository(self, relative: str) -> Path:
         return self.suite / relative
 
-    def write_context(self, active, pending):
+    @staticmethod
+    def context_text(active, pending):
         def rows(items, status):
             return "\n".join(
                 f"| {oid} | TEST | Objective {oid} | {status} | 5 | N/A | {branch} | docs/{oid}.md |"
                 for oid, branch in items
             )
 
-        text = (
+        return (
             "# PROJECT_CONTEXT.md\n\n## 3. Active objectives\n\n"
             "| ID | Project | Objective | Status | Priority | Target date | Branch | Documentation |\n"
             "|---|---|---|---|---:|---|---|---|\n"
@@ -116,7 +120,11 @@ class Environment:
             + rows(pending, "pending")
             + "\n"
         )
-        (self.context / "PROJECT_CONTEXT.md").write_text(text, encoding="utf-8", newline="\n")
+
+    def write_context(self, active, pending):
+        (self.context / "PROJECT_CONTEXT.md").write_text(
+            self.context_text(active, pending), encoding="utf-8", newline="\n"
+        )
 
     def publish_branch(self, branch: str) -> None:
         for relative in self.repositories:
@@ -134,6 +142,20 @@ class Environment:
             stream.write("remote\n")
         run("git", "add", "tracked.txt", cwd=publisher)
         run("git", "commit", "-m", "remote advance", cwd=publisher)
+        run("git", "push", "origin", branch, cwd=publisher)
+        return run("git", "rev-parse", "HEAD", cwd=publisher).stdout.strip()
+
+    def advance_remote_lifecycle(self, branch: str, active, pending) -> str:
+        publisher = self.publishers / f"context-lifecycle-{len(list(self.publishers.iterdir()))}"
+        run("git", "clone", str(self.remote("context")), str(publisher), cwd=self.root)
+        run("git", "config", "user.email", "tests@example.com", cwd=publisher)
+        run("git", "config", "user.name", "Tests", cwd=publisher)
+        run("git", "checkout", branch, cwd=publisher)
+        (publisher / "PROJECT_CONTEXT.md").write_text(
+            self.context_text(active, pending), encoding="utf-8", newline="\n"
+        )
+        run("git", "add", "PROJECT_CONTEXT.md", cwd=publisher)
+        run("git", "commit", "-m", "remote lifecycle update", cwd=publisher)
         run("git", "push", "origin", branch, cwd=publisher)
         return run("git", "rev-parse", "HEAD", cwd=publisher).stdout.strip()
 
@@ -246,6 +268,86 @@ class ObjectiveGitPullTests(unittest.TestCase):
                 (env.context / "PROJECT_CONTEXT.md").read_text(encoding="utf-8"),
                 lifecycle_before,
             )
+
+    def test_context_remote_lifecycle_update_is_accepted_when_objective_and_branch_match(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            env = Environment(Path(directory))
+            branch = "FEATURE-lifecycle-refresh"
+            oid = "OBJ-PULL-008"
+            env.write_context([(oid, branch)], [])
+            run("git", "add", "PROJECT_CONTEXT.md", cwd=env.context)
+            run("git", "commit", "-m", "lifecycle", cwd=env.context)
+            env.publish_branch(branch)
+            expected = env.advance_remote_lifecycle(
+                branch,
+                [(oid, branch), ("OBJ-PULL-OTHER", "FEATURE-other")],
+                [],
+            )
+
+            result = env.pull(oid)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(env.head("context"), expected)
+            self.assertIn(
+                "OBJ-PULL-OTHER",
+                (env.context / "PROJECT_CONTEXT.md").read_text(encoding="utf-8"),
+            )
+            for relative in env.repositories:
+                self.assertEqual(env.current_branch(relative), branch)
+                self.assertEqual(env.porcelain(relative), "")
+
+    def test_incompatible_remote_lifecycle_update_fails_safely(self) -> None:
+        cases = (
+            ([("OBJ-PULL-009", "BUGFIX-incompatible")], "branch"),
+            ([("OBJ-PULL-OTHER", "FEATURE-other")], "objective"),
+        )
+        for active, reason in cases:
+            with self.subTest(reason=reason), tempfile.TemporaryDirectory() as directory:
+                env = Environment(Path(directory))
+                branch = "FEATURE-lifecycle-incompatible"
+                oid = "OBJ-PULL-009"
+                env.write_context([(oid, branch)], [])
+                run("git", "add", "PROJECT_CONTEXT.md", cwd=env.context)
+                run("git", "commit", "-m", "lifecycle", cwd=env.context)
+                env.publish_branch(branch)
+                expected = env.advance_remote_lifecycle(branch, active, [])
+
+                result = env.pull(oid)
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("lifecycle incompatible después de actualizar context", result.stderr)
+                self.assertEqual(env.head("context"), expected)
+                for relative in env.repositories:
+                    self.assertEqual(env.current_branch(relative), branch)
+                    self.assertEqual(env.porcelain(relative), "")
+
+    def test_concurrent_local_commit_after_context_pull_is_still_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            env = Environment(Path(directory))
+            branch = "FEATURE-lifecycle-concurrency"
+            oid = "OBJ-PULL-010"
+            env.write_context([(oid, branch)], [])
+            run("git", "add", "PROJECT_CONTEXT.md", cwd=env.context)
+            run("git", "commit", "-m", "lifecycle", cwd=env.context)
+            env.publish_branch(branch)
+            expected_remote = env.advance_remote("context", branch)
+            hook = env.context / ".git/hooks/post-merge"
+            hook.write_text(
+                "#!/usr/bin/env bash\n"
+                "printf '\\n# concurrent local lifecycle change\\n' >> PROJECT_CONTEXT.md\n"
+                "git add PROJECT_CONTEXT.md\n"
+                "git commit -qm 'concurrent lifecycle change'\n",
+                encoding="utf-8",
+                newline="\n",
+            )
+            hook.chmod(0o755)
+
+            result = env.pull(oid)
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("context cambió concurrentemente durante git pull", result.stderr)
+            self.assertNotEqual(env.head("context"), expected_remote)
+            self.assertEqual(env.porcelain("context"), "")
 
     def test_missing_local_branch_is_created_tracking_origin(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -157,6 +157,13 @@ done < "${REPOSITORIES}"
   exit 1
 }
 
+[[ "$(lifecycle_digest)" == "${LIFECYCLE_BEFORE}" ]] || {
+  echo "ERROR: el estado lifecycle cambió concurrentemente durante fetch" >&2
+  exit 1
+}
+
+EXPECTED_CONTEXT_HEAD=""
+
 validate_repository() {
   local path="$1"
   local repository="${SUITE_ROOT}/$1"
@@ -181,6 +188,15 @@ validate_repository() {
       echo "ERROR: ${path}: ${OBJECTIVE_BRANCH} local no admite fast-forward: divergencia con origin (behind=${behind}, ahead=${ahead})" >&2
       return 1
     fi
+    if [[ "${path}" == "context" ]]; then
+      if (( behind > 0 )); then
+        EXPECTED_CONTEXT_HEAD="$(git -C "${repository}" rev-parse "${remote_ref}")"
+      else
+        EXPECTED_CONTEXT_HEAD="$(git -C "${repository}" rev-parse "refs/heads/${OBJECTIVE_BRANCH}")"
+      fi
+    fi
+  elif [[ "${path}" == "context" ]]; then
+    EXPECTED_CONTEXT_HEAD="$(git -C "${repository}" rev-parse "${remote_ref}")"
   fi
 }
 
@@ -191,6 +207,11 @@ done < "${REPOSITORIES}"
 
 [[ "${failed}" == "0" ]] || {
   echo "ERROR: Validación transversal fallida; no se modificó ningún working tree." >&2
+  exit 1
+}
+
+[[ -n "${EXPECTED_CONTEXT_HEAD}" ]] || {
+  echo "ERROR: no se pudo determinar el commit esperado de context" >&2
   exit 1
 }
 
@@ -239,8 +260,32 @@ done < "${REPOSITORIES}"
   exit 1
 }
 
-[[ "$(lifecycle_digest)" == "${LIFECYCLE_BEFORE}" ]] || {
-  echo "ERROR: el estado lifecycle del objetivo cambió durante git pull" >&2
+[[ "$(git -C "${CONTEXT_ROOT}" rev-parse HEAD)" == "${EXPECTED_CONTEXT_HEAD}" ]] || {
+  echo "ERROR: context cambió concurrentemente durante git pull" >&2
+  exit 1
+}
+[[ -z "$(git -C "${CONTEXT_ROOT}" status --porcelain -- \
+  "$(basename "${PROJECT_CONTEXT_FILE}")" \
+  "$(basename "${COMPLETED_OBJECTIVES_FILE}")")" ]] || {
+  echo "ERROR: el estado lifecycle cambió concurrentemente durante git pull" >&2
+  exit 1
+}
+
+set +e
+updated_values="$({
+  python3 "${CLI_HELPER}" \
+    --project-context "${PROJECT_CONTEXT_FILE}" \
+    --objective-id "${OBJECTIVE_ID}"
+} 2>&1)"
+updated_status=$?
+set -e
+if [[ "${updated_status}" != "0" ]]; then
+  echo "ERROR: lifecycle incompatible después de actualizar context: ${updated_values}" >&2
+  exit 1
+fi
+IFS=$'\t' read -r UPDATED_ID UPDATED_BRANCH _ <<< "${updated_values}"
+[[ "${UPDATED_ID}" == "${OBJECTIVE_ID}" && "${UPDATED_BRANCH}" == "${OBJECTIVE_BRANCH}" ]] || {
+  echo "ERROR: lifecycle incompatible después de actualizar context: esperado ${OBJECTIVE_ID}/${OBJECTIVE_BRANCH}, obtenido ${UPDATED_ID}/${UPDATED_BRANCH}" >&2
   exit 1
 }
 

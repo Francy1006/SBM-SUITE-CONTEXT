@@ -71,6 +71,26 @@ sbm_sonar_image_hash() {
   docker image inspect --format '{{ index .Config.Labels "com.sbm.sonar-scanner.dockerfile-sha256" }}' "$1"
 }
 
+sbm_sonar_msys_host_path() {
+  cygpath -am -- "$1"
+}
+
+sbm_sonar_msys_volume() {
+  local spec="$1" source remainder tail
+  if [[ "${spec}" =~ ^[A-Za-z]:[/\\] ]]; then
+    tail="${spec:2}"
+    source="${spec:0:2}${tail%%:*}"
+    remainder="${tail#*:}"
+  elif [[ "${spec}" == /*:* || "${spec}" == ./*:* || "${spec}" == ../*:* ]]; then
+    source="${spec%%:*}"
+    remainder="${spec#*:}"
+  else
+    printf '%s\n' "${spec}"
+    return 0
+  fi
+  printf '%s:%s\n' "$(sbm_sonar_msys_host_path "${source}")" "${remainder}"
+}
+
 # Reuse only images built from the current Dockerfile.
 
 sbm_sonar_ensure_image() {
@@ -102,15 +122,8 @@ sbm_sonar_ensure_image() {
   fi
 }
 
-sbm_sonar_run() {
-  local timeout_seconds="${SONAR_SCANNER_TIMEOUT_SECONDS:-${SBM_SONAR_TIMEOUT_SECONDS}}"
-
-  if ! command -v python3 >/dev/null 2>&1; then
-    echo "ERROR: python3 es obligatorio para controlar el timeout del scanner" >&2
-    return 1
-  fi
-
-  python3 - "${timeout_seconds}" "$@" <<'PY'
+sbm_sonar_timeout_controller() {
+  python3 - "$@" <<'PY'
 import subprocess
 import sys
 
@@ -156,4 +169,55 @@ except subprocess.TimeoutExpired:
 
 raise SystemExit(returncode)
 PY
+}
+
+sbm_sonar_run() {
+  local timeout_seconds="${SONAR_SCANNER_TIMEOUT_SECONDS:-${SBM_SONAR_TIMEOUT_SECONDS}}"
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "ERROR: python3 es obligatorio para controlar el timeout del scanner" >&2
+    return 1
+  fi
+
+  if [[ -z "${MSYSTEM:-}" ]]; then
+    sbm_sonar_timeout_controller "${timeout_seconds}" "$@"
+    return
+  fi
+
+  local converted=()
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      -v|--volume)
+        converted+=("$1")
+        shift
+        [[ "$#" -gt 0 ]] || {
+          echo "ERROR: -v/--volume requiere un volumen" >&2
+          return 2
+        }
+        converted+=("$(sbm_sonar_msys_volume "$1")")
+        ;;
+      --volume=*)
+        converted+=("--volume=$(sbm_sonar_msys_volume "${1#*=}")")
+        ;;
+      --env-file)
+        converted+=("$1")
+        shift
+        [[ "$#" -gt 0 ]] || {
+          echo "ERROR: --env-file requiere un path" >&2
+          return 2
+        }
+        converted+=("$(sbm_sonar_msys_host_path "$1")")
+        ;;
+      --env-file=*)
+        converted+=("--env-file=$(sbm_sonar_msys_host_path "${1#*=}")")
+        ;;
+      *)
+        converted+=("$1")
+        ;;
+    esac
+    shift
+  done
+
+  MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' \
+    sbm_sonar_timeout_controller "${timeout_seconds}" "${converted[@]}"
 }

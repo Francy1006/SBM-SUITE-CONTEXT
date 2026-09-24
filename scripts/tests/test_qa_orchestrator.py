@@ -10,7 +10,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.tests._git_bash import bash_executable as _bash_executable
+try:
+    from scripts.tests._git_bash import bash_executable as _bash_executable
+except ModuleNotFoundError:
+    from _git_bash import bash_executable as _bash_executable
 
 CONTEXT_ROOT = Path(__file__).resolve().parents[2]
 QA_PROJECT_SOURCE = CONTEXT_ROOT / "QA" / "qa-project.sh"
@@ -25,6 +28,32 @@ def _bash_path(path: Path) -> str:
     if os.name == "nt" and len(resolved) >= 3 and resolved[1:3] == ":/":
         return f"/{resolved[0].lower()}/{resolved[3:]}"
     return resolved
+
+
+def _path_key(path: str | Path) -> str:
+    if os.name != "nt":
+        return str(path)
+    result = subprocess.run(
+        [
+            _bash_executable(),
+            "-c",
+            'cygpath -am -- "$1"',
+            "context-path-key",
+            str(path),
+        ],
+        check=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    return result.stdout.strip().rstrip("/").casefold()
+
+
+def _contains_equivalent_path(path_value: str, expected: str | Path) -> bool:
+    expected_key = _path_key(expected)
+    return any(_path_key(entry) == expected_key for entry in path_value.split(":"))
 
 
 def _run(*args: str, cwd: Path, check: bool = True, env=None):
@@ -384,57 +413,76 @@ class QAOrchestratorTests(unittest.TestCase):
                 )
 
     def test_context_venv_is_not_inherited_by_child_qa(self):
-        with tempfile.TemporaryDirectory() as d:
-            env = QAEnvironment(Path(d))
-            context_only = env.context / ".venv/bin/context-only"
-            context_only.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
-            context_only.chmod(0o755)
-            coverage = env.suite / "DP/DP-API/scripts/coverage.sh"
-            coverage.write_text(
-                "#!/usr/bin/env bash\nset -euo pipefail\n"
-                "if command -v context-only >/dev/null 2>&1; then exit 19; fi\n"
-                "printf '%s\\n' \"${VIRTUAL_ENV-unset}\" > child-virtual-env.txt\n"
-                "printf '%s\\n' \"$PATH\" > child-path.txt\n",
-                encoding="utf-8",
-            )
-            coverage.chmod(0o755)
+        for layout in ("bin", "Scripts"):
+            with self.subTest(layout=layout), tempfile.TemporaryDirectory() as d:
+                env = QAEnvironment(Path(d), context_venv_layout=layout)
+                context_venv_bin = env.context / ".venv" / layout
+                context_only = context_venv_bin / "context-only"
+                context_only.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+                context_only.chmod(0o755)
+                coverage = env.suite / "DP/DP-API/scripts/coverage.sh"
+                coverage.write_text(
+                    "#!/usr/bin/env bash\nset -euo pipefail\n"
+                    "if command -v context-only >/dev/null 2>&1; then exit 19; fi\n"
+                    "printf '%s\\n' \"${VIRTUAL_ENV-unset}\" > child-virtual-env.txt\n"
+                    "printf '%s\\n' \"$PATH\" > child-path.txt\n",
+                    encoding="utf-8",
+                )
+                coverage.chmod(0o755)
 
-            inherited = env.inherited_context_environment()
-            inherited["GIT_BASH"] = ""
-            native_bin = Path(d) / "native tools" / "bin"
-            native_bin.mkdir(parents=True)
-            inherited["PATH"] += os.pathsep + str(native_bin)
-            # Only Windows fixtures may introduce a Git for Windows PATH entry.
-            if os.name == "nt":
-                inherited["PATH"] += os.pathsep + r"E:\Programs Files\Git\cmd"
-            result = _run(
-                str(env.context / "QA/qa-project.sh"),
-                "DP-API",
-                cwd=env.context,
-                check=False,
-                env=inherited,
-            )
+                inherited = env.inherited_context_environment()
+                inherited["GIT_BASH"] = ""
+                native_bin = Path(d) / "native tools" / "bin"
+                native_bin.mkdir(parents=True)
+                inherited["PATH"] += os.pathsep + str(native_bin)
+                # Only Windows fixtures may introduce MSYS aliases and Git paths.
+                git_cmd = None
+                if os.name == "nt":
+                    inherited["PATH"] += os.pathsep + _bash_path(context_venv_bin)
+                    inherited["PATH"] += os.pathsep + str(context_venv_bin)
+                    git_root = Path(_bash_executable()).resolve().parent.parent
+                    if git_root.name.casefold() == "usr":
+                        git_root = git_root.parent
+                    git_cmd = git_root / "cmd"
+                    inherited["PATH"] += os.pathsep + str(git_cmd)
+                result = _run(
+                    str(env.context / "QA/qa-project.sh"),
+                    "DP-API",
+                    cwd=env.context,
+                    check=False,
+                    env=inherited,
+                )
 
-            self.assertEqual(result.returncode, 0, result.stderr)
-            child_virtual_env = (
-                env.suite / "DP/DP-API/child-virtual-env.txt"
-            ).read_text(encoding="utf-8").strip()
-            self.assertEqual(child_virtual_env, "unset")
-            child_path = (env.suite / "DP/DP-API/child-path.txt").read_text(
-                encoding="utf-8"
-            ).strip()
-            self.assertNotRegex(child_path, r";[A-Za-z]:[\\/]")
-            self.assertNotIn(_bash_path(env.context / ".venv/bin"), child_path.split(":"))
-            if os.name == "nt":
-                # Bash uses POSIX separators after importing the native Windows PATH.
-                self.assertIn(_bash_path(native_bin), child_path.split(":"))
-                self.assertIn("/e/Programs Files/Git/cmd", child_path.split(":"))
-            else:
-                self.assertNotIn(str(env.context / ".venv/bin"), child_path.split(":"))
-                self.assertNotRegex(child_path, r"(?:^|[:;])[A-Za-z]:[\\/]")
-                self.assertNotIn(";", child_path)
-                self.assertEqual(child_path, os.environ["PATH"] + os.pathsep + str(native_bin))
-            self.assertFalse(any(";E" in path.name for path in env.suite.rglob("*")))
+                self.assertEqual(result.returncode, 0, result.stderr)
+                child_virtual_env = (
+                    env.suite / "DP/DP-API/child-virtual-env.txt"
+                ).read_text(encoding="utf-8").strip()
+                self.assertEqual(child_virtual_env, "unset")
+                child_path = (env.suite / "DP/DP-API/child-path.txt").read_text(
+                    encoding="utf-8"
+                ).strip()
+                self.assertNotRegex(child_path, r";[A-Za-z]:[\\/]")
+                self.assertFalse(
+                    _contains_equivalent_path(child_path, context_venv_bin), child_path
+                )
+                if os.name == "nt":
+                    self.assertTrue(
+                        _contains_equivalent_path(child_path, native_bin), child_path
+                    )
+                    self.assertTrue(
+                        _contains_equivalent_path(child_path, git_cmd),
+                        child_path,
+                    )
+                else:
+                    self.assertNotRegex(child_path, r"(?:^|[:;])[A-Za-z]:[\\/]")
+                    self.assertNotIn(";", child_path)
+                    self.assertEqual(
+                        child_path,
+                        os.environ["PATH"] + os.pathsep + str(native_bin),
+                    )
+                self.assertFalse(
+                    any(";E" in path.name for path in env.suite.rglob("*"))
+                )
 
     def test_repository_venv_is_selected_for_windows_and_posix_layouts(self):
         layouts = (("Scripts", "repo-python.exe"), ("bin", "repo-python"))

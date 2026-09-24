@@ -74,6 +74,42 @@ path_without_inherited_venv() {
     path_value="$(cygpath --path --unix "${path_value}")"
   fi
   IFS=':' read -r -a entries <<< "${path_value}"
+
+  if [[ -n "${MSYSTEM:-}" ]]; then
+    local candidate canonical_entry canonical_candidate skip
+    local excluded=(
+      "${CONTEXT_ROOT}/.venv/Scripts"
+      "${CONTEXT_ROOT}/.venv/bin"
+    )
+    local canonical_excluded=()
+    if [[ -n "${inherited_venv}" ]]; then
+      excluded+=("${inherited_venv}/Scripts" "${inherited_venv}/bin")
+    fi
+    for candidate in "${excluded[@]}"; do
+      canonical_candidate="$(cygpath -am -- "${candidate}" 2>/dev/null || printf '%s' "${candidate}")"
+      canonical_excluded+=("${canonical_candidate%/}")
+    done
+    for entry in "${entries[@]}"; do
+      canonical_entry="$(cygpath -am -- "${entry}" 2>/dev/null || printf '%s' "${entry}")"
+      canonical_entry="${canonical_entry%/}"
+      skip=0
+      for canonical_candidate in "${canonical_excluded[@]}"; do
+        if [[ "${canonical_entry,,}" == "${canonical_candidate,,}" ]]; then
+          skip=1
+          break
+        fi
+      done
+      [[ "${skip}" == "0" ]] || continue
+      if [[ -n "${cleaned}" ]]; then
+        cleaned="${cleaned}:${entry}"
+      else
+        cleaned="${entry}"
+      fi
+    done
+    printf '%s\n' "${cleaned}"
+    return 0
+  fi
+
   for entry in "${entries[@]}"; do
     case "${entry%/}" in
       "${CONTEXT_ROOT}/.venv/Scripts"|"${CONTEXT_ROOT}/.venv/bin")
